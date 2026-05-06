@@ -131,13 +131,13 @@ function linksFor(candidate) {
 export function formatRadarButtons(candidates) {
   return candidates.slice(0, 5).map((candidate, index) => {
     const links = linksFor(candidate);
-    const prefix = `${index + 1}. ${candidate.symbol}`.slice(0, 18);
+    const n = index + 1;
     return {
       type: 1,
       components: [
-        { type: 2, style: 5, label: `${prefix} DexScreener`, url: links.dex },
-        { type: 2, style: 5, label: `${index + 1}. gmgn`, url: links.gmgn },
-        { type: 2, style: 5, label: `${index + 1}. Nansen`, url: links.nansen }
+        { type: 2, style: 5, label: `${n} Dex`, url: links.dex },
+        { type: 2, style: 5, label: `${n} gmgn`, url: links.gmgn },
+        { type: 2, style: 5, label: `${n} Nansen`, url: links.nansen }
       ]
     };
   });
@@ -170,13 +170,13 @@ export function formatRadarReport(candidates) {
       `CA: \`${candidate.ca}\``,
       `見る理由: ${candidate.reason}`,
       `警戒点: ${candidate.caution}`,
-      "確認リンクは下のボタンから開けます。",
+      `Links: ${index + 1} Dex / ${index + 1} gmgn / ${index + 1} Nansen`,
       ""
     );
   });
 
   lines.push("※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。");
-  lines.push("※ 気になるCAは `/flow <CA>`、条件確認は `/criteria`、使い方は `/help`。");
+  lines.push("※ ボタン番号は候補番号に対応しています。気になるCAは `/flow <CA>`。");
   return lines.join("\n");
 }
 
