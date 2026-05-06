@@ -82,7 +82,8 @@ export async function scanAlphaCandidates() {
       const metrics = candidate.metrics || {};
       const lowEnough = !metrics.marketCapUsd || metrics.marketCapUsd <= config.marketCapMaxUsd;
       const hasFlow = (metrics.netflow24hUsd || 0) > 0 || (metrics.traderCount || 0) >= config.minSmartMoneyTraders;
-      const freshEnough = !metrics.tokenAgeDays || metrics.tokenAgeDays <= config.tokenAgeMaxDays;
+      const hasAge = Number.isFinite(metrics.tokenAgeDays) && metrics.tokenAgeDays > 0;
+      const freshEnough = hasAge && metrics.tokenAgeDays <= config.tokenAgeMaxDays;
       return lowEnough && hasFlow && freshEnough;
     })
     .sort((a, b) => b.bbScore - a.bbScore)
@@ -176,6 +177,7 @@ export function formatRadarReport(candidates) {
   });
 
   lines.push("※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。");
+  lines.push("※ Nansenの最新データを毎回取得するため、表示候補は実行タイミングで変わります。");
   lines.push("※ ボタン番号は候補番号に対応しています。気になるCAは `/flow <CA>`。");
   return lines.join("\n");
 }
