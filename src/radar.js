@@ -16,7 +16,7 @@ const mockCandidates = [
     smartMoneyInflows: 4,
     newWalletGrowth: "+72%",
     bbScore: 82,
-    reason: "Smart Moneyが短時間で複数流入。FDVは低く、まだ拡散前の初動候補。",
+    reason: "Smart Moneyが短時間で複数流入。低capのまま買いが先行。",
     caution: "低capのため急落リスクあり。出来高継続と上位ホルダー売りを確認。",
     metrics: { netflow24hUsd: 5700, tokenAgeDays: 1, traderCount: 4, dexTradeMatches: 2 }
   },
@@ -27,20 +27,9 @@ const mockCandidates = [
     smartMoneyInflows: 3,
     newWalletGrowth: "+58%",
     bbScore: 74,
-    reason: "新規ウォレット増加とSmart Money流入が同時発生。bb部屋向きのミーム性あり。",
-    caution: "流動性はまだ薄い。エントリー前にDexScreenerで板と出来高を確認。",
+    reason: "新規ウォレット増加とSmart Money流入が同時発生。",
+    caution: "流動性はまだ薄い。DexScreenerで板と出来高を確認。",
     metrics: { netflow24hUsd: 4100, tokenAgeDays: 1, traderCount: 3, dexTradeMatches: 1 }
-  },
-  {
-    symbol: "APPLE",
-    ca: "Aw5SxKyYhXFDZj2BHCqs11UaV5ohwpFQJauB9jFhpump",
-    marketCap: "$118K",
-    smartMoneyInflows: 5,
-    newWalletGrowth: "+91%",
-    bbScore: 88,
-    reason: "複数のラベル付きウォレットが同時反応。低capのまま買いが先行。",
-    caution: "短期パンプ型の可能性あり。通知後の出口速度に注意。",
-    metrics: { netflow24hUsd: 9000, tokenAgeDays: 0.5, traderCount: 5, dexTradeMatches: 3 }
   }
 ];
 
@@ -68,8 +57,7 @@ export async function scanAlphaCandidates() {
   if (config.mockMode || !config.nansenApiKey) {
     const rotated = [
       mockCandidates[mockIndex % mockCandidates.length],
-      mockCandidates[(mockIndex + 1) % mockCandidates.length],
-      mockCandidates[(mockIndex + 2) % mockCandidates.length]
+      mockCandidates[(mockIndex + 1) % mockCandidates.length]
     ];
     mockIndex += 1;
     return rotated.map((candidate) => ({
@@ -147,24 +135,9 @@ export function formatRadarButtons(candidates) {
     return {
       type: 1,
       components: [
-        {
-          type: 2,
-          style: 5,
-          label: `${prefix} DexScreener`,
-          url: links.dex
-        },
-        {
-          type: 2,
-          style: 5,
-          label: `${index + 1}. gmgn`,
-          url: links.gmgn
-        },
-        {
-          type: 2,
-          style: 5,
-          label: `${index + 1}. Nansen`,
-          url: links.nansen
-        }
+        { type: 2, style: 5, label: `${prefix} DexScreener`, url: links.dex },
+        { type: 2, style: 5, label: `${index + 1}. gmgn`, url: links.gmgn },
+        { type: 2, style: 5, label: `${index + 1}. Nansen`, url: links.nansen }
       ]
     };
   });
@@ -176,7 +149,7 @@ export function formatRadarReport(candidates) {
       "🚨 **bb Native Alpha Radar**",
       "",
       "今の条件では候補がありませんでした。",
-      "条件を緩めるか、少し時間を置いて再実行してください。"
+      "条件は `/criteria`、使い方は `/help` で確認できます。"
     ].join("\n");
   }
 
@@ -203,7 +176,7 @@ export function formatRadarReport(candidates) {
   });
 
   lines.push("※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。");
-  lines.push("※ ボタンは候補番号に対応しています。例: 1 DexScreener = 1位の銘柄。");
+  lines.push("※ 気になるCAは `/flow <CA>`、条件確認は `/criteria`、使い方は `/help`。");
   return lines.join("\n");
 }
 
@@ -219,7 +192,7 @@ export function formatCriteria() {
     `・Token age: ${config.tokenAgeMaxDays}日以内`,
     `・24h Smart Money netflowがプラス、またはSmart Money tradersが${config.minSmartMoneyTraders}以上`,
     "・SCAM / RUG / HONEYPOT / DRAIN / HACK系のシンボルは除外",
-    `・bb反応度: ${config.minBbScore}以上で通知対象`,
+    `・bb反応度: ${config.minBbScore}以上で自動通知対象`,
     `・重複通知: ${config.dedupeHours}時間以内は同じCAを再通知しない`,
     `・通知上限: 1日最大${config.maxDailyAlerts}件`,
     "",
@@ -233,8 +206,25 @@ export function formatCriteria() {
   ].join("\n");
 }
 
-export function formatAlert(candidate) {
-  return formatRadarReport([candidate]);
+export function formatHelp() {
+  return [
+    "🧭 **bb Native Alpha Radar Help**",
+    "",
+    "**/radar**",
+    "Nansen Smart Moneyデータから、今見るべきSolana lowcap候補を表示します。",
+    "",
+    "**/flow <CA>**",
+    "気になったCAを指定して、通知履歴またはNansen APIから簡易フロー分析を返します。",
+    "",
+    "**/criteria**",
+    "抽出条件とbb反応度の意味を表示します。",
+    "",
+    "**自動通知**",
+    `Botを起動したままにすると、${config.alertIntervalMinutes}分ごとにRadarを確認します。`,
+    `同じCAは${config.dedupeHours}時間以内は再通知せず、1日最大${config.maxDailyAlerts}件までです。`,
+    "",
+    "※ 投資助言ではありません。必ず自分で確認してください。"
+  ].join("\n");
 }
 
 export function formatFlowAnalysis(candidate) {

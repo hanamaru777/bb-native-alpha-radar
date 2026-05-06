@@ -62,8 +62,12 @@ export async function getApplication(token) {
 export async function registerCommands(token, applicationId, guildId = "") {
   const commands = [
     {
+      name: "radar",
+      description: "NansenからSolana lowcap候補を表示します"
+    },
+    {
       name: "flow",
-      description: "CAからNansen風の資金流入分析を返します",
+      description: "CAを指定して簡易フロー分析を表示します",
       options: [
         {
           name: "ca",
@@ -74,12 +78,12 @@ export async function registerCommands(token, applicationId, guildId = "") {
       ]
     },
     {
-      name: "radar",
-      description: "Alpha Radarのテスト通知を実行します"
+      name: "criteria",
+      description: "Radarの抽出条件を表示します"
     },
     {
-      name: "criteria",
-      description: "Alpha Radarの抽出条件を表示します"
+      name: "help",
+      description: "Botの使い方を表示します"
     }
   ];
 

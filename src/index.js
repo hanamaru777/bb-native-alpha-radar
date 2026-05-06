@@ -12,6 +12,7 @@ import {
   analyzeTokenFlow,
   formatCriteria,
   formatFlowAnalysis,
+  formatHelp,
   formatRadarButtons,
   formatRadarReport,
   scanAlphaCandidates
@@ -137,6 +138,16 @@ async function handleInteraction(payload) {
       interaction.id,
       interaction.token,
       formatCriteria()
+    );
+    return;
+  }
+
+  if (commandName === "help") {
+    await replyInteraction(
+      config.discordToken,
+      interaction.id,
+      interaction.token,
+      formatHelp()
     );
   }
 }
