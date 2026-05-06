@@ -19,6 +19,7 @@ import {
   scanAlphaCandidates
 } from "./radar.js";
 import { applyNotificationPolicy, findAlertByCa, getStats, saveAlert } from "./store.js";
+import { updateTrackingOnce } from "./tracking.js";
 
 validateConfig();
 let applicationId = "";
@@ -38,6 +39,13 @@ async function runRadarOnce() {
       formatRadarReport(notifyCandidates),
       formatRadarButtons(notifyCandidates)
     );
+  }
+}
+
+async function runTrackingOnce() {
+  const result = await updateTrackingOnce();
+  if (result.checked > 0) {
+    console.log(`Tracking checked ${result.checked}, updated ${result.updated}, failed ${result.failed}.`);
   }
 }
 
@@ -211,6 +219,7 @@ console.log(`Logged in application: ${app.name}`);
 console.log(config.guildId ? "Slash commands registered to test server." : "Global slash commands registered.");
 console.log(config.mockMode ? "MOCK_MODE is ON. Nansen data is simulated." : "MOCK_MODE is OFF.");
 console.log(`Auto alert policy: max ${config.maxDailyAlerts}/day, dedupe ${config.dedupeHours}h, min score ${config.minBbScore}.`);
+console.log(`Tracking interval: ${config.trackingIntervalMinutes} minutes.`);
 
 await connectGateway();
 
@@ -218,3 +227,8 @@ const intervalMs = Math.max(config.alertIntervalMinutes, 1) * 60 * 1000;
 setInterval(() => {
   runRadarOnce().catch((error) => console.error("radar error:", error.message));
 }, intervalMs);
+
+const trackingIntervalMs = Math.max(config.trackingIntervalMinutes, 1) * 60 * 1000;
+setInterval(() => {
+  runTrackingOnce().catch((error) => console.error("tracking loop error:", error.message));
+}, trackingIntervalMs);

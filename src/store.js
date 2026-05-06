@@ -22,6 +22,11 @@ export function readAlerts() {
   }
 }
 
+function writeAlerts(alerts) {
+  fs.mkdirSync(config.dataDir, { recursive: true });
+  fs.writeFileSync(historyPath, JSON.stringify(alerts.slice(0, 300), null, 2));
+}
+
 export function saveAlert(alert, source = "manual") {
   fs.mkdirSync(config.dataDir, { recursive: true });
   const alerts = readAlerts();
@@ -52,7 +57,7 @@ export function saveAlert(alert, source = "manual") {
   };
 
   alerts.unshift(record);
-  fs.writeFileSync(historyPath, JSON.stringify(alerts.slice(0, 300), null, 2));
+  writeAlerts(alerts);
   return record;
 }
 
@@ -91,7 +96,7 @@ export function getStats() {
   const alerts = readAlerts();
   const today = new Date().toISOString().slice(0, 10);
   const validAlerts = alerts.filter(hasValidRadarMetrics);
-  const todayManualAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today));
+  const todayManualAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today) && alert.source === "manual");
   const todayAutoAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today) && alert.source === "auto");
   const best = validAlerts.reduce((current, alert) => {
     const score = Number(alert.bbScore || 0);
@@ -105,8 +110,84 @@ export function getStats() {
     todayManual: todayManualAlerts.length,
     todayAuto: todayAutoAlerts.length,
     best,
-    recent: uniqueRecent(validAlerts).slice(0, 5)
+    recent: uniqueRecent(validAlerts).slice(0, 5),
+    tracking: trackingStats(validAlerts)
   };
+}
+
+export function getAlertsDueForTracking(now = new Date()) {
+  const alerts = readAlerts();
+  const nowMs = now.getTime();
+  const sixHoursMs = 6 * 60 * 60 * 1000;
+  const minRefreshMs = Math.max(config.trackingIntervalMinutes, 1) * 60 * 1000;
+
+  const dueAlerts = alerts.filter((alert) => {
+    if (!hasValidRadarMetrics(alert)) return false;
+    const notifiedAt = new Date(alert.notification?.notifiedAt || alert.savedAt || alert.detectedAt || 0).getTime();
+    if (!Number.isFinite(notifiedAt)) return false;
+    if (nowMs - notifiedAt < 10 * 60 * 1000) return false;
+    if (nowMs - notifiedAt > sixHoursMs + 30 * 60 * 1000) return false;
+
+    const updatedAt = new Date(alert.tracking?.updatedAt || 0).getTime();
+    if (Number.isFinite(updatedAt) && nowMs - updatedAt < minRefreshMs) return false;
+
+    const tracking = alert.tracking || {};
+    return tracking.after1hMarketCapUsd === null
+      || tracking.after3hMarketCapUsd === null
+      || tracking.after6hMarketCapUsd === null
+      || nowMs - notifiedAt <= sixHoursMs;
+  });
+
+  return uniqueRecent(dueAlerts).slice(0, 15);
+}
+
+export function updateAlertTracking(ca, marketData, now = new Date()) {
+  const alerts = readAlerts();
+  const index = alerts.findIndex((alert) => alert.ca.toLowerCase() === ca.toLowerCase());
+  if (index === -1 || !marketData?.marketCapUsd) return null;
+
+  const alert = alerts[index];
+  const notifiedAt = new Date(alert.notification?.notifiedAt || alert.savedAt || alert.detectedAt || 0).getTime();
+  const ageMs = now.getTime() - notifiedAt;
+  const marketCapUsd = marketData.marketCapUsd;
+  const tracking = alert.tracking || {};
+  const startMarketCapUsd = alert.notification?.marketCapUsd || alert.metrics?.marketCapUsd || marketCapUsd;
+  const maxMarketCapUsd = Math.max(tracking.maxMarketCapUsd || 0, marketCapUsd);
+  const maxGainPercent = startMarketCapUsd
+    ? Math.round(((maxMarketCapUsd - startMarketCapUsd) / startMarketCapUsd) * 100)
+    : 0;
+
+  const nextTracking = {
+    after1hMarketCapUsd: tracking.after1hMarketCapUsd ?? null,
+    after3hMarketCapUsd: tracking.after3hMarketCapUsd ?? null,
+    after6hMarketCapUsd: tracking.after6hMarketCapUsd ?? null,
+    maxMarketCapUsd,
+    maxGainPercent,
+    bbMentioned: Boolean(tracking.bbMentioned),
+    updatedAt: now.toISOString(),
+    latestMarketCapUsd: marketCapUsd,
+    latestPriceUsd: marketData.priceUsd,
+    latestVolume24hUsd: marketData.volume24hUsd,
+    latestLiquidityUsd: marketData.liquidityUsd,
+    latestPairUrl: marketData.pairUrl
+  };
+
+  if (ageMs >= 60 * 60 * 1000 && nextTracking.after1hMarketCapUsd === null) {
+    nextTracking.after1hMarketCapUsd = marketCapUsd;
+  }
+  if (ageMs >= 3 * 60 * 60 * 1000 && nextTracking.after3hMarketCapUsd === null) {
+    nextTracking.after3hMarketCapUsd = marketCapUsd;
+  }
+  if (ageMs >= 6 * 60 * 60 * 1000 && nextTracking.after6hMarketCapUsd === null) {
+    nextTracking.after6hMarketCapUsd = marketCapUsd;
+  }
+
+  alerts[index] = {
+    ...alert,
+    tracking: nextTracking
+  };
+  writeAlerts(alerts);
+  return alerts[index];
 }
 
 function hasValidRadarMetrics(alert) {
@@ -126,4 +207,20 @@ function uniqueRecent(alerts) {
     result.push(alert);
   }
   return result;
+}
+
+function trackingStats(alerts) {
+  const tracked = alerts.filter((alert) => Number.isFinite(Number(alert.tracking?.latestMarketCapUsd)));
+  const completed = alerts.filter((alert) => alert.tracking?.after6hMarketCapUsd !== null && alert.tracking?.after6hMarketCapUsd !== undefined);
+  const bestGain = tracked.reduce((current, alert) => {
+    const gain = Number(alert.tracking?.maxGainPercent || 0);
+    const currentGain = Number(current?.tracking?.maxGainPercent || 0);
+    return gain > currentGain ? alert : current;
+  }, null);
+
+  return {
+    tracked: tracked.length,
+    completed: completed.length,
+    bestGain
+  };
 }

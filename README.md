@@ -86,6 +86,7 @@ DISCORD_CHANNEL_ID=your_alert_channel_id
 DISCORD_GUILD_ID=your_test_guild_id
 NANSEN_API_KEY=your_nansen_api_key
 ALERT_INTERVAL_MINUTES=30
+TRACKING_INTERVAL_MINUTES=15
 MARKET_CAP_MAX_USD=500000
 TOKEN_AGE_MAX_DAYS=30
 MIN_BB_SCORE=70
@@ -117,7 +118,7 @@ This bot does not provide financial advice. The Discord output tells users to ve
 
 Secrets are loaded from `.env` and are ignored by git.
 
-## Stored Alert History
+## Tracking
 
 Alerts are stored in `data/alerts.json`.
 
@@ -136,7 +137,9 @@ Each alert record includes:
 - max gain percent
 - bb mentioned flag
 
-The tracking slots are present in the data model so they can be updated by a scheduled market-data adapter.
+While the bot is running, it checks saved candidates with the DexScreener API every `TRACKING_INTERVAL_MINUTES` minutes. It fills the 1h / 3h / 6h market-cap slots when each checkpoint is reached and keeps the max market cap / max gain updated.
+
+Use `/stats` to see tracking progress and the best post-alert gain. Use `/flow <CA>` on a saved candidate to see its current tracking snapshot.
 
 ## Current Limitations
 
@@ -148,7 +151,6 @@ The current MVP already calls the live Nansen REST API, but a few final-product 
 - top-holder sell pressure
 - bb-room "not posted yet" detection
 - CTO / Korea / CEX narrative detection
-- automatic 1h / 3h / 6h market-cap refresh
 
 The code is structured so these can be added behind Nansen or market-data adapters without changing the Discord command surface.
 

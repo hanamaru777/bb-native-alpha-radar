@@ -121,6 +121,12 @@ function formatUsd(value) {
   return `$${Math.round(number).toLocaleString()}`;
 }
 
+function formatGain(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "n/a";
+  return `${number >= 0 ? "+" : ""}${number}%`;
+}
+
 function metricLine(candidate) {
   const metrics = candidate.metrics || {};
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
@@ -311,19 +317,43 @@ export function formatStats(stats) {
     lines.push("まだ通知履歴がありません。`/radar` を実行すると履歴が保存されます。");
   }
 
+  lines.push(
+    "",
+    "**追跡状況**",
+    `更新済み: ${stats.tracking.tracked}件 / 6h完了: ${stats.tracking.completed}件`
+  );
+
+  if (stats.tracking.bestGain) {
+    const bestGain = stats.tracking.bestGain;
+    lines.push(
+      `最大上昇: $${bestGain.symbol} / ${formatGain(bestGain.tracking?.maxGainPercent)} / max ${formatUsd(bestGain.tracking?.maxMarketCapUsd)}`
+    );
+  }
+
   lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
   lines.push("※ statsは現在のRadar条件を満たす履歴だけを集計します。");
   lines.push("※ 手動チェックは `/radar` 実行分、自動通知はBotが時間で投稿した分です。");
+  lines.push(`※ Bot起動中は${config.trackingIntervalMinutes}分ごとにMC推移を確認します。`);
   return lines.join("\n");
 }
 
 export function formatFlowAnalysis(candidate) {
   const metrics = candidate.metrics || {};
+  const tracking = candidate.tracking || {};
   const judge = flowJudge(candidate);
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
   const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
   const netflow = formatUsd(metrics.netflow24hUsd);
   const sm = candidate.smartMoneyInflows || metrics.traderCount || "n/a";
+  const trackingLines = Number.isFinite(Number(tracking.latestMarketCapUsd))
+    ? [
+        "",
+        "**通知後トラッキング**",
+        `現在MC: ${formatUsd(tracking.latestMarketCapUsd)}`,
+        `最大MC: ${formatUsd(tracking.maxMarketCapUsd)} / 最大上昇: ${formatGain(tracking.maxGainPercent)}`,
+        `1h: ${formatUsd(tracking.after1hMarketCapUsd)} / 3h: ${formatUsd(tracking.after3hMarketCapUsd)} / 6h: ${formatUsd(tracking.after6hMarketCapUsd)}`
+      ]
+    : [];
 
   return [
     "🧠 **Flow Judge**",
@@ -347,6 +377,7 @@ export function formatFlowAnalysis(candidate) {
     judge.verdict,
     "",
     `Nansen根拠: ${candidate.reason}`,
+    ...trackingLines,
     "",
     "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"
   ].join("\n");

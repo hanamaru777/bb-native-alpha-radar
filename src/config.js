@@ -29,6 +29,7 @@ export const config = {
   guildId: process.env.DISCORD_GUILD_ID || "",
   nansenApiKey: process.env.NANSEN_API_KEY || "",
   alertIntervalMinutes: numberEnv("ALERT_INTERVAL_MINUTES", 30),
+  trackingIntervalMinutes: numberEnv("TRACKING_INTERVAL_MINUTES", 15),
   marketCapMaxUsd: numberEnv("MARKET_CAP_MAX_USD", 500000),
   tokenAgeMaxDays: numberEnv("TOKEN_AGE_MAX_DAYS", 30),
   minBbScore: numberEnv("MIN_BB_SCORE", 70),
