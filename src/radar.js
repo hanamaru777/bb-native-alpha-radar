@@ -232,6 +232,8 @@ function metricLine(candidate) {
 
 function flowJudge(candidate) {
   const metrics = candidate.metrics || {};
+  const holders = candidate.nansenDeepDive?.holders || null;
+  const flow = candidate.nansenDeepDive?.flow || null;
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
   const score = Number(candidate.bbScore || 0);
   const netflow = Number(metrics.netflow24hUsd || 0);
@@ -251,19 +253,33 @@ function flowJudge(candidate) {
       ? "回転・継続監視寄り"
       : "初動から拡散前の中間";
 
-  const pressure = netflow > 5000 && sm >= 5
+  const pressure = flow?.bias === "流入優勢"
+    ? "Nansen Flowは流入優勢"
+    : flow?.bias === "流出優勢"
+      ? "Nansen Flowは流出優勢。買い圧より出口確認を優先"
+      : netflow > 5000 && sm >= 5
     ? "買い圧は強め"
     : netflow > 0
       ? "買い圧は確認できるが継続確認"
       : "買い圧は弱め";
 
-  const risk = mcap > 400000
+  const holderRisk = holders?.concentration === "集中高め"
+    ? "上位ホルダー集中が高め。売り圧と分散状況を強めに確認"
+    : holders?.concentration === "やや集中"
+      ? "上位ホルダーはやや集中。上位売りを確認"
+      : "";
+  const baseRisk = mcap > 400000
     ? "MCが上限に近いので出口速度に注意"
     : dexMatches === 0
       ? "板・出来高・上位ホルダー売りを要確認"
       : "低capなので板・出来高・上位ホルダー売りを確認";
+  const risk = holderRisk || baseRisk;
 
-  const verdict = score >= 90
+  const verdict = flow?.bias === "流出優勢"
+    ? "条件は見えるが、Nansen Flowは流出寄り。無理に入らず再確認向き。"
+    : holders?.concentration === "集中高め"
+      ? "bb候補ではあるが、上位ホルダー集中が重い。板と売りを先に確認。"
+      : score >= 90
     ? "bb初動候補。まず見る価値あり。"
     : score >= 75
       ? "Watch候補。条件は良いが確認必須。"
@@ -330,6 +346,7 @@ export function formatRadarReport(candidates) {
 
   lines.push("※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。");
   lines.push("※ Nansenの最新データを毎回取得するため、表示候補は実行タイミングで変わります。");
+  lines.push("※ 上位ホルダー濃度とFlow Intelligenceは `/flow <CA>` で確認できます。");
   lines.push("※ ボタン番号は候補番号に対応しています。気になるCAは `/flow <CA>`。");
   return lines.join("\n");
 }

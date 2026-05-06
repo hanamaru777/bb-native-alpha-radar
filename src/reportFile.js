@@ -75,6 +75,7 @@ export function buildMarkdownReport(stats, generatedAt = new Date()) {
     "- Smart Money DEX trades",
     "- Token Screener",
     "- Token holders / Flow Intelligence for `/flow` deep dives",
+    "- Holder concentration and Flow Intelligence bias in `/flow` verdicts",
     "",
     "## Runtime Criteria",
     "",

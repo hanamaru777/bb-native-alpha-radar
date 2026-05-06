@@ -1,6 +1,6 @@
 # bb Native Alpha Radar Report
 
-Generated at: 2026-05-06T13:01:37.501Z
+Generated at: 2026-05-06T13:54:42.406Z
 
 bb Native Alpha Radar is a Discord bot that uses Nansen Smart Money data to surface Solana lowcap meme candidates before contract addresses are posted in the bb altcoin room.
 
@@ -15,8 +15,8 @@ bb Native Alpha Radar is a Discord bot that uses Nansen Smart Money data to surf
 
 | # | Token | Max gain | Alert MC | Max MC | Current MC |
 | - | - | -: | -: | -: | -: |
-| 1 | [$XANIMALS](https://dexscreener.com/solana/FJtB7uHWLDJA92vv2zdTyGRzMDQ227vivWhEjaeEpump) | +29% | $110.2K | $141.9K | $126.8K |
-| 2 | [$ODAI](https://dexscreener.com/solana/HxFSWTJE3SeUCgsKJUcuGQYAiH4S4BFEnSoktfKLpump) | +0% | $194.8K | $194.8K | $186.1K |
+| 1 | [$XANIMALS](https://dexscreener.com/solana/FJtB7uHWLDJA92vv2zdTyGRzMDQ227vivWhEjaeEpump) | +29% | $110.2K | $141.9K | $106.7K |
+| 2 | [$ODAI](https://dexscreener.com/solana/HxFSWTJE3SeUCgsKJUcuGQYAiH4S4BFEnSoktfKLpump) | +0% | $194.8K | $194.8K | $184.5K |
 
 ## Nansen Usage
 
@@ -24,6 +24,7 @@ bb Native Alpha Radar is a Discord bot that uses Nansen Smart Money data to surf
 - Smart Money DEX trades
 - Token Screener
 - Token holders / Flow Intelligence for `/flow` deep dives
+- Holder concentration and Flow Intelligence bias in `/flow` verdicts
 
 ## Runtime Criteria
 
