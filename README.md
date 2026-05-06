@@ -58,7 +58,7 @@ Shows command usage and explains manual vs automatic operation.
 
 ### `/stats`
 
-Shows saved alert history, today's alert count, the best bb reaction score, and recent candidates.
+Shows saved alert history, today's alert count, the best bb reaction score, recent candidates, tracking progress, and a post-alert performance leaderboard.
 
 ## Nansen API Usage
 
@@ -139,7 +139,14 @@ Each alert record includes:
 
 While the bot is running, it checks saved candidates with the DexScreener API every `TRACKING_INTERVAL_MINUTES` minutes. It fills the 1h / 3h / 6h market-cap slots when each checkpoint is reached and keeps the max market cap / max gain updated.
 
-Use `/stats` to see tracking progress and the best post-alert gain. Use `/flow <CA>` on a saved candidate to see its current tracking snapshot.
+Use `/stats` to see tracking progress, the best post-alert gain, and a leaderboard like:
+
+```text
+Post-alert performance
+1. $TOKEN / +35% / alert $100.0K -> max $135.0K / now $128.0K
+```
+
+Use `/flow <CA>` on a saved candidate to see its current tracking snapshot.
 
 ## Current Limitations
 

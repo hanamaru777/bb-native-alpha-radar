@@ -331,6 +331,16 @@ export function formatStats(stats) {
     );
   }
 
+  if (stats.tracking.leaderboard.length > 0) {
+    lines.push("", "**通知後成績**");
+    stats.tracking.leaderboard.forEach((alert, index) => {
+      const tracking = alert.tracking || {};
+      lines.push(
+        `${index + 1}. $${alert.symbol} / ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} → max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)}`
+      );
+    });
+  }
+
   lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
   lines.push("※ statsは現在のRadar条件を満たす履歴だけを集計します。");
   lines.push("※ 手動チェックは `/radar` 実行分、自動通知はBotが時間で投稿した分です。");

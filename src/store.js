@@ -212,6 +212,10 @@ function uniqueRecent(alerts) {
 function trackingStats(alerts) {
   const tracked = alerts.filter((alert) => Number.isFinite(Number(alert.tracking?.latestMarketCapUsd)));
   const completed = alerts.filter((alert) => alert.tracking?.after6hMarketCapUsd !== null && alert.tracking?.after6hMarketCapUsd !== undefined);
+  const leaderboard = tracked
+    .slice()
+    .sort((a, b) => Number(b.tracking?.maxGainPercent || 0) - Number(a.tracking?.maxGainPercent || 0))
+    .slice(0, 5);
   const bestGain = tracked.reduce((current, alert) => {
     const gain = Number(alert.tracking?.maxGainPercent || 0);
     const currentGain = Number(current?.tracking?.maxGainPercent || 0);
@@ -221,6 +225,7 @@ function trackingStats(alerts) {
   return {
     tracked: tracked.length,
     completed: completed.length,
-    bestGain
+    bestGain,
+    leaderboard
   };
 }
