@@ -113,11 +113,61 @@ export async function analyzeTokenFlow(ca) {
   };
 }
 
+function formatUsd(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "n/a";
+  if (Math.abs(number) >= 1_000_000) return `$${(number / 1_000_000).toFixed(2)}M`;
+  if (Math.abs(number) >= 1_000) return `$${(number / 1_000).toFixed(1)}K`;
+  return `$${Math.round(number).toLocaleString()}`;
+}
+
 function metricLine(candidate) {
   const metrics = candidate.metrics || {};
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
   const netflow = Number.isFinite(metrics.netflow24hUsd) ? `$${Math.round(metrics.netflow24hUsd).toLocaleString()}` : "n/a";
   return `MC ${candidate.marketCap} | SM ${candidate.smartMoneyInflows} | 24h flow ${netflow} | age ${age}`;
+}
+
+function flowJudge(candidate) {
+  const metrics = candidate.metrics || {};
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const score = Number(candidate.bbScore || 0);
+  const netflow = Number(metrics.netflow24hUsd || 0);
+  const age = Number(metrics.tokenAgeDays || 0);
+  const mcap = Number(metrics.marketCapUsd || 0);
+  const dexMatches = Number(metrics.dexTradeMatches || 0);
+
+  const driver = sm >= 10
+    ? "Smart Money主導が強め"
+    : sm >= 3
+      ? "初期degen + Smart Money反応"
+      : "まだ薄い初期反応";
+
+  const stage = age > 0 && age <= 3 && mcap > 0 && mcap <= 250000
+    ? "初動寄り"
+    : age > 7 || mcap > 400000
+      ? "回転・継続監視寄り"
+      : "初動から拡散前の中間";
+
+  const pressure = netflow > 5000 && sm >= 5
+    ? "買い圧は強め"
+    : netflow > 0
+      ? "買い圧は確認できるが継続確認"
+      : "買い圧は弱め";
+
+  const risk = mcap > 400000
+    ? "MCが上限に近いので出口速度に注意"
+    : dexMatches === 0
+      ? "DEX側の追加確認が必要"
+      : "低capなので板・出来高・上位ホルダー売りを確認";
+
+  const verdict = score >= 90
+    ? "bb初動候補。まず見る価値あり。"
+    : score >= 75
+      ? "Watch候補。条件は良いが確認必須。"
+      : "弱めの候補。無理に触らず監視向き。";
+
+  return { driver, stage, pressure, risk, verdict };
 }
 
 function linksFor(candidate) {
@@ -230,20 +280,36 @@ export function formatHelp() {
 }
 
 export function formatFlowAnalysis(candidate) {
+  const metrics = candidate.metrics || {};
+  const judge = flowJudge(candidate);
+  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
+  const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
+  const netflow = formatUsd(metrics.netflow24hUsd);
+  const sm = candidate.smartMoneyInflows || metrics.traderCount || "n/a";
+
   return [
-    "🧠 **bb Flow Analysis**",
+    "🧠 **Flow Judge**",
     "",
     `対象: **$${candidate.symbol}**`,
     `CA: \`${candidate.ca}\``,
-    `通知時MC: ${candidate.marketCap}`,
-    `Smart Money流入: ${candidate.smartMoneyInflows}`,
-    `新規ウォレット増加: ${candidate.newWalletGrowth}`,
-    `bb反応度: ${candidate.bbScore}/100`,
     "",
-    `現在地: ${candidate.reason}`,
-    `見るべき点: ${candidate.caution}`,
-    "bb反応度は、低cap感、若さ、Smart Money流入、24h flowを合成した独自スコアです。",
+    `・MC: ${mcap}`,
+    `・Smart Money: ${sm}`,
+    `・24h flow: ${netflow}`,
+    `・age: ${age}`,
+    `・bb反応度: ${candidate.bbScore}/100`,
     "",
-    "※ 投資助言ではありません。自分で必ず確認してください。"
+    "**判定**",
+    `・状態: ${judge.stage}`,
+    `・主導: ${judge.driver}`,
+    `・買い圧: ${judge.pressure}`,
+    `・リスク: ${judge.risk}`,
+    "",
+    "**見方**",
+    judge.verdict,
+    "",
+    `Nansen根拠: ${candidate.reason}`,
+    "",
+    "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"
   ].join("\n");
 }
