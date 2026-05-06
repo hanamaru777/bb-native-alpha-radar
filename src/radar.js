@@ -98,18 +98,113 @@ export async function analyzeTokenFlow(ca) {
     getFlowIntelligence("solana", ca, "1d")
   ]);
 
-  const holderCount = Array.isArray(holders) ? holders.length : 0;
-  const flowSummary = typeof flow === "object" ? JSON.stringify(flow).slice(0, 500) : String(flow).slice(0, 500);
+  const holderSummary = summarizeHolders(holders);
+  const flowSummary = summarizeFlowIntelligence(flow);
 
   return {
     symbol: "NANSEN",
     ca,
     marketCap: "Nansen分析",
     smartMoneyInflows: "Nansen API",
-    newWalletGrowth: `${holderCount} holder rows`,
+    newWalletGrowth: `${holderSummary.rowCount} holder rows`,
     bbScore: "分析中",
-    reason: `Token holders ${holderCount}件とFlow Intelligenceを取得しました。`,
-    caution: `Flow raw summary: ${flowSummary}`
+    reason: `Token holders ${holderSummary.rowCount}件とFlow Intelligenceを取得しました。`,
+    caution: flowSummary.summary,
+    nansenDeepDive: {
+      holders: holderSummary,
+      flow: flowSummary
+    }
+  };
+}
+
+function findNumberDeep(value, keyHints, depth = 0) {
+  if (depth > 4 || value === null || value === undefined) return null;
+  if (typeof value !== "object") return null;
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findNumberDeep(item, keyHints, depth + 1);
+      if (found !== null) return found;
+    }
+    return null;
+  }
+
+  for (const [key, item] of Object.entries(value)) {
+    const normalizedKey = key.toLowerCase();
+    const matches = keyHints.some((hint) => normalizedKey.includes(hint));
+    const number = Number(item);
+    if (matches && Number.isFinite(number)) return number;
+  }
+
+  for (const item of Object.values(value)) {
+    const found = findNumberDeep(item, keyHints, depth + 1);
+    if (found !== null) return found;
+  }
+
+  return null;
+}
+
+function rowNumber(row, keyHints) {
+  if (!row || typeof row !== "object") return null;
+  for (const [key, value] of Object.entries(row)) {
+    const normalizedKey = key.toLowerCase();
+    if (!keyHints.some((hint) => normalizedKey.includes(hint))) continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function summarizeHolders(holders) {
+  const rows = Array.isArray(holders) ? holders : [];
+  const holderShares = rows
+    .map((row) => rowNumber(row, ["percentage", "percent", "share", "ownership", "balance_pct", "holding_pct"]))
+    .filter((value) => Number.isFinite(value))
+    .map((value) => (value > 1 ? value : value * 100))
+    .sort((a, b) => b - a);
+
+  const top1Percent = holderShares[0] ?? null;
+  const top5Percent = holderShares.slice(0, 5).reduce((sum, value) => sum + value, 0) || null;
+  const concentration = top1Percent === null
+    ? "未判定"
+    : top1Percent >= 20 || (top5Percent !== null && top5Percent >= 55)
+      ? "集中高め"
+      : top1Percent >= 10 || (top5Percent !== null && top5Percent >= 35)
+        ? "やや集中"
+        : "分散寄り";
+
+  return {
+    rowCount: rows.length,
+    top1Percent,
+    top5Percent,
+    concentration
+  };
+}
+
+function summarizeFlowIntelligence(flow) {
+  const inflowUsd = findNumberDeep(flow, ["inflow", "in_flow", "buy"]);
+  const outflowUsd = findNumberDeep(flow, ["outflow", "out_flow", "sell"]);
+  const netflowUsd = findNumberDeep(flow, ["netflow", "net_flow", "net"]);
+  const inferredNetflowUsd = netflowUsd ?? (
+    Number.isFinite(inflowUsd) && Number.isFinite(outflowUsd)
+      ? inflowUsd - outflowUsd
+      : null
+  );
+
+  const bias = inferredNetflowUsd === null
+    ? "未判定"
+    : inferredNetflowUsd > 0
+      ? "流入優勢"
+      : inferredNetflowUsd < 0
+        ? "流出優勢"
+        : "中立";
+
+  return {
+    inflowUsd,
+    outflowUsd,
+    netflowUsd: inferredNetflowUsd,
+    bias,
+    summary: `Flow Intelligence: ${bias}${inferredNetflowUsd === null ? "" : ` / net ${formatUsd(inferredNetflowUsd)}`}`
   };
 }
 
@@ -423,6 +518,9 @@ export function formatConfigSummary() {
 export function formatFlowAnalysis(candidate) {
   const metrics = candidate.metrics || {};
   const tracking = candidate.tracking || {};
+  const deepDive = candidate.nansenDeepDive || {};
+  const holders = deepDive.holders || null;
+  const flow = deepDive.flow || null;
   const judge = flowJudge(candidate);
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
   const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
@@ -435,6 +533,18 @@ export function formatFlowAnalysis(candidate) {
         `現在MC: ${formatUsd(tracking.latestMarketCapUsd)}`,
         `最大MC: ${formatUsd(tracking.maxMarketCapUsd)} / 最大上昇: ${formatGain(tracking.maxGainPercent)}`,
         `1h: ${formatUsd(tracking.after1hMarketCapUsd)} / 3h: ${formatUsd(tracking.after3hMarketCapUsd)} / 6h: ${formatUsd(tracking.after6hMarketCapUsd)}`
+      ]
+    : [];
+  const nansenDeepDiveLines = holders || flow
+    ? [
+        "",
+        "**Nansen深掘り**",
+        holders
+          ? `・上位ホルダー: ${holders.concentration} / top1 ${holders.top1Percent === null ? "n/a" : `${holders.top1Percent.toFixed(1)}%`} / top5 ${holders.top5Percent === null ? "n/a" : `${holders.top5Percent.toFixed(1)}%`}`
+          : "・上位ホルダー: n/a",
+        flow
+          ? `・Flow Intelligence: ${flow.bias} / net ${formatUsd(flow.netflowUsd)}`
+          : "・Flow Intelligence: n/a"
       ]
     : [];
 
@@ -460,6 +570,7 @@ export function formatFlowAnalysis(candidate) {
     judge.verdict,
     "",
     `Nansen根拠: ${candidate.reason}`,
+    ...nansenDeepDiveLines,
     ...trackingLines,
     "",
     "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"

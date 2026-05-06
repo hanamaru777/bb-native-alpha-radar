@@ -46,7 +46,7 @@ Current filter:
 
 ### `/flow <CA>`
 
-Returns a short flow analysis for a token. It uses saved radar history when available, and otherwise attempts a live Nansen lookup.
+Returns a short flow analysis for a token. It uses saved radar history when available and also attempts a live Nansen lookup for token holders and Flow Intelligence.
 
 ### `/criteria`
 
@@ -165,9 +165,9 @@ Use `/flow <CA>` on a saved candidate to see its current tracking snapshot.
 The current MVP already calls the live Nansen REST API, but a few final-product signals are still approximated or left for adapter expansion:
 
 - winning-wallet classification
-- detailed wallet labels per CA
 - new wallet growth rate
-- top-holder sell pressure
+- detailed wallet labels per CA beyond holder concentration
+- top-holder sell pressure beyond holder concentration / flow bias
 - bb-room "not posted yet" detection
 - CTO / Korea / CEX narrative detection
 

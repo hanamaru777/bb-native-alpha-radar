@@ -93,7 +93,7 @@ async function handleFlow(interaction) {
 
   const ca = interaction.data?.options?.find((option) => option.name === "ca")?.value;
   const known = ca ? findAlertByCa(ca) : null;
-  const liveAnalysis = !known && ca
+  const liveAnalysis = ca
     ? await analyzeTokenFlow(ca).catch((error) => ({
         symbol: "ERROR",
         ca,
@@ -117,7 +117,14 @@ async function handleFlow(interaction) {
     caution: "DexScreener、gmgn、Nansenで必ず確認してください。"
   };
 
-  const analysis = known || liveAnalysis || fallback;
+  const analysis = known
+    ? {
+        ...known,
+        nansenDeepDive: liveAnalysis?.nansenDeepDive,
+        liveNansenReason: liveAnalysis?.reason,
+        liveNansenCaution: liveAnalysis?.caution
+      }
+    : liveAnalysis || fallback;
 
   await editInteractionReply(
     config.discordToken,
