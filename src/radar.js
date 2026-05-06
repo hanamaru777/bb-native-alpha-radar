@@ -279,7 +279,13 @@ export function formatHelp() {
     "抽出条件とbb反応度の意味を表示します。",
     "",
     "**/stats**",
-    "通知履歴から検知数、最高スコア、直近候補を表示します。",
+    "通知履歴、追跡状況、通知後成績を表示します。",
+    "",
+    "**/report**",
+    "READMEや提出コメントに貼れる短い実績レポートを表示します。",
+    "",
+    "**/config**",
+    "現在の検知条件と通知設定を表示します。",
     "",
     "**自動通知**",
     `Botを起動したままにすると、${config.alertIntervalMinutes}分ごとにRadarを確認します。`,
@@ -346,6 +352,69 @@ export function formatStats(stats) {
   lines.push("※ 手動チェックは `/radar` 実行分、自動通知はBotが時間で投稿した分です。");
   lines.push(`※ Bot起動中は${config.trackingIntervalMinutes}分ごとにMC推移を確認します。`);
   return lines.join("\n");
+}
+
+export function formatReport(stats) {
+  const lines = [
+    "📝 **bb Native Alpha Radar Report**",
+    "",
+    "Nansen Smart Moneyデータから、bbアルト部屋でCAが貼られる前に見る候補を抽出するSolana lowcap radarです。",
+    "",
+    "**現在の実績**",
+    `・有効な検知履歴: ${stats.total}件`,
+    `・追跡済み: ${stats.tracking.tracked}件`,
+    `・6h追跡完了: ${stats.tracking.completed}件`,
+    `・今日の自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
+    ""
+  ];
+
+  if (stats.tracking.leaderboard.length > 0) {
+    lines.push("**通知後成績 Top**");
+    stats.tracking.leaderboard.slice(0, 3).forEach((alert, index) => {
+      const tracking = alert.tracking || {};
+      lines.push(
+        `${index + 1}. $${alert.symbol}: ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} → max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)}`
+      );
+    });
+    lines.push("");
+  }
+
+  lines.push(
+    "**Nansenを使っている箇所**",
+    "・Smart Money netflow",
+    "・Smart Money DEX trades",
+    "・Token Screener",
+    "・Token holders / Flow Intelligence（/flow深掘り）",
+    "",
+    "**MVPで重視していること**",
+    "・大量通知ではなく少数候補",
+    "・なぜ拾ったかを短く表示",
+    "・通知後のMC推移を保存",
+    "・DexScreener / gmgn / Nansenへの確認導線",
+    "",
+    "※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。"
+  );
+
+  return lines.join("\n");
+}
+
+export function formatConfigSummary() {
+  return [
+    "⚙️ **bb Native Alpha Radar Config**",
+    "",
+    `対象チェーン: Solana`,
+    `Market Cap上限: ${formatUsd(config.marketCapMaxUsd)}`,
+    `Token age上限: ${config.tokenAgeMaxDays}d`,
+    `最小bb反応度: ${config.minBbScore}`,
+    `Smart Money traders最小: ${config.minSmartMoneyTraders}`,
+    `自動通知上限: ${config.maxDailyAlerts}件/日`,
+    `重複通知防止: ${config.dedupeHours}h`,
+    `Radar確認間隔: ${config.alertIntervalMinutes}分`,
+    `MC追跡間隔: ${config.trackingIntervalMinutes}分`,
+    `Mock mode: ${config.mockMode ? "ON" : "OFF"}`,
+    "",
+    "※ APIキーやDiscord Tokenは表示しません。"
+  ].join("\n");
 }
 
 export function formatFlowAnalysis(candidate) {

@@ -88,6 +88,14 @@ export async function registerCommands(token, applicationId, guildId = "") {
     {
       name: "stats",
       description: "通知履歴と検知実績を表示します"
+    },
+    {
+      name: "report",
+      description: "READMEや提出に使える実績レポートを表示します"
+    },
+    {
+      name: "config",
+      description: "現在のRadar設定を表示します"
     }
   ];
 

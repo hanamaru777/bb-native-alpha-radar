@@ -60,6 +60,14 @@ Shows command usage and explains manual vs automatic operation.
 
 Shows saved alert history, today's alert count, the best bb reaction score, recent candidates, tracking progress, and a post-alert performance leaderboard.
 
+### `/report`
+
+Shows a short submission-ready report with the bot concept, current tracked results, top post-alert performers, and Nansen usage points.
+
+### `/config`
+
+Shows the current non-secret runtime settings such as market-cap limit, token-age limit, bb reaction threshold, alert interval, tracking interval, daily alert cap, and dedupe window.
+
 ## Nansen API Usage
 
 Base URL:

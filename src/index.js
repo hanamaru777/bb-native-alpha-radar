@@ -11,10 +11,12 @@ import {
 import {
   analyzeTokenFlow,
   formatCriteria,
+  formatConfigSummary,
   formatFlowAnalysis,
   formatHelp,
   formatRadarButtons,
   formatRadarReport,
+  formatReport,
   formatStats,
   scanAlphaCandidates
 } from "./radar.js";
@@ -168,6 +170,26 @@ async function handleInteraction(payload) {
       interaction.token,
       formatStats(getStats())
     );
+    return;
+  }
+
+  if (commandName === "report") {
+    await replyInteraction(
+      config.discordToken,
+      interaction.id,
+      interaction.token,
+      formatReport(getStats())
+    );
+    return;
+  }
+
+  if (commandName === "config") {
+    await replyInteraction(
+      config.discordToken,
+      interaction.id,
+      interaction.token,
+      formatConfigSummary()
+    );
   }
 }
 
@@ -222,6 +244,8 @@ console.log(`Auto alert policy: max ${config.maxDailyAlerts}/day, dedupe ${confi
 console.log(`Tracking interval: ${config.trackingIntervalMinutes} minutes.`);
 
 await connectGateway();
+
+runTrackingOnce().catch((error) => console.error("initial tracking error:", error.message));
 
 const intervalMs = Math.max(config.alertIntervalMinutes, 1) * 60 * 1000;
 setInterval(() => {
