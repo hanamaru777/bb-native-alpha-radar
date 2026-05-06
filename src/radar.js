@@ -286,16 +286,16 @@ export function formatStats(stats) {
   const lines = [
     "📈 **bb Native Alpha Radar Stats**",
     "",
-    `Valid radar records: ${stats.total}`,
-    `Raw saved records: ${stats.rawTotal}`,
-    `Today manual checks: ${stats.todayManual}`,
-    `Today auto alerts: ${stats.todayAuto}/${config.maxDailyAlerts}`,
+    `有効な検知履歴: ${stats.total}件`,
+    `全保存履歴: ${stats.rawTotal}件`,
+    `今日の手動チェック: ${stats.todayManual}件`,
+    `今日の自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
     ""
   ];
 
   if (stats.best) {
     lines.push(
-      "**Best score**",
+      "**最高スコア**",
       `$${stats.best.symbol} / bb反応度 ${stats.best.bbScore}/100 / MC ${stats.best.marketCap}`,
       `CA: \`${stats.best.ca}\``,
       ""
@@ -303,7 +303,7 @@ export function formatStats(stats) {
   }
 
   if (stats.recent.length > 0) {
-    lines.push("**Recent**");
+    lines.push("**直近候補**");
     stats.recent.forEach((alert, index) => {
       lines.push(`${index + 1}. $${alert.symbol} / score ${alert.bbScore}/100 / ${alert.marketCap}`);
     });
@@ -313,6 +313,7 @@ export function formatStats(stats) {
 
   lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
   lines.push("※ statsは現在のRadar条件を満たす履歴だけを集計します。");
+  lines.push("※ 手動チェックは `/radar` 実行分、自動通知はBotが時間で投稿した分です。");
   return lines.join("\n");
 }
 
