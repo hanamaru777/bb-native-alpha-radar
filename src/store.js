@@ -70,13 +70,15 @@ export function wasRecentlyNotified(ca, hours = config.dedupeHours) {
   });
 }
 
-export function countTodayAlerts() {
+export function countTodayAutoAlerts() {
   const today = new Date().toISOString().slice(0, 10);
-  return readAlerts().filter((alert) => String(alert.savedAt || "").startsWith(today)).length;
+  return readAlerts().filter((alert) => {
+    return String(alert.savedAt || "").startsWith(today) && alert.source === "auto";
+  }).length;
 }
 
 export function applyNotificationPolicy(candidates) {
-  const remainingDailySlots = Math.max(config.maxDailyAlerts - countTodayAlerts(), 0);
+  const remainingDailySlots = Math.max(config.maxDailyAlerts - countTodayAutoAlerts(), 0);
   if (remainingDailySlots <= 0) return [];
 
   return candidates
