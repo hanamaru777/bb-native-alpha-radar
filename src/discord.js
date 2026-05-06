@@ -96,6 +96,10 @@ export async function registerCommands(token, applicationId, guildId = "") {
     {
       name: "config",
       description: "現在のRadar設定を表示します"
+    },
+    {
+      name: "export",
+      description: "GitHub用のREPORT.mdを生成します"
     }
   ];
 

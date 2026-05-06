@@ -20,6 +20,7 @@ import {
   formatStats,
   scanAlphaCandidates
 } from "./radar.js";
+import { writeMarkdownReport } from "./reportFile.js";
 import { applyNotificationPolicy, findAlertByCa, getStats, saveAlert } from "./store.js";
 import { updateTrackingOnce } from "./tracking.js";
 
@@ -189,6 +190,17 @@ async function handleInteraction(payload) {
       interaction.id,
       interaction.token,
       formatConfigSummary()
+    );
+    return;
+  }
+
+  if (commandName === "export") {
+    const reportPath = writeMarkdownReport(getStats());
+    await replyInteraction(
+      config.discordToken,
+      interaction.id,
+      interaction.token,
+      `REPORT.mdを更新しました。\n${reportPath}`
     );
   }
 }

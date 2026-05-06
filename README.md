@@ -68,6 +68,10 @@ Shows a short submission-ready report with the bot concept, current tracked resu
 
 Shows the current non-secret runtime settings such as market-cap limit, token-age limit, bb reaction threshold, alert interval, tracking interval, daily alert cap, and dedupe window.
 
+### `/export`
+
+Writes the latest submission-ready performance report to `REPORT.md`. This gives the GitHub repository a visible snapshot of the bot's current tracked results without committing the raw local `data/alerts.json` history.
+
 ## Nansen API Usage
 
 Base URL:
