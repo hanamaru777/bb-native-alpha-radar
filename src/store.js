@@ -57,7 +57,8 @@ export function saveAlert(alert, source = "manual") {
 }
 
 export function findAlertByCa(ca) {
-  return readAlerts().find((alert) => alert.ca.toLowerCase() === ca.toLowerCase());
+  const matches = readAlerts().filter((alert) => alert.ca.toLowerCase() === ca.toLowerCase());
+  return matches.find(hasValidRadarMetrics) || matches[0];
 }
 
 export function wasRecentlyNotified(ca, hours = config.dedupeHours) {
@@ -87,17 +88,40 @@ export function applyNotificationPolicy(candidates) {
 export function getStats() {
   const alerts = readAlerts();
   const today = new Date().toISOString().slice(0, 10);
-  const todayAlerts = alerts.filter((alert) => String(alert.savedAt || "").startsWith(today));
-  const best = alerts.reduce((current, alert) => {
+  const validAlerts = alerts.filter(hasValidRadarMetrics);
+  const todayManualAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today));
+  const todayAutoAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today) && alert.source === "auto");
+  const best = validAlerts.reduce((current, alert) => {
     const score = Number(alert.bbScore || 0);
     const currentScore = Number(current?.bbScore || 0);
     return score > currentScore ? alert : current;
   }, null);
 
   return {
-    total: alerts.length,
-    today: todayAlerts.length,
+    total: validAlerts.length,
+    rawTotal: alerts.length,
+    todayManual: todayManualAlerts.length,
+    todayAuto: todayAutoAlerts.length,
     best,
-    recent: alerts.slice(0, 5)
+    recent: uniqueRecent(validAlerts).slice(0, 5)
   };
+}
+
+function hasValidRadarMetrics(alert) {
+  const age = Number(alert.metrics?.tokenAgeDays);
+  const mcap = Number(alert.metrics?.marketCapUsd);
+  return Number.isFinite(age) && age > 0 && age <= config.tokenAgeMaxDays
+    && (!Number.isFinite(mcap) || mcap <= config.marketCapMaxUsd);
+}
+
+function uniqueRecent(alerts) {
+  const seen = new Set();
+  const result = [];
+  for (const alert of alerts) {
+    const key = alert.ca.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(alert);
+  }
+  return result;
 }

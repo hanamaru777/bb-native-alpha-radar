@@ -286,8 +286,10 @@ export function formatStats(stats) {
   const lines = [
     "📈 **bb Native Alpha Radar Stats**",
     "",
-    `Total saved alerts: ${stats.total}`,
-    `Today saved alerts: ${stats.today}/${config.maxDailyAlerts}`,
+    `Valid radar records: ${stats.total}`,
+    `Raw saved records: ${stats.rawTotal}`,
+    `Today manual checks: ${stats.todayManual}`,
+    `Today auto alerts: ${stats.todayAuto}/${config.maxDailyAlerts}`,
     ""
   ];
 
@@ -310,6 +312,7 @@ export function formatStats(stats) {
   }
 
   lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
+  lines.push("※ statsは現在のRadar条件を満たす履歴だけを集計します。");
   return lines.join("\n");
 }
 
