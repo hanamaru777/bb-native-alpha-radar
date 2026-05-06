@@ -114,6 +114,7 @@ export async function analyzeTokenFlow(ca) {
 }
 
 function formatUsd(value) {
+  if (value === null || value === undefined || value === "") return "n/a";
   const number = Number(value);
   if (!Number.isFinite(number)) return "n/a";
   if (Math.abs(number) >= 1_000_000) return `$${(number / 1_000_000).toFixed(2)}M`;
