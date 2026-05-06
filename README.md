@@ -52,6 +52,14 @@ Returns a short flow analysis for a token. It uses saved radar history when avai
 
 Shows the filter criteria and explains the bb reaction score.
 
+### `/help`
+
+Shows command usage and explains manual vs automatic operation.
+
+### `/stats`
+
+Shows saved alert history, today's alert count, the best bb reaction score, and recent candidates.
+
 ## Nansen API Usage
 
 Base URL:

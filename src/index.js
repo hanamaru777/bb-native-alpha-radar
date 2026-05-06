@@ -15,9 +15,10 @@ import {
   formatHelp,
   formatRadarButtons,
   formatRadarReport,
+  formatStats,
   scanAlphaCandidates
 } from "./radar.js";
-import { applyNotificationPolicy, findAlertByCa, saveAlert } from "./store.js";
+import { applyNotificationPolicy, findAlertByCa, getStats, saveAlert } from "./store.js";
 
 validateConfig();
 let applicationId = "";
@@ -148,6 +149,16 @@ async function handleInteraction(payload) {
       interaction.id,
       interaction.token,
       formatHelp()
+    );
+    return;
+  }
+
+  if (commandName === "stats") {
+    await replyInteraction(
+      config.discordToken,
+      interaction.id,
+      interaction.token,
+      formatStats(getStats())
     );
   }
 }

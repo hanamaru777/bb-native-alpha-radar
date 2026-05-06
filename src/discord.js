@@ -84,6 +84,10 @@ export async function registerCommands(token, applicationId, guildId = "") {
     {
       name: "help",
       description: "Botの使い方を表示します"
+    },
+    {
+      name: "stats",
+      description: "通知履歴と検知実績を表示します"
     }
   ];
 

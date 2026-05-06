@@ -158,7 +158,7 @@ function flowJudge(candidate) {
   const risk = mcap > 400000
     ? "MCが上限に近いので出口速度に注意"
     : dexMatches === 0
-      ? "DEX側の追加確認が必要"
+      ? "板・出来高・上位ホルダー売りを要確認"
       : "低capなので板・出来高・上位ホルダー売りを確認";
 
   const verdict = score >= 90
@@ -271,12 +271,46 @@ export function formatHelp() {
     "**/criteria**",
     "抽出条件とbb反応度の意味を表示します。",
     "",
+    "**/stats**",
+    "通知履歴から検知数、最高スコア、直近候補を表示します。",
+    "",
     "**自動通知**",
     `Botを起動したままにすると、${config.alertIntervalMinutes}分ごとにRadarを確認します。`,
     `同じCAは${config.dedupeHours}時間以内は再通知せず、1日最大${config.maxDailyAlerts}件までです。`,
     "",
     "※ 投資助言ではありません。必ず自分で確認してください。"
   ].join("\n");
+}
+
+export function formatStats(stats) {
+  const lines = [
+    "📈 **bb Native Alpha Radar Stats**",
+    "",
+    `Total saved alerts: ${stats.total}`,
+    `Today saved alerts: ${stats.today}/${config.maxDailyAlerts}`,
+    ""
+  ];
+
+  if (stats.best) {
+    lines.push(
+      "**Best score**",
+      `$${stats.best.symbol} / bb反応度 ${stats.best.bbScore}/100 / MC ${stats.best.marketCap}`,
+      `CA: \`${stats.best.ca}\``,
+      ""
+    );
+  }
+
+  if (stats.recent.length > 0) {
+    lines.push("**Recent**");
+    stats.recent.forEach((alert, index) => {
+      lines.push(`${index + 1}. $${alert.symbol} / score ${alert.bbScore}/100 / ${alert.marketCap}`);
+    });
+  } else {
+    lines.push("まだ通知履歴がありません。`/radar` を実行すると履歴が保存されます。");
+  }
+
+  lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
+  return lines.join("\n");
 }
 
 export function formatFlowAnalysis(candidate) {
@@ -294,7 +328,7 @@ export function formatFlowAnalysis(candidate) {
     `CA: \`${candidate.ca}\``,
     "",
     `・MC: ${mcap}`,
-    `・Smart Money: ${sm}`,
+    `・SM traders: ${sm}`,
     `・24h flow: ${netflow}`,
     `・age: ${age}`,
     `・bb反応度: ${candidate.bbScore}/100`,

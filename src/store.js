@@ -83,3 +83,21 @@ export function applyNotificationPolicy(candidates) {
     .filter((candidate) => candidate.bbScore >= config.minBbScore)
     .slice(0, remainingDailySlots);
 }
+
+export function getStats() {
+  const alerts = readAlerts();
+  const today = new Date().toISOString().slice(0, 10);
+  const todayAlerts = alerts.filter((alert) => String(alert.savedAt || "").startsWith(today));
+  const best = alerts.reduce((current, alert) => {
+    const score = Number(alert.bbScore || 0);
+    const currentScore = Number(current?.bbScore || 0);
+    return score > currentScore ? alert : current;
+  }, null);
+
+  return {
+    total: alerts.length,
+    today: todayAlerts.length,
+    best,
+    recent: alerts.slice(0, 5)
+  };
+}
