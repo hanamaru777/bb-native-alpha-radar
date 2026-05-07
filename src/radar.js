@@ -135,7 +135,6 @@ export async function scanAlphaCandidates() {
 
   const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
   return enrichedCandidates
-    .filter((candidate) => !candidate.metrics?.holderHighRisk)
     .sort((a, b) => {
       const scoreDiff = b.bbScore - a.bbScore;
       if (scoreDiff !== 0) return scoreDiff;
@@ -608,13 +607,15 @@ export function formatCriteria() {
     `・Market Cap: $${Math.round(config.marketCapMaxUsd / 1000)}K以下`,
     `・Token age: ${config.tokenAgeMaxDays}日以内`,
     `・24h Smart Money netflowがプラス、またはSmart Money tradersが${config.minSmartMoneyTraders}以上`,
+    "・表示前に上位候補だけNansen holders / Flow Intelligenceを追加確認",
+    "・上位ホルダー集中やNansen flowは除外ではなくbb反応度に減点/加点で反映",
     "・SCAM / RUG / HONEYPOT / DRAIN / HACK / 不適切・NSFW系のシンボルは除外",
     `・bb反応度: ${config.minBbScore}以上で自動通知対象`,
     `・重複通知: ${config.dedupeHours}時間以内は同じCAを再通知しない`,
     `・通知上限: 1日最大${config.maxDailyAlerts}件`,
     "",
     "**bb反応度**",
-    "低cap感、若さ、Smart Money流入、24h flow、DEX反応を合成した独自スコアです。",
+    "低cap感、若さ、Smart Money流入、24h flow、上位ホルダー集中、Nansen Flow Intelligenceを合成した独自スコアです。",
     "",
     "**思想**",
     "大量通知ではなく、bbアルト部屋でCAが貼られる前に見る価値がありそうな候補だけを少数表示します。",

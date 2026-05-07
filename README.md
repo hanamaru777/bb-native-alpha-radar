@@ -44,7 +44,7 @@ Current filter:
 - Token age: <= 30 days
 - 24h Smart Money netflow is positive, or Smart Money traders >= 3
 - Top candidates are enriched with Nansen holders and Flow Intelligence before display
-- Single-SM candidates with very concentrated top holders are filtered out
+- Single-SM candidates with very concentrated top holders are heavily penalized instead of being shown as strong alerts
 - Excludes suspicious, offensive, or NSFW public-channel symbols before display
 - Minimum bb reaction score: 70
 - Duplicate prevention: same CA is not auto-notified again within 6 hours
