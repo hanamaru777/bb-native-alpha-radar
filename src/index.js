@@ -12,12 +12,12 @@ import {
   analyzeTokenFlow,
   formatCriteria,
   formatConfigSummary,
-  formatFlowAnalysis,
+  formatFlowCardIntro,
   formatFlowEmbed,
   formatHelp,
   formatRadarButtons,
+  formatRadarCardIntro,
   formatRadarEmbeds,
-  formatRadarReport,
   formatReport,
   formatStats,
   scanAlphaCandidates
@@ -41,7 +41,7 @@ async function runRadarOnce() {
     await postMessage(
       config.discordToken,
       config.alertChannelId,
-      formatRadarReport(notifyCandidates),
+      formatRadarCardIntro(notifyCandidates),
       formatRadarButtons(notifyCandidates),
       formatRadarEmbeds(notifyCandidates)
     );
@@ -78,7 +78,7 @@ async function handleRadar(interaction) {
       config.discordToken,
       applicationId,
       interaction.token,
-      formatRadarReport(candidates),
+      formatRadarCardIntro(candidates),
       formatRadarButtons(candidates),
       formatRadarEmbeds(candidates)
     );
@@ -134,7 +134,7 @@ async function handleFlow(interaction) {
     config.discordToken,
     applicationId,
     interaction.token,
-    formatFlowAnalysis(analysis),
+    formatFlowCardIntro(analysis),
     formatRadarButtons([analysis]),
     [formatFlowEmbed(analysis)]
   );

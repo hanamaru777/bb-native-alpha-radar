@@ -427,6 +427,22 @@ export function formatRadarReport(candidates) {
   return lines.join("\n");
 }
 
+export function formatRadarCardIntro(candidates) {
+  if (!candidates.length) {
+    return [
+      "🚨 **bb Native Alpha Radar**",
+      "今の条件では候補がありませんでした。`/criteria` で抽出条件を確認できます。"
+    ].join("\n");
+  }
+
+  return [
+    "🚨 **bb Native Alpha Radar**",
+    `Nansen Smart Moneyから ${candidates.length} 件のSolana lowcap候補を検出`,
+    `Filter: MC <= $${Math.round(config.marketCapMaxUsd / 1000)}K / age <= ${config.tokenAgeMaxDays}d / SM flow or traders`,
+    "詳細確認は各カード下のボタン、深掘りは `/flow <CA>`。"
+  ].join("\n");
+}
+
 export function formatRadarEmbeds(candidates) {
   if (!candidates.length) return [];
 
@@ -685,6 +701,13 @@ export function formatFlowAnalysis(candidate) {
     ...trackingLines,
     "",
     "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"
+  ].join("\n");
+}
+
+export function formatFlowCardIntro(candidate) {
+  return [
+    "🧠 **Flow Judge**",
+    `$${candidate.symbol} のNansen深掘りと通知後トラッキング`
   ].join("\n");
 }
 
