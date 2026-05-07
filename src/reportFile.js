@@ -43,7 +43,8 @@ function performanceRows(stats) {
       formatGain(tracking.maxGainPercent),
       formatUsd(alert.notification?.marketCapUsd),
       formatUsd(tracking.maxMarketCapUsd),
-      formatUsd(tracking.latestMarketCapUsd)
+      formatUsd(tracking.latestMarketCapUsd),
+      tracking.bbMentioned ? "Yes" : "No"
     ].join(" | ");
   }).map((row) => `| ${row} |`).join("\n");
 }
@@ -61,12 +62,13 @@ export function buildMarkdownReport(stats, generatedAt = new Date()) {
     `- Valid radar records: ${stats.total}`,
     `- Tracked records: ${stats.tracking.tracked}`,
     `- Completed 6h tracking: ${stats.tracking.completed}`,
+    `- bb-mentioned records: ${stats.bbMentioned}`,
     `- Today's auto alerts: ${stats.todayAuto}/${config.maxDailyAlerts}`,
     "",
     "## Post-Alert Performance",
     "",
-    "| # | Token | Max gain | Alert MC | Max MC | Current MC |",
-    "| - | - | -: | -: | -: | -: |",
+    "| # | Token | Max gain | Alert MC | Max MC | Current MC | bb mentioned |",
+    "| - | - | -: | -: | -: | - |",
     performanceRows(stats),
     "",
     "## Nansen Usage",

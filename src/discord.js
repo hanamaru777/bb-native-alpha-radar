@@ -100,6 +100,24 @@ export async function registerCommands(token, applicationId, guildId = "") {
     {
       name: "export",
       description: "GitHub用のREPORT.mdを生成します"
+    },
+    {
+      name: "markbb",
+      description: "CAがbbで話題化したかを履歴に記録します",
+      options: [
+        {
+          name: "ca",
+          description: "Solana token contract address",
+          type: 3,
+          required: true
+        },
+        {
+          name: "mentioned",
+          description: "bbで話題化した場合はtrue",
+          type: 5,
+          required: true
+        }
+      ]
     }
   ];
 

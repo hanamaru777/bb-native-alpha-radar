@@ -80,6 +80,10 @@ Shows the current non-secret runtime settings such as market-cap limit, token-ag
 
 Writes the latest submission-ready performance report to `REPORT.md`. This gives the GitHub repository a visible snapshot of the bot's current tracked results without committing the raw local `data/alerts.json` history.
 
+### `/markbb <CA> <mentioned>`
+
+Marks whether a detected CA later became a topic in the bb room. This fills the `bbMentioned` tracking field for demos and reports without requiring broad message-reading permissions.
+
 ## Nansen API Usage
 
 Base URL:
