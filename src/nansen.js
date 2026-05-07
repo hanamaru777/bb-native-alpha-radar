@@ -147,12 +147,18 @@ export function toCandidate(row, dexTrades = []) {
 
   const smartMoneyInflows = Math.max(matchingTrades.length, traderCount || 1);
   const lowCapBonus = marketCapUsd > 0 && marketCapUsd <= 250_000 ? 22 : marketCapUsd <= 500_000 ? 14 : 0;
-  const youngTokenBonus = tokenAgeDays > 0 && tokenAgeDays <= 7 ? 28 : tokenAgeDays <= 30 ? 18 : 0;
+  const youngTokenBonus = tokenAgeDays > 0 && tokenAgeDays <= 7 ? 24 : tokenAgeDays <= 30 ? 16 : 0;
   const oldTokenPenalty = tokenAgeDays > 30 ? 24 : 0;
-  const flowScore = Math.min(32, Math.round(Math.log10(Math.max(netflow24hUsd, 0) + 1) * 7));
-  const smScore = Math.min(24, smartMoneyInflows * 3);
+  const flowScore = Math.min(28, Math.round(Math.log10(Math.max(netflow24hUsd, 0) + 1) * 6));
+  const smScore = Math.min(26, smartMoneyInflows <= 1 ? 4 : smartMoneyInflows * 4);
   const dexScore = matchingTrades.length > 0 ? 8 : 0;
-  const bbScore = Math.max(25, Math.min(95, 25 + lowCapBonus + youngTokenBonus + flowScore + smScore + dexScore - oldTokenPenalty));
+  const rawScore = 25 + lowCapBonus + youngTokenBonus + flowScore + smScore + dexScore - oldTokenPenalty;
+  const confidenceCap = smartMoneyInflows <= 1
+    ? 82
+    : smartMoneyInflows < 3
+      ? 88
+      : 95;
+  const bbScore = Math.max(25, Math.min(confidenceCap, rawScore));
   const ageLabel = tokenAgeDays ? `${tokenAgeDays.toFixed(tokenAgeDays < 10 ? 1 : 0)}d` : "未取得";
 
   return {

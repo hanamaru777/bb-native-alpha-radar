@@ -124,7 +124,13 @@ export async function scanAlphaCandidates() {
       const freshEnough = hasAge && metrics.tokenAgeDays <= config.tokenAgeMaxDays;
       return lowEnough && hasFlow && freshEnough;
     })
-    .sort((a, b) => b.bbScore - a.bbScore)
+    .sort((a, b) => {
+      const scoreDiff = b.bbScore - a.bbScore;
+      if (scoreDiff !== 0) return scoreDiff;
+      const bFlow = Number(b.metrics?.netflow24hUsd || 0);
+      const aFlow = Number(a.metrics?.netflow24hUsd || 0);
+      return bFlow - aFlow;
+    })
     .slice(0, 5);
 }
 
@@ -330,12 +336,19 @@ function candidateFields(candidate) {
   const metrics = candidate.metrics || {};
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
   const netflow = Number.isFinite(metrics.netflow24hUsd) ? formatUsd(metrics.netflow24hUsd) : "n/a";
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const signalQuality = sm >= 10
+    ? "strong: SM traders 10+"
+    : sm >= 3
+      ? "medium: multiple SM traders"
+      : "watch: netflow first / SM traders low";
   return [
     { name: "MC", value: candidate.marketCap || "n/a", inline: true },
     { name: "SM", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
     { name: "24h flow", value: netflow, inline: true },
     { name: "age", value: age, inline: true },
     { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
+    { name: "根拠強度", value: signalQuality, inline: true },
     { name: "CA", value: `\`${candidate.ca}\`` },
     { name: "見る理由", value: shortText(candidate.reason, 500) },
     { name: "警戒点", value: shortText(candidate.caution, 500) }

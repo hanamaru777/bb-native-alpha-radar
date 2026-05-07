@@ -31,6 +31,7 @@ Output includes:
 - 24h Smart Money netflow
 - token age
 - bb reaction score
+- signal quality, so single-trader flow does not look as strong as multi-wallet Smart Money flow
 - buttons for DexScreener, gmgn, and Nansen
 
 Current filter:
