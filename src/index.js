@@ -18,9 +18,11 @@ import {
   formatRadarButtons,
   formatRadarCardIntro,
   formatRadarEmbeds,
+  formatRadarMissReport,
   formatReport,
   formatStats,
-  scanAlphaCandidates
+  scanAlphaCandidates,
+  scanAlphaCandidatesDetailed
 } from "./radar.js";
 import { writeMarkdownReport } from "./reportFile.js";
 import { applyNotificationPolicy, findAlertByCa, getStats, saveAlert } from "./store.js";
@@ -59,13 +61,14 @@ async function handleRadar(interaction) {
   await deferInteraction(config.discordToken, interaction.id, interaction.token);
 
   try {
-    const candidates = await scanAlphaCandidates();
+    const result = await scanAlphaCandidatesDetailed();
+    const candidates = result.candidates;
     if (!candidates.length) {
       await editInteractionReply(
         config.discordToken,
         applicationId,
         interaction.token,
-        "現在、bb反応度70以上の強い候補はありません。上位ホルダー集中やNansen flowを加味して監視候補に落としています。/criteria で抽出条件を確認できます。"
+        formatRadarMissReport(result.rejected)
       );
       return;
     }

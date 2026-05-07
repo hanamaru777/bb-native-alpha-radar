@@ -91,18 +91,38 @@ function isUnsafeForPublicChannel(candidate) {
   return blocked.some((word) => text.includes(word));
 }
 
+function compareByScoreThenFlow(a, b) {
+  const scoreDiff = b.bbScore - a.bbScore;
+  if (scoreDiff !== 0) return scoreDiff;
+  const bFlow = Number(b.metrics?.netflow24hUsd || 0);
+  const aFlow = Number(a.metrics?.netflow24hUsd || 0);
+  return bFlow - aFlow;
+}
+
+function sortByScoreThenFlow(candidates) {
+  return [...candidates].sort(compareByScoreThenFlow);
+}
+
 export async function scanAlphaCandidates() {
+  const result = await scanAlphaCandidatesDetailed();
+  return result.candidates;
+}
+
+export async function scanAlphaCandidatesDetailed() {
   if (config.mockMode || !config.nansenApiKey) {
     const rotated = [
       mockCandidates[mockIndex % mockCandidates.length],
       mockCandidates[(mockIndex + 1) % mockCandidates.length]
     ];
     mockIndex += 1;
-    return rotated.map((candidate) => ({
-      ...candidate,
-      detectedAt: new Date().toISOString(),
-      source: "mock"
-    }));
+    return {
+      candidates: rotated.map((candidate) => ({
+        ...candidate,
+        detectedAt: new Date().toISOString(),
+        source: "mock"
+      })),
+      rejected: []
+    };
   }
 
   const [netflows, dexTrades, screenerTokens] = await Promise.all([
@@ -124,26 +144,15 @@ export async function scanAlphaCandidates() {
       const freshEnough = hasAge && metrics.tokenAgeDays <= config.tokenAgeMaxDays;
       return lowEnough && hasFlow && freshEnough;
     })
-    .sort((a, b) => {
-      const scoreDiff = b.bbScore - a.bbScore;
-      if (scoreDiff !== 0) return scoreDiff;
-      const bFlow = Number(b.metrics?.netflow24hUsd || 0);
-      const aFlow = Number(a.metrics?.netflow24hUsd || 0);
-      return bFlow - aFlow;
-    })
+    .sort(compareByScoreThenFlow)
     .slice(0, 8);
 
   const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
-  return enrichedCandidates
-    .filter((candidate) => candidate.bbScore >= config.minBbScore)
-    .sort((a, b) => {
-      const scoreDiff = b.bbScore - a.bbScore;
-      if (scoreDiff !== 0) return scoreDiff;
-      const bFlow = Number(b.metrics?.netflow24hUsd || 0);
-      const aFlow = Number(a.metrics?.netflow24hUsd || 0);
-      return bFlow - aFlow;
-    })
-    .slice(0, 5);
+  const sorted = sortByScoreThenFlow(enrichedCandidates);
+  return {
+    candidates: sorted.filter((candidate) => candidate.bbScore >= config.minBbScore).slice(0, 5),
+    rejected: sorted.filter((candidate) => candidate.bbScore < config.minBbScore).slice(0, 3)
+  };
 }
 
 async function enrichRadarCandidate(candidate) {
@@ -595,6 +604,49 @@ export function formatRadarEmbeds(candidates) {
     },
     timestamp: new Date().toISOString()
   }));
+}
+
+function rejectedReason(candidate) {
+  const metrics = candidate.metrics || {};
+  const holders = candidate.nansenDeepDive?.holders || null;
+  const reasons = [];
+
+  if (Number(metrics.holderPenalty || 0) > 0) {
+    const top1 = holders?.top1Percent === null || holders?.top1Percent === undefined ? "n/a" : `${holders.top1Percent.toFixed(1)}%`;
+    const top5 = holders?.top5Percent === null || holders?.top5Percent === undefined ? "n/a" : `${holders.top5Percent.toFixed(1)}%`;
+    reasons.push(`上位ホルダー集中 top1 ${top1} / top5 ${top5}`);
+  }
+
+  if (Number(metrics.flowAdjustment || 0) < 0) {
+    reasons.push("Nansen Flow Intelligenceが流出寄り");
+  }
+
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  if (sm <= 1) reasons.push("SM tradersが1人のみ");
+  if (!reasons.length) reasons.push(`bb反応度が${config.minBbScore}未満`);
+  return reasons.join(" / ");
+}
+
+export function formatRadarMissReport(rejected = []) {
+  const lines = [
+    "🚨 **bb Native Alpha Radar**",
+    `現在、bb反応度${config.minBbScore}以上の強い候補はありません。`,
+    "上位ホルダー集中やNansen flowを加味して、弱い候補は監視候補に落としています。"
+  ];
+
+  if (rejected.length) {
+    lines.push("", "**直近で見送った候補**");
+    rejected.slice(0, 3).forEach((candidate, index) => {
+      lines.push(
+        `${index + 1}. $${candidate.symbol} / bb反応度 ${candidate.bbScore}/100 / MC ${candidate.marketCap}`,
+        `理由: ${rejectedReason(candidate)}`,
+        `CA: \`${candidate.ca}\``
+      );
+    });
+  }
+
+  lines.push("", "見る価値がありそうな候補だけを少数表示します。条件は `/criteria` で確認できます。");
+  return lines.join("\n");
 }
 
 export function formatCriteria() {
