@@ -51,6 +51,7 @@ Returns a short flow analysis for a token. It uses saved radar history when avai
 The flow judge now uses Nansen deep-dive signals in the verdict:
 
 - holder concentration from token holders
+- wallet label hints from Nansen label/tag/category fields when present
 - top1 / top5 holder share when available
 - Flow Intelligence bias such as inflow-heavy, outflow-heavy, or neutral
 - post-alert market-cap tracking when the CA was previously detected

@@ -155,6 +155,51 @@ function rowNumber(row, keyHints) {
   return null;
 }
 
+function collectLabelText(value, output = [], depth = 0) {
+  if (depth > 4 || value === null || value === undefined) return output;
+
+  if (typeof value === "string") {
+    if (value.trim()) output.push(value);
+    return output;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectLabelText(item, output, depth + 1);
+    return output;
+  }
+
+  if (typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      const normalizedKey = key.toLowerCase();
+      const likelyLabel = ["label", "tag", "name", "category", "entity", "type", "segment"].some((hint) => normalizedKey.includes(hint));
+      if (likelyLabel) collectLabelText(item, output, depth + 1);
+      if (typeof item === "object") collectLabelText(item, output, depth + 1);
+    }
+  }
+
+  return output;
+}
+
+function summarizeWalletLabels(rows) {
+  const text = collectLabelText(rows).join(" | ").toLowerCase();
+  const categories = [
+    { key: "smart", label: "Smart Money系", words: ["smart", "smart money", "sm "] },
+    { key: "whale", label: "whale系", words: ["whale", "large holder"] },
+    { key: "fund", label: "fund/VC系", words: ["fund", "vc", "capital", "ventures", "labs"] },
+    { key: "cex", label: "CEX/取引所系", words: ["binance", "coinbase", "okx", "bybit", "kucoin", "exchange", "cex"] },
+    { key: "degen", label: "degen/trader系", words: ["degen", "trader", "meme", "pump"] }
+  ];
+
+  const detected = categories
+    .filter((category) => category.words.some((word) => text.includes(word)))
+    .map((category) => category.label);
+
+  return {
+    detected,
+    summary: detected.length ? detected.join(" / ") : "目立つラベル未検出"
+  };
+}
+
 function summarizeHolders(holders) {
   const rows = Array.isArray(holders) ? holders : [];
   const holderShares = rows
@@ -177,7 +222,8 @@ function summarizeHolders(holders) {
     rowCount: rows.length,
     top1Percent,
     top5Percent,
-    concentration
+    concentration,
+    labels: summarizeWalletLabels(rows)
   };
 }
 
@@ -242,7 +288,9 @@ function flowJudge(candidate) {
   const dexMatches = Number(metrics.dexTradeMatches || 0);
 
   const driver = sm >= 10
-    ? "Smart Money主導が強め"
+    ? holders?.labels?.detected?.length
+      ? `Smart Money主導が強め / ${holders.labels.summary}`
+      : "Smart Money主導が強め"
     : sm >= 3
       ? "初期degen + Smart Money反応"
       : "まだ薄い初期反応";
@@ -559,6 +607,9 @@ export function formatFlowAnalysis(candidate) {
         holders
           ? `・上位ホルダー: ${holders.concentration} / top1 ${holders.top1Percent === null ? "n/a" : `${holders.top1Percent.toFixed(1)}%`} / top5 ${holders.top5Percent === null ? "n/a" : `${holders.top5Percent.toFixed(1)}%`}`
           : "・上位ホルダー: n/a",
+        holders?.labels
+          ? `・ウォレットラベル: ${holders.labels.summary}`
+          : "・ウォレットラベル: n/a",
         flow
           ? `・Flow Intelligence: ${flow.bias} / net ${formatUsd(flow.netflowUsd)}`
           : "・Flow Intelligence: n/a"

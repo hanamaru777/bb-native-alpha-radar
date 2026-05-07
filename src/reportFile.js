@@ -76,6 +76,7 @@ export function buildMarkdownReport(stats, generatedAt = new Date()) {
     "- Token Screener",
     "- Token holders / Flow Intelligence for `/flow` deep dives",
     "- Holder concentration and Flow Intelligence bias in `/flow` verdicts",
+    "- Wallet label hints when Nansen holder rows include label/tag/category fields",
     "",
     "## Runtime Criteria",
     "",
