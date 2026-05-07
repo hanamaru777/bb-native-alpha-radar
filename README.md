@@ -15,6 +15,8 @@ The main score is `bb reaction score`, an original score made from:
 - Smart Money traders
 - 24h Smart Money netflow
 - DEX-side activity
+- Nansen holder concentration
+- Nansen Flow Intelligence bias
 
 ## Commands
 
@@ -32,7 +34,7 @@ Output includes:
 - token age
 - bb reaction score
 - signal quality, so single-trader flow does not look as strong as multi-wallet Smart Money flow
-- compact score breakdown for lowcap, age, flow, Smart Money, and confidence cap
+- compact score breakdown for lowcap, age, flow, Smart Money, holders, Flow Intelligence, and confidence cap
 - buttons for DexScreener, gmgn, and Nansen
 
 Current filter:
@@ -41,6 +43,8 @@ Current filter:
 - Market cap: <= $500K
 - Token age: <= 30 days
 - 24h Smart Money netflow is positive, or Smart Money traders >= 3
+- Top candidates are enriched with Nansen holders and Flow Intelligence before display
+- Single-SM candidates with very concentrated top holders are filtered out
 - Excludes suspicious, offensive, or NSFW public-channel symbols before display
 - Minimum bb reaction score: 70
 - Duplicate prevention: same CA is not auto-notified again within 6 hours

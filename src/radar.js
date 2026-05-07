@@ -112,7 +112,7 @@ export async function scanAlphaCandidates() {
   ]);
 
   const rows = [...netflows, ...screenerTokens];
-  return uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
+  const baseCandidates = uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
     .filter((candidate) => candidate.symbol !== "UNKNOWN")
     .filter((candidate) => !candidate.ca.endsWith("address-not-returned"))
     .filter((candidate) => !isUnsafeForPublicChannel(candidate))
@@ -131,7 +131,91 @@ export async function scanAlphaCandidates() {
       const aFlow = Number(a.metrics?.netflow24hUsd || 0);
       return bFlow - aFlow;
     })
+    .slice(0, 8);
+
+  const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
+  return enrichedCandidates
+    .filter((candidate) => !candidate.metrics?.holderHighRisk)
+    .sort((a, b) => {
+      const scoreDiff = b.bbScore - a.bbScore;
+      if (scoreDiff !== 0) return scoreDiff;
+      const bFlow = Number(b.metrics?.netflow24hUsd || 0);
+      const aFlow = Number(a.metrics?.netflow24hUsd || 0);
+      return bFlow - aFlow;
+    })
     .slice(0, 5);
+}
+
+async function enrichRadarCandidate(candidate) {
+  try {
+    const [holders, flow] = await Promise.all([
+      getTokenHolders("solana", candidate.ca, 20),
+      getFlowIntelligence("solana", candidate.ca, "1d")
+    ]);
+    return applyNansenQualityAdjustments(candidate, summarizeHolders(holders), summarizeFlowIntelligence(flow));
+  } catch (error) {
+    return {
+      ...candidate,
+      metrics: {
+        ...(candidate.metrics || {}),
+        enrichmentError: error.message
+      }
+    };
+  }
+}
+
+function applyNansenQualityAdjustments(candidate, holders, flow) {
+  const metrics = candidate.metrics || {};
+  const scoreBreakdown = metrics.scoreBreakdown || {};
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const top1 = Number(holders.top1Percent);
+  const top5 = Number(holders.top5Percent);
+  const holderPenalty = (Number.isFinite(top1) && top1 >= 20) || (Number.isFinite(top5) && top5 >= 55)
+    ? 20
+    : (Number.isFinite(top1) && top1 >= 15) || (Number.isFinite(top5) && top5 >= 40)
+      ? 10
+      : 0;
+  const flowAdjustment = Number.isFinite(flow.netflowUsd)
+    ? flow.netflowUsd > 0
+      ? 6
+      : flow.netflowUsd < 0
+        ? -10
+        : 0
+    : 0;
+  const singleSmHolderPenalty = sm <= 1 && holderPenalty > 0 ? 12 : 0;
+  const confidenceCap = Number.isFinite(scoreBreakdown.confidenceCap) ? scoreBreakdown.confidenceCap : 95;
+  const adjustedScore = Math.max(25, Math.min(confidenceCap, candidate.bbScore + flowAdjustment - holderPenalty - singleSmHolderPenalty));
+  const holderHighRisk = sm <= 1 && holderPenalty >= 20;
+  const holderLine = `holders top1 ${Number.isFinite(top1) ? `${top1.toFixed(1)}%` : "n/a"} / top5 ${Number.isFinite(top5) ? `${top5.toFixed(1)}%` : "n/a"}`;
+  const flowLine = Number.isFinite(flow.netflowUsd) ? `Nansen flow ${formatUsd(flow.netflowUsd)}` : "Nansen flow n/a";
+  const cautionAdd = holderPenalty > 0
+    ? ` 上位ホルダー集中に注意。${holderLine}。`
+    : ` ${holderLine}。`;
+
+  return {
+    ...candidate,
+    bbScore: adjustedScore,
+    caution: `${candidate.caution}${cautionAdd}`,
+    reason: `${candidate.reason} / ${flowLine}`,
+    nansenDeepDive: {
+      ...(candidate.nansenDeepDive || {}),
+      holders,
+      flow
+    },
+    metrics: {
+      ...metrics,
+      holderPenalty,
+      flowAdjustment,
+      singleSmHolderPenalty,
+      holderHighRisk,
+      scoreBreakdown: {
+        ...scoreBreakdown,
+        holderPenalty,
+        flowAdjustment,
+        singleSmHolderPenalty
+      }
+    }
+  };
 }
 
 export async function analyzeTokenFlow(ca) {
@@ -344,7 +428,7 @@ function candidateFields(candidate) {
       ? "中: 複数SMが反応"
       : "監視: flow先行 / SM少なめ";
   const scoreParts = Number.isFinite(score.confidenceCap)
-    ? `低cap +${score.lowCapBonus} / 若さ +${score.youngTokenBonus} / flow +${score.flowScore} / SM +${score.smScore} / 上限 ${score.confidenceCap}`
+    ? `低cap +${score.lowCapBonus} / 若さ +${score.youngTokenBonus} / flow +${score.flowScore} / SM +${score.smScore} / holders -${score.holderPenalty || 0} / FI ${score.flowAdjustment || 0} / 上限 ${score.confidenceCap}`
     : "低cap・若さ・SM流入・24h flowを合成";
   return [
     { name: "MC", value: candidate.marketCap || "n/a", inline: true },
@@ -504,7 +588,6 @@ export function formatRadarEmbeds(candidates) {
 
   return candidates.slice(0, 5).map((candidate, index) => ({
     title: `${index + 1}. $${candidate.symbol} | bb反応度 ${candidate.bbScore}/100`,
-    description: "CAが貼られる前に見るSolana lowcap候補",
     color: scoreColor(candidate.bbScore),
     fields: candidateFields(candidate),
     footer: {
