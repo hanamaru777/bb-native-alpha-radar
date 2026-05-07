@@ -135,6 +135,7 @@ export async function scanAlphaCandidates() {
 
   const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
   return enrichedCandidates
+    .filter((candidate) => candidate.bbScore >= config.minBbScore)
     .sort((a, b) => {
       const scoreDiff = b.bbScore - a.bbScore;
       if (scoreDiff !== 0) return scoreDiff;
@@ -610,7 +611,7 @@ export function formatCriteria() {
     "・表示前に上位候補だけNansen holders / Flow Intelligenceを追加確認",
     "・上位ホルダー集中やNansen flowは除外ではなくbb反応度に減点/加点で反映",
     "・SCAM / RUG / HONEYPOT / DRAIN / HACK / 不適切・NSFW系のシンボルは除外",
-    `・bb反応度: ${config.minBbScore}以上で自動通知対象`,
+    `・bb反応度: ${config.minBbScore}以上をRadar表示・自動通知対象`,
     `・重複通知: ${config.dedupeHours}時間以内は同じCAを再通知しない`,
     `・通知上限: 1日最大${config.maxDailyAlerts}件`,
     "",

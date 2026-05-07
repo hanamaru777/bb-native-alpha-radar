@@ -46,7 +46,7 @@ Current filter:
 - Top candidates are enriched with Nansen holders and Flow Intelligence before display
 - Single-SM candidates with very concentrated top holders are heavily penalized instead of being shown as strong alerts
 - Excludes suspicious, offensive, or NSFW public-channel symbols before display
-- Minimum bb reaction score: 70
+- Minimum bb reaction score for radar display and auto alerts: 70
 - Duplicate prevention: same CA is not auto-notified again within 6 hours
 - Daily limit: max 8 auto alerts per day
 

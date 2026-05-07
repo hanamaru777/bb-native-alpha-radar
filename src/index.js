@@ -65,7 +65,7 @@ async function handleRadar(interaction) {
         config.discordToken,
         applicationId,
         interaction.token,
-        "Nansenから現在の条件に合う候補を取得できませんでした。/criteria で抽出条件を確認できます。"
+        "現在、bb反応度70以上の強い候補はありません。上位ホルダー集中やNansen flowを加味して監視候補に落としています。/criteria で抽出条件を確認できます。"
       );
       return;
     }
