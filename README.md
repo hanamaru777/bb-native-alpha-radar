@@ -23,7 +23,7 @@ The main score is `bb reaction score`, an original score made from:
 ### `/radar`
 
 Shows current Solana lowcap candidates from Nansen data.
-If no candidate clears the bb reaction threshold, the bot shows a short rejection summary so reviewers can see that weak candidates were intentionally filtered out.
+If no candidate clears the bb reaction threshold, the bot shows a short rejection summary and verification buttons so reviewers can see that weak candidates were intentionally filtered out.
 
 Output includes:
 
@@ -37,6 +37,7 @@ Output includes:
 - signal quality, so single-trader flow does not look as strong as multi-wallet Smart Money flow
 - compact score breakdown for lowcap, age, flow, Smart Money, holders, Flow Intelligence, and confidence cap
 - buttons for DexScreener, gmgn, and Nansen
+- rejection reasons and verification buttons when no strong candidate clears the threshold
 
 Current filter:
 

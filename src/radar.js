@@ -537,6 +537,21 @@ export function formatRadarButtons(candidates) {
   });
 }
 
+export function formatRejectedRadarButtons(candidates) {
+  return candidates.slice(0, 3).map((candidate, index) => {
+    const links = linksFor(candidate);
+    const n = index + 1;
+    return {
+      type: 1,
+      components: [
+        { type: 2, style: 5, label: `見送り${n} Dex`, url: links.dex },
+        { type: 2, style: 5, label: `見送り${n} gmgn`, url: links.gmgn },
+        { type: 2, style: 5, label: `見送り${n} Nansen`, url: links.nansen }
+      ]
+    };
+  });
+}
+
 export function formatRadarReport(candidates) {
   if (!candidates.length) {
     return [

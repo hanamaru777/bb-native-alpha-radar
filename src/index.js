@@ -19,6 +19,7 @@ import {
   formatRadarCardIntro,
   formatRadarEmbeds,
   formatRadarMissReport,
+  formatRejectedRadarButtons,
   formatReport,
   formatStats,
   scanAlphaCandidates,
@@ -68,7 +69,8 @@ async function handleRadar(interaction) {
         config.discordToken,
         applicationId,
         interaction.token,
-        formatRadarMissReport(result.rejected)
+        formatRadarMissReport(result.rejected),
+        formatRejectedRadarButtons(result.rejected)
       );
       return;
     }
