@@ -338,10 +338,10 @@ function candidateFields(candidate) {
   const netflow = Number.isFinite(metrics.netflow24hUsd) ? formatUsd(metrics.netflow24hUsd) : "n/a";
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
   const signalQuality = sm >= 10
-    ? "strong: SM traders 10+"
+    ? "強い: SM 10人以上"
     : sm >= 3
-      ? "medium: multiple SM traders"
-      : "watch: netflow first / SM traders low";
+      ? "中: 複数SMが反応"
+      : "監視: flow先行 / SM少なめ";
   return [
     { name: "MC", value: candidate.marketCap || "n/a", inline: true },
     { name: "SM", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
@@ -489,7 +489,7 @@ export function formatRadarCardIntro(candidates) {
   return [
     "🚨 **bb Native Alpha Radar**",
     `Nansen Smart Moneyから ${candidates.length} 件のSolana lowcap候補を検出`,
-    `Filter: MC <= $${Math.round(config.marketCapMaxUsd / 1000)}K / age <= ${config.tokenAgeMaxDays}d / SM flow or traders`,
+    `Filter: MC <= $${Math.round(config.marketCapMaxUsd / 1000)}K / age <= ${config.tokenAgeMaxDays}d / SM flowまたはSM traders`,
     "詳細確認は各カード下のボタン、深掘りは `/flow <CA>`。"
   ].join("\n");
 }
