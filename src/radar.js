@@ -47,10 +47,48 @@ function uniqueByCa(candidates) {
   return result;
 }
 
-function looksBadForDemo(candidate) {
-  const symbol = candidate.symbol.toLowerCase();
-  const blocked = ["scam", "rug", "honeypot", "drain", "hack"];
-  return blocked.some((word) => symbol.includes(word));
+function getCandidateSafetyText(candidate) {
+  const raw = candidate.raw || {};
+  return [
+    candidate.symbol,
+    raw.token_symbol,
+    raw.symbol,
+    raw.ticker,
+    raw.token,
+    raw.token_name,
+    raw.name,
+    raw.base_token_name,
+    raw.pair_name
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function isUnsafeForPublicChannel(candidate) {
+  const text = getCandidateSafetyText(candidate);
+  const blocked = [
+    "scam",
+    "rug",
+    "honeypot",
+    "drain",
+    "hack",
+    "nigga",
+    "nigger",
+    "faggot",
+    "retard",
+    "rape",
+    "nazi",
+    "hitler",
+    "kkk",
+    "porn",
+    "sex",
+    "xxx",
+    "hentai",
+    "onlyfans",
+    "fuck"
+  ];
+  return blocked.some((word) => text.includes(word));
 }
 
 export async function scanAlphaCandidates() {
@@ -77,7 +115,7 @@ export async function scanAlphaCandidates() {
   return uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
     .filter((candidate) => candidate.symbol !== "UNKNOWN")
     .filter((candidate) => !candidate.ca.endsWith("address-not-returned"))
-    .filter((candidate) => !looksBadForDemo(candidate))
+    .filter((candidate) => !isUnsafeForPublicChannel(candidate))
     .filter((candidate) => {
       const metrics = candidate.metrics || {};
       const lowEnough = !metrics.marketCapUsd || metrics.marketCapUsd <= config.marketCapMaxUsd;
@@ -469,7 +507,7 @@ export function formatCriteria() {
     `・Market Cap: $${Math.round(config.marketCapMaxUsd / 1000)}K以下`,
     `・Token age: ${config.tokenAgeMaxDays}日以内`,
     `・24h Smart Money netflowがプラス、またはSmart Money tradersが${config.minSmartMoneyTraders}以上`,
-    "・SCAM / RUG / HONEYPOT / DRAIN / HACK系のシンボルは除外",
+    "・SCAM / RUG / HONEYPOT / DRAIN / HACK / 不適切・NSFW系のシンボルは除外",
     `・bb反応度: ${config.minBbScore}以上で自動通知対象`,
     `・重複通知: ${config.dedupeHours}時間以内は同じCAを再通知しない`,
     `・通知上限: 1日最大${config.maxDailyAlerts}件`,

@@ -39,7 +39,7 @@ Current filter:
 - Market cap: <= $500K
 - Token age: <= 30 days
 - 24h Smart Money netflow is positive, or Smart Money traders >= 3
-- Excludes suspicious demo symbols such as `SCAM`, `RUG`, `HONEYPOT`, `DRAIN`, and `HACK`
+- Excludes suspicious, offensive, or NSFW public-channel symbols before display
 - Minimum bb reaction score: 70
 - Duplicate prevention: same CA is not auto-notified again within 6 hours
 - Daily limit: max 8 auto alerts per day
