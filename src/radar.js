@@ -276,6 +276,34 @@ function metricLine(candidate) {
   return `MC ${candidate.marketCap} | SM ${candidate.smartMoneyInflows} | 24h flow ${netflow} | age ${age}`;
 }
 
+function scoreColor(score) {
+  const number = Number(score || 0);
+  if (number >= 90) return 0x37d67a;
+  if (number >= 80) return 0xf5c542;
+  return 0x7aa2ff;
+}
+
+function shortText(value, max = 900) {
+  const text = String(value || "n/a");
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function candidateFields(candidate) {
+  const metrics = candidate.metrics || {};
+  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
+  const netflow = Number.isFinite(metrics.netflow24hUsd) ? formatUsd(metrics.netflow24hUsd) : "n/a";
+  return [
+    { name: "MC", value: candidate.marketCap || "n/a", inline: true },
+    { name: "SM", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
+    { name: "24h flow", value: netflow, inline: true },
+    { name: "age", value: age, inline: true },
+    { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
+    { name: "CA", value: `\`${candidate.ca}\`` },
+    { name: "見る理由", value: shortText(candidate.reason, 500) },
+    { name: "警戒点", value: shortText(candidate.caution, 500) }
+  ];
+}
+
 function flowJudge(candidate) {
   const metrics = candidate.metrics || {};
   const holders = candidate.nansenDeepDive?.holders || null;
@@ -397,6 +425,21 @@ export function formatRadarReport(candidates) {
   lines.push("※ 上位ホルダー濃度とFlow Intelligenceは `/flow <CA>` で確認できます。");
   lines.push("※ ボタン番号は候補番号に対応しています。気になるCAは `/flow <CA>`。");
   return lines.join("\n");
+}
+
+export function formatRadarEmbeds(candidates) {
+  if (!candidates.length) return [];
+
+  return candidates.slice(0, 5).map((candidate, index) => ({
+    title: `${index + 1}. $${candidate.symbol} | bb反応度 ${candidate.bbScore}/100`,
+    description: "CAが貼られる前に見るSolana lowcap候補",
+    color: scoreColor(candidate.bbScore),
+    fields: candidateFields(candidate),
+    footer: {
+      text: "Not financial advice | Verify with DexScreener / gmgn / Nansen"
+    },
+    timestamp: new Date().toISOString()
+  }));
 }
 
 export function formatCriteria() {
@@ -643,4 +686,49 @@ export function formatFlowAnalysis(candidate) {
     "",
     "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"
   ].join("\n");
+}
+
+export function formatFlowEmbed(candidate) {
+  const metrics = candidate.metrics || {};
+  const tracking = candidate.tracking || {};
+  const holders = candidate.nansenDeepDive?.holders || null;
+  const flow = candidate.nansenDeepDive?.flow || null;
+  const judge = flowJudge(candidate);
+  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
+  const netflow = formatUsd(metrics.netflow24hUsd);
+  const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
+  const holderLine = holders
+    ? `${holders.concentration} / top1 ${holders.top1Percent === null ? "n/a" : `${holders.top1Percent.toFixed(1)}%`} / top5 ${holders.top5Percent === null ? "n/a" : `${holders.top5Percent.toFixed(1)}%`}`
+    : "n/a";
+  const labelLine = holders?.labels?.summary || "n/a";
+  const flowLine = flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : "n/a";
+  const trackingLine = Number.isFinite(Number(tracking.latestMarketCapUsd))
+    ? `now ${formatUsd(tracking.latestMarketCapUsd)} / max ${formatUsd(tracking.maxMarketCapUsd)} / ${formatGain(tracking.maxGainPercent)}`
+    : "n/a";
+
+  return {
+    title: `Flow Judge | $${candidate.symbol}`,
+    description: `\`${candidate.ca}\``,
+    color: scoreColor(candidate.bbScore),
+    fields: [
+      { name: "MC", value: mcap, inline: true },
+      { name: "SM traders", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
+      { name: "24h flow", value: netflow, inline: true },
+      { name: "age", value: age, inline: true },
+      { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
+      { name: "状態", value: judge.stage, inline: true },
+      { name: "主導", value: shortText(judge.driver, 250) },
+      { name: "買い圧", value: shortText(judge.pressure, 250), inline: true },
+      { name: "リスク", value: shortText(judge.risk, 250), inline: true },
+      { name: "見方", value: shortText(judge.verdict, 500) },
+      { name: "Nansen: holders", value: holderLine },
+      { name: "Nansen: labels", value: labelLine, inline: true },
+      { name: "Nansen: flow", value: flowLine, inline: true },
+      { name: "Tracking", value: trackingLine }
+    ],
+    footer: {
+      text: "Not financial advice | Verify with DexScreener / gmgn / Nansen"
+    },
+    timestamp: new Date().toISOString()
+  };
 }

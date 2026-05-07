@@ -13,8 +13,10 @@ import {
   formatCriteria,
   formatConfigSummary,
   formatFlowAnalysis,
+  formatFlowEmbed,
   formatHelp,
   formatRadarButtons,
+  formatRadarEmbeds,
   formatRadarReport,
   formatReport,
   formatStats,
@@ -40,7 +42,8 @@ async function runRadarOnce() {
       config.discordToken,
       config.alertChannelId,
       formatRadarReport(notifyCandidates),
-      formatRadarButtons(notifyCandidates)
+      formatRadarButtons(notifyCandidates),
+      formatRadarEmbeds(notifyCandidates)
     );
   }
 }
@@ -76,7 +79,8 @@ async function handleRadar(interaction) {
       applicationId,
       interaction.token,
       formatRadarReport(candidates),
-      formatRadarButtons(candidates)
+      formatRadarButtons(candidates),
+      formatRadarEmbeds(candidates)
     );
   } catch (error) {
     await editInteractionReply(
@@ -131,7 +135,8 @@ async function handleFlow(interaction) {
     applicationId,
     interaction.token,
     formatFlowAnalysis(analysis),
-    formatRadarButtons([analysis])
+    formatRadarButtons([analysis]),
+    [formatFlowEmbed(analysis)]
   );
 }
 

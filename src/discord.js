@@ -19,10 +19,10 @@ export async function discordRequest(token, path, options = {}) {
   return res.json();
 }
 
-export async function postMessage(token, channelId, content, components = []) {
+export async function postMessage(token, channelId, content, components = [], embeds = []) {
   return discordRequest(token, `/channels/${channelId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content, components })
+    body: JSON.stringify({ content, components, embeds })
   });
 }
 
@@ -43,10 +43,10 @@ export async function deferInteraction(token, interactionId, interactionToken) {
   });
 }
 
-export async function editInteractionReply(token, applicationId, interactionToken, content, components = []) {
+export async function editInteractionReply(token, applicationId, interactionToken, content, components = [], embeds = []) {
   return discordRequest(token, `/webhooks/${applicationId}/${interactionToken}/messages/@original`, {
     method: "PATCH",
-    body: JSON.stringify({ content, components })
+    body: JSON.stringify({ content, components, embeds })
   });
 }
 
