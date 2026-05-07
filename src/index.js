@@ -69,7 +69,7 @@ async function handleRadar(interaction) {
         config.discordToken,
         applicationId,
         interaction.token,
-        formatRadarMissReport(result.rejected),
+        formatRadarMissReport(result.rejected, result.scannedCount),
         formatRejectedRadarButtons(result.rejected)
       );
       return;

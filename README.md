@@ -23,7 +23,7 @@ The main score is `bb reaction score`, an original score made from:
 ### `/radar`
 
 Shows current Solana lowcap candidates from Nansen data.
-If no candidate clears the bb reaction threshold, the bot shows a short rejection summary and verification buttons so reviewers can see that weak candidates were intentionally filtered out.
+If no candidate clears the bb reaction threshold, the bot explains whether candidates were rejected after enrichment or no first-pass candidate matched at all.
 
 Output includes:
 

@@ -121,7 +121,8 @@ export async function scanAlphaCandidatesDetailed() {
         detectedAt: new Date().toISOString(),
         source: "mock"
       })),
-      rejected: []
+      rejected: [],
+      scannedCount: rotated.length
     };
   }
 
@@ -151,7 +152,8 @@ export async function scanAlphaCandidatesDetailed() {
   const sorted = sortByScoreThenFlow(enrichedCandidates);
   return {
     candidates: sorted.filter((candidate) => candidate.bbScore >= config.minBbScore).slice(0, 5),
-    rejected: sorted.filter((candidate) => candidate.bbScore < config.minBbScore).slice(0, 3)
+    rejected: sorted.filter((candidate) => candidate.bbScore < config.minBbScore).slice(0, 3),
+    scannedCount: baseCandidates.length
   };
 }
 
@@ -642,7 +644,7 @@ function rejectedReason(candidate) {
   return reasons.join(" / ");
 }
 
-export function formatRadarMissReport(rejected = []) {
+export function formatRadarMissReport(rejected = [], scannedCount = 0) {
   const lines = [
     "🚨 **bb Native Alpha Radar**",
     `現在、bb反応度${config.minBbScore}以上の強い候補はありません。`,
@@ -658,6 +660,17 @@ export function formatRadarMissReport(rejected = []) {
         `CA: \`${candidate.ca}\``
       );
     });
+  } else if (scannedCount > 0) {
+    lines.push(
+      "",
+      `一次条件を通過した候補は${scannedCount}件ありましたが、Nansen追加確認後にすべてbb反応度${config.minBbScore}未満へ落ちました。`
+    );
+  } else {
+    lines.push(
+      "",
+      "一次条件を通過した候補もありませんでした。",
+      "MC、token age、Smart Money flow、公開チャンネル安全フィルタのいずれかで除外されています。"
+    );
   }
 
   lines.push("", "見る価値がありそうな候補だけを少数表示します。条件は `/criteria` で確認できます。");
