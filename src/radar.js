@@ -337,11 +337,15 @@ function candidateFields(candidate) {
   const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
   const netflow = Number.isFinite(metrics.netflow24hUsd) ? formatUsd(metrics.netflow24hUsd) : "n/a";
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const score = metrics.scoreBreakdown || {};
   const signalQuality = sm >= 10
     ? "強い: SM 10人以上"
     : sm >= 3
       ? "中: 複数SMが反応"
       : "監視: flow先行 / SM少なめ";
+  const scoreParts = Number.isFinite(score.confidenceCap)
+    ? `低cap +${score.lowCapBonus} / 若さ +${score.youngTokenBonus} / flow +${score.flowScore} / SM +${score.smScore} / 上限 ${score.confidenceCap}`
+    : "低cap・若さ・SM流入・24h flowを合成";
   return [
     { name: "MC", value: candidate.marketCap || "n/a", inline: true },
     { name: "SM", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
@@ -349,6 +353,7 @@ function candidateFields(candidate) {
     { name: "age", value: age, inline: true },
     { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
     { name: "根拠強度", value: signalQuality, inline: true },
+    { name: "スコア内訳", value: scoreParts },
     { name: "CA", value: `\`${candidate.ca}\`` },
     { name: "見る理由", value: shortText(candidate.reason, 500) },
     { name: "警戒点", value: shortText(candidate.caution, 500) }

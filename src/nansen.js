@@ -159,6 +159,16 @@ export function toCandidate(row, dexTrades = []) {
       ? 88
       : 95;
   const bbScore = Math.max(25, Math.min(confidenceCap, rawScore));
+  const scoreBreakdown = {
+    base: 25,
+    lowCapBonus,
+    youngTokenBonus,
+    flowScore,
+    smScore,
+    dexScore,
+    oldTokenPenalty,
+    confidenceCap
+  };
   const ageLabel = tokenAgeDays ? `${tokenAgeDays.toFixed(tokenAgeDays < 10 ? 1 : 0)}d` : "未取得";
 
   return {
@@ -179,7 +189,8 @@ export function toCandidate(row, dexTrades = []) {
       marketCapUsd,
       tokenAgeDays,
       traderCount,
-      dexTradeMatches: matchingTrades.length
+      dexTradeMatches: matchingTrades.length,
+      scoreBreakdown
     },
     raw: row,
     detectedAt: new Date().toISOString(),
