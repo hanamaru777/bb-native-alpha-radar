@@ -450,9 +450,6 @@ export function formatHelp() {
     "**/export**",
     "GitHub提出用の `REPORT.md` を最新成績で生成します。",
     "",
-    "**/markbb <CA> <mentioned>**",
-    "CAがbbで話題化したかを履歴に記録します。",
-    "",
     "**自動通知**",
     `Botを起動したままにすると、${config.alertIntervalMinutes}分ごとにRadarを確認します。`,
     `同じCAは${config.dedupeHours}時間以内は再通知せず、1日最大${config.maxDailyAlerts}件までです。`,
@@ -469,7 +466,6 @@ export function formatStats(stats) {
     `全保存履歴: ${stats.rawTotal}件`,
     `今日の手動チェック: ${stats.todayManual}件`,
     `今日の自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
-    `bb話題化記録: ${stats.bbMentioned}件`,
     ""
   ];
 
@@ -631,7 +627,6 @@ export function formatFlowAnalysis(candidate) {
     `・24h flow: ${netflow}`,
     `・age: ${age}`,
     `・bb反応度: ${candidate.bbScore}/100`,
-    `・bb話題化: ${tracking.bbMentioned ? "あり" : "未記録"}`,
     "",
     "**判定**",
     `・状態: ${judge.stage}`,

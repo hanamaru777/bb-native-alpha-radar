@@ -80,10 +80,6 @@ Shows the current non-secret runtime settings such as market-cap limit, token-ag
 
 Writes the latest submission-ready performance report to `REPORT.md`. This gives the GitHub repository a visible snapshot of the bot's current tracked results without committing the raw local `data/alerts.json` history.
 
-### `/markbb <CA> <mentioned>`
-
-Marks whether a detected CA later became a topic in the bb room. This fills the `bbMentioned` tracking field for demos and reports without requiring broad message-reading permissions.
-
 ## Nansen API Usage
 
 Base URL:
@@ -159,7 +155,6 @@ Each alert record includes:
 - tracking slots for 1h / 3h / 6h market cap
 - max market cap
 - max gain percent
-- bb mentioned flag
 
 While the bot is running, it checks saved candidates with the DexScreener API every `TRACKING_INTERVAL_MINUTES` minutes. It fills the 1h / 3h / 6h market-cap slots when each checkpoint is reached and keeps the max market cap / max gain updated.
 
@@ -180,7 +175,6 @@ The current MVP already calls the live Nansen REST API, but a few final-product 
 - new wallet growth rate
 - detailed wallet labels per CA beyond holder concentration
 - top-holder sell pressure beyond holder concentration / flow bias
-- bb-room "not posted yet" detection
 - CTO / Korea / CEX narrative detection
 
 The code is structured so these can be added behind Nansen or market-data adapters without changing the Discord command surface.

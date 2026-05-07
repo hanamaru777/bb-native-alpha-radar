@@ -21,7 +21,7 @@ import {
   scanAlphaCandidates
 } from "./radar.js";
 import { writeMarkdownReport } from "./reportFile.js";
-import { applyNotificationPolicy, findAlertByCa, getStats, markBbMentioned, saveAlert } from "./store.js";
+import { applyNotificationPolicy, findAlertByCa, getStats, saveAlert } from "./store.js";
 import { updateTrackingOnce } from "./tracking.js";
 
 validateConfig();
@@ -208,21 +208,6 @@ async function handleInteraction(payload) {
       interaction.id,
       interaction.token,
       `REPORT.mdを更新しました。\n${reportPath}`
-    );
-    return;
-  }
-
-  if (commandName === "markbb") {
-    const ca = interaction.data?.options?.find((option) => option.name === "ca")?.value;
-    const mentioned = interaction.data?.options?.find((option) => option.name === "mentioned")?.value;
-    const updated = ca ? markBbMentioned(ca, Boolean(mentioned)) : null;
-    await replyInteraction(
-      config.discordToken,
-      interaction.id,
-      interaction.token,
-      updated
-        ? `$${updated.symbol} のbb話題化フラグを ${mentioned ? "あり" : "なし"} に更新しました。`
-        : "該当CAが履歴にありません。先に `/radar` または `/flow` で確認してください。"
     );
   }
 }

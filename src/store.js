@@ -66,24 +66,6 @@ export function findAlertByCa(ca) {
   return matches.find(hasValidRadarMetrics) || matches[0];
 }
 
-export function markBbMentioned(ca, mentioned = true) {
-  const alerts = readAlerts();
-  let updated = null;
-  const nextAlerts = alerts.map((alert) => {
-    if (alert.ca.toLowerCase() !== ca.toLowerCase()) return alert;
-    const tracking = {
-      ...(alert.tracking || {}),
-      bbMentioned: Boolean(mentioned),
-      bbMentionedUpdatedAt: new Date().toISOString()
-    };
-    updated = { ...alert, tracking };
-    return updated;
-  });
-
-  if (updated) writeAlerts(nextAlerts);
-  return updated;
-}
-
 export function wasRecentlyNotified(ca, hours = config.dedupeHours) {
   const cutoff = Date.now() - hours * 60 * 60 * 1000;
   return readAlerts().some((alert) => {
@@ -127,7 +109,6 @@ export function getStats() {
     rawTotal: alerts.length,
     todayManual: todayManualAlerts.length,
     todayAuto: todayAutoAlerts.length,
-    bbMentioned: validAlerts.filter((alert) => alert.tracking?.bbMentioned).length,
     best,
     recent: uniqueRecent(validAlerts).slice(0, 5),
     tracking: trackingStats(validAlerts)
