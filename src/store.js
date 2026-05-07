@@ -209,21 +209,38 @@ function uniqueRecent(alerts) {
   return result;
 }
 
+function uniqueBestTracked(alerts) {
+  const byCa = new Map();
+  for (const alert of alerts) {
+    const key = alert.ca.toLowerCase();
+    const current = byCa.get(key);
+    const gain = Number(alert.tracking?.maxGainPercent || 0);
+    const currentGain = Number(current?.tracking?.maxGainPercent || 0);
+    const latestTime = new Date(alert.tracking?.updatedAt || alert.savedAt || 0).getTime();
+    const currentTime = new Date(current?.tracking?.updatedAt || current?.savedAt || 0).getTime();
+    if (!current || gain > currentGain || (gain === currentGain && latestTime > currentTime)) {
+      byCa.set(key, alert);
+    }
+  }
+  return [...byCa.values()];
+}
+
 function trackingStats(alerts) {
   const tracked = alerts.filter((alert) => Number.isFinite(Number(alert.tracking?.latestMarketCapUsd)));
-  const completed = alerts.filter((alert) => alert.tracking?.after6hMarketCapUsd !== null && alert.tracking?.after6hMarketCapUsd !== undefined);
-  const leaderboard = tracked
+  const uniqueTracked = uniqueBestTracked(tracked);
+  const completed = uniqueTracked.filter((alert) => alert.tracking?.after6hMarketCapUsd !== null && alert.tracking?.after6hMarketCapUsd !== undefined);
+  const leaderboard = uniqueTracked
     .slice()
     .sort((a, b) => Number(b.tracking?.maxGainPercent || 0) - Number(a.tracking?.maxGainPercent || 0))
     .slice(0, 5);
-  const bestGain = tracked.reduce((current, alert) => {
+  const bestGain = uniqueTracked.reduce((current, alert) => {
     const gain = Number(alert.tracking?.maxGainPercent || 0);
     const currentGain = Number(current?.tracking?.maxGainPercent || 0);
     return gain > currentGain ? alert : current;
   }, null);
 
   return {
-    tracked: tracked.length,
+    tracked: uniqueTracked.length,
     completed: completed.length,
     bestGain,
     leaderboard

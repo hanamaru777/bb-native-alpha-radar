@@ -1,14 +1,14 @@
 # bb Native Alpha Radar Report
 
-Generated at: 2026-05-07T01:23:29.369Z
+Generated at: 2026-05-07T01:31:04.749Z
 
 bb Native Alpha Radar is a Discord bot that uses Nansen Smart Money data to surface Solana lowcap meme candidates before contract addresses are posted in the bb altcoin room.
 
 ## Current Results
 
 - Valid radar records: 14
-- Tracked records: 3
-- Completed 6h tracking: 2
+- Tracked records: 2
+- Completed 6h tracking: 1
 - Today's auto alerts: 0/8
 
 ## Post-Alert Performance
@@ -16,8 +16,7 @@ bb Native Alpha Radar is a Discord bot that uses Nansen Smart Money data to surf
 | # | Token | Max gain | Alert MC | Max MC | Current MC |
 | - | - | -: | -: | -: | -: |
 | 1 | [$XANIMALS](https://dexscreener.com/solana/FJtB7uHWLDJA92vv2zdTyGRzMDQ227vivWhEjaeEpump) | +99% | $111.8K | $222.3K | $222.3K |
-| 2 | [$XANIMALS](https://dexscreener.com/solana/FJtB7uHWLDJA92vv2zdTyGRzMDQ227vivWhEjaeEpump) | +32% | $110.2K | $145.9K | $145.9K |
-| 3 | [$ODAI](https://dexscreener.com/solana/HxFSWTJE3SeUCgsKJUcuGQYAiH4S4BFEnSoktfKLpump) | +6% | $194.8K | $205.6K | $199.6K |
+| 2 | [$ODAI](https://dexscreener.com/solana/HxFSWTJE3SeUCgsKJUcuGQYAiH4S4BFEnSoktfKLpump) | +6% | $194.8K | $205.6K | $199.6K |
 
 ## Nansen Usage
 
