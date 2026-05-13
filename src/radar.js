@@ -629,7 +629,7 @@ function radarSignalState(candidate) {
 
   if (confidence === "HIGH" || (score >= 92 && sm >= 3 && holderPenalty <= 10 && flowAdjustment >= 0)) {
     return {
-      tag: "SIGNAL",
+      tag: "本命候補",
       label: "強い初動反応",
       color: 0x22c55e,
       summary: "bbで広がる前に、Smart Money側で先に反応が出ています。",
@@ -639,7 +639,7 @@ function radarSignalState(candidate) {
 
   if (score >= config.minBbScore && sm >= 3 && flowAdjustment >= 0) {
     return {
-      tag: "WATCH",
+      tag: "監視候補",
       label: "監視候補",
       color: 0xfacc15,
       summary: "反応はあります。まだ一段確認してから触る候補です。",
@@ -648,7 +648,7 @@ function radarSignalState(candidate) {
   }
 
   return {
-    tag: "WATCH",
+    tag: "監視候補",
     label: "薄い反応",
     color: 0x60a5fa,
     summary: "Radarには引っかかったけど、決定打はまだ弱めです。",
@@ -713,8 +713,8 @@ export function formatRadarIntroWinning(candidates) {
   const count = Math.min(candidates.length, config.radarDisplayLimit);
   return [
     "**bb Native Alpha Radar**",
-    `SCAN RESULT: ${count} ${count === 1 ? "SIGNAL" : "SIGNALS"} DETECTED`,
-    "Pre-CA Radar is active. Verify before touching."
+    `スキャン結果: ${count}件の反応あり`,
+    "Pre-CA Radar 稼働中。触る前に確認。"
   ].join("\n");
 }
 
@@ -726,10 +726,10 @@ export function formatRadarEmbedsWinning(candidates) {
       description: `${state.label}\n\n${state.summary}`,
       color: state.color,
       fields: [
-        { name: "RADAR NOTICE", value: shortText(radarWhyNowLine(candidate), 180) },
-        { name: "VERIFY NOW", value: shortText(radarVerifyLine(candidate), 180) },
-        { name: "WATCH FOR", value: shortText(radarRiskLine(candidate), 160), inline: true },
-        { name: "TRACE", value: shortText(radarTraceLine(candidate), 220), inline: true },
+        { name: "Radarが見た動き", value: shortText(radarWhyNowLine(candidate), 180) },
+        { name: "まず確認", value: shortText(radarVerifyLine(candidate), 180) },
+        { name: "注意点", value: shortText(radarRiskLine(candidate), 160), inline: true },
+        { name: "Nansen根拠", value: shortText(radarTraceLine(candidate), 220), inline: true },
         { name: "CA", value: `\`${candidate.ca}\`` }
       ],
       footer: { text: "NFA / DYOR | VERIFY before touching" },
@@ -763,38 +763,38 @@ function compactRejectedLine(candidate) {
 export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
   const lines = [
     "**bb Native Alpha Radar**",
-    "**NO STRONG SIGNALS**",
+    "**強い反応なし**",
     "",
-    "**SCAN RESULT**",
+    "**スキャン結果**",
     "今は流しません。"
   ];
   const topReasons = stats?.scans?.topReasons || [];
 
   if (topReasons.length) {
-    lines.push("", "**FILTERED**");
+    lines.push("", "**見送り理由**");
     topReasons.slice(0, 3).forEach((item) => {
       lines.push(`${reasonLabel(item.reason)} ${item.count}`);
     });
   }
 
   if (rejected.length) {
-    lines.push("", "**WATCH ONLY**");
+    lines.push("", "**監視のみ**");
     rejected.slice(0, 2).forEach((candidate) => {
       lines.push(compactRejectedLine(candidate));
     });
   } else if (scannedCount > 0) {
-    lines.push("", "**WATCH ONLY**");
+    lines.push("", "**監視のみ**");
     lines.push(`一次候補 ${scannedCount}件 -> 条件未満`);
   } else {
-    lines.push("", "**WATCH ONLY**");
+    lines.push("", "**監視のみ**");
     lines.push("一次候補なし");
   }
 
-  lines.push("", "**NEXT**");
-  lines.push("`/rejections` FILTERED");
+  lines.push("", "**次に見るもの**");
+  lines.push("`/rejections` 見送り一覧");
   lines.push("`/stats` Daily Radar");
   lines.push("`/criteria` Rules");
-  lines.push("", "Weak signals were filtered. Radar stayed silent.");
+  lines.push("", "弱い反応は流さず、今日は静かに見ています。");
   return lines.join("\n");
 }
 
