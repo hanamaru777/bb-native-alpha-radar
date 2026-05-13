@@ -18,7 +18,7 @@ Candidate verification:
 System check:
 
 - `nansen schema --pretty`
-- Lightweight REST status check when needed
+- REST status is inferred from the latest Radar scan when possible, so `/health` does not spend a Nansen REST call just to poll status.
 
 ## Product Purpose By Endpoint
 
@@ -48,6 +48,7 @@ System check:
 ## Credit-Efficient Principles
 
 - Filter cheap signals before expensive enrichment.
+- Check recent bb history before deep candidate enrichment when available.
 - Enrich only the top candidates that may become Radar Calls.
 - Do not deep-dive every scanned row.
 - Cache or reuse saved data when a command can safely use history.
@@ -57,11 +58,18 @@ System check:
 
 ## Acceptable Credit Spend
 
+Current scan budget:
+
+- Base Radar scan: 3 REST calls (`netflow`, `dex-trades`, `token-screener`).
+- Candidate enrichment: up to `RADAR_DISPLAY_LIMIT + 3` candidates, capped by the code path before holders/flow.
+- bb already-posted candidates are rejected before holders/flow enrichment when recent Discord history is available.
+- `/flow <CA>` remains a user-requested deep dive for one CA.
+
 Acceptable:
 
 - A scheduled Radar scan that uses Nansen to find a small candidate set.
 - `/flow <CA>` live verification for one user-selected CA.
-- Occasional health checks that verify Nansen availability without leaking secrets.
+- CLI health checks that verify Nansen CLI availability without leaking secrets.
 
 Avoid:
 

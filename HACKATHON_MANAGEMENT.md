@@ -26,13 +26,13 @@ Status legend:
 | - | - | - |
 | Core bot runtime | Done | Node bot, Discord Gateway, slash commands, scheduled Radar, tracking, daily summary support. |
 | Nansen CLI requirement | Needs polish | `/health` checks CLI with `nansen schema --pretty`; final demo must prove the CLI is installed and working. |
-| Nansen REST usage | Done | Smart Money, Token Screener, holders, Flow Intelligence. Credit efficiency still needs work. |
-| Discord command UX | Needs polish | Commands exist. `/radar` should be polished for three-second screenshots. |
+| Nansen REST usage | Done | Smart Money, Token Screener, holders, Flow Intelligence. Enrichment is now capped and bb history is checked before deep enrichment when available. |
+| Discord command UX | Done | Commands exist. `/radar` has been reviewed in Discord dark mode and is good enough for three-second comprehension. |
 | Radar Call IDs | Done | Saved alerts receive shared Radar Call IDs. Compatibility must stay protected. |
 | JSON storage | Done | `alerts.json`, `scans.json`, `daily-summary.json`. Compatibility smoke tests are still missing. |
 | README | Needs polish | Setup and concept exist. Needs final demo/submission framing. |
 | REPORT.md | Needs polish | Exists. Should be refreshed near submission with `/export`. |
-| Demo screenshots | Not started | Need final Discord dark mode screenshot set. |
+| Demo screenshots | Needs polish | `/radar` dark mode screenshot has been reviewed. Remaining screenshots still need to be captured. |
 | Demo video | Not started | Required for stronger evaluation, even if not strictly required by form. |
 | Intro tweet/post | Not started | Required if GitHub URL alone is not enough or to improve reach. |
 | Submission form | Not started | Final form must include GitHub URL or intro tweet and demo assets. |
@@ -86,27 +86,28 @@ The project is win-quality if:
 - [x] Scheduled Radar path exists.
 - [x] Tracking loop exists.
 - [x] Daily summary dedupe exists.
-- [ ] Final real `.env` verified with `MOCK_MODE=false`.
+- [x] Final real `.env` verified with `MOCK_MODE=false`.
 - [ ] Final `/health` screenshot captured.
-- [ ] Final `npm.cmd run check:all` captured.
+- [x] Final `npm.cmd run check:all` captured after latest Nansen credit-efficiency changes.
 
 ### UI/UX Readiness
 
 - [x] Commands cover Radar, Verify, Prove, Community.
 - [x] `/rejections` exists as a quality filter.
 - [x] `/stats` exists as daily summary.
-- [ ] `/radar` screenshot is short enough for three-second comprehension.
-- [ ] CA is visible but not the visual hero.
-- [ ] Dark mode screenshots reviewed.
-- [ ] Demo output avoids dashboard feel.
+- [x] `/radar` screenshot is short enough for three-second comprehension.
+- [x] CA is visible but not the visual hero in `/radar`.
+- [x] `/radar` dark mode screenshot reviewed.
+- [x] Runtime is unified to the primary repo.
+- [ ] Full demo output avoids dashboard feel.
 
 ### Nansen Credit Readiness
 
 - [x] Nansen Smart Money is used for Radar.
 - [x] Nansen holders and Flow Intelligence are used for verification.
 - [x] Nansen CLI health check exists.
-- [ ] Enrichment is limited to likely Radar Calls.
-- [ ] `/health` avoids unnecessary credit drain where possible.
+- [x] Enrichment is limited to likely Radar Calls.
+- [x] `/health` avoids unnecessary REST credit drain where possible.
 - [ ] Demo avoids repeatedly running `/radar`.
 - [ ] Credit exhaustion path is screenshot-tested.
 
@@ -263,15 +264,14 @@ Use this framing:
 ## Final Implementation Priority Order
 
 1. `/radar` screenshot UX polish.
-2. Nansen credit-efficiency pass.
-3. JSON compatibility and Radar Call continuity smoke tests.
-4. `/flow` verification polish without dashboard creep.
-5. README architecture/setup/dependency polish.
-6. REPORT refresh and submission narrative polish.
-7. Demo screenshots and demo video.
-8. Final `npm.cmd run check:all`.
-9. Final GitHub push.
-10. Submission form and intro tweet/post.
+2. JSON compatibility and Radar Call continuity smoke tests.
+3. `/flow` verification polish without dashboard creep.
+4. README architecture/setup/dependency polish.
+5. REPORT refresh and submission narrative polish.
+6. Demo screenshots and demo video.
+7. Final `npm.cmd run check:all`.
+8. Final GitHub push.
+9. Submission form and intro tweet/post.
 
 ## Scope Control Rules
 

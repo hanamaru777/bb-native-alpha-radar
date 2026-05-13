@@ -35,6 +35,8 @@ const mockCandidates = [
   }
 ];
 
+const RADAR_ENRICHMENT_LIMIT = Math.max(3, config.radarDisplayLimit + 3);
+
 let mockIndex = 0;
 
 function uniqueByCa(candidates) {
@@ -459,7 +461,7 @@ async function enrichRadarCandidate(candidate) {
   };
 }
 
-export async function scanAlphaCandidatesDetailed() {
+export async function scanAlphaCandidatesDetailed(options = {}) {
   if (config.mockMode || !config.nansenApiKey) {
     const rotated = [
       mockCandidates[mockIndex % mockCandidates.length],
@@ -492,6 +494,9 @@ export async function scanAlphaCandidatesDetailed() {
   }
 
   const rows = [...netflows, ...screenerTokens];
+  const preEnrichmentReject = typeof options.preEnrichmentReject === "function"
+    ? options.preEnrichmentReject
+    : null;
   const baseCandidates = uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
     .filter((candidate) => candidate.symbol !== "UNKNOWN")
     .filter((candidate) => !isUnsafeForPublicChannel(candidate))
@@ -505,12 +510,38 @@ export async function scanAlphaCandidatesDetailed() {
     .sort(compareByScoreThenFlow)
     .slice(0, 8);
 
-  const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
+  const preRejected = [];
+  const enrichableCandidates = [];
+  for (const candidate of baseCandidates) {
+    const rejectedCandidate = preEnrichmentReject?.(candidate);
+    if (rejectedCandidate) {
+      preRejected.push(rejectedCandidate);
+    } else {
+      enrichableCandidates.push(candidate);
+    }
+  }
+
+  const enrichmentPool = enrichableCandidates.slice(0, RADAR_ENRICHMENT_LIMIT);
+  const enrichmentSkipped = enrichableCandidates.slice(RADAR_ENRICHMENT_LIMIT).map((candidate) => ({
+    ...candidate,
+    bbScore: Math.min(Number(candidate.bbScore || 0), config.minBbScore - 1),
+    metrics: {
+      ...(candidate.metrics || {}),
+      enrichmentSkipped: true
+    }
+  }));
+
+  const enrichedCandidates = await Promise.all(enrichmentPool.map(enrichRadarCandidate));
   const sorted = sortByScoreThenFlow(enrichedCandidates);
   const passed = sorted.filter(passesAutoAlertPolicy);
+  const rejectedCandidates = [
+    ...sorted.filter((candidate) => !passesAutoAlertPolicy(candidate)),
+    ...preRejected,
+    ...enrichmentSkipped
+  ];
   return {
     candidates: passed.slice(0, 5),
-    rejected: sorted.filter((candidate) => !passesAutoAlertPolicy(candidate)).slice(0, 3),
+    rejected: sortByScoreThenFlow(rejectedCandidates).slice(0, 3),
     scannedCount: baseCandidates.length,
     sourceErrors
   };

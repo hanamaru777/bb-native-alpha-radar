@@ -47,7 +47,6 @@ import {
   writeDailySummaryState
 } from "./store.js";
 import { updateTrackingOnce } from "./tracking.js";
-import { getSolanaSmartMoneyNetflow } from "./nansen.js";
 import { checkNansenCli } from "./nansenCli.js";
 import { fetchRadarMessageReactions } from "./reactions.js";
 
@@ -66,37 +65,72 @@ function messageSearchText(message) {
   return parts.join("\n").toLowerCase();
 }
 
-async function applyBbUnpostedFilter(result) {
+async function getBbHistoryContext() {
+  const messages = await getRecentMessages(config.discordToken, config.alertChannelId, config.bbLookbackMessages);
+  return {
+    checkedCount: messages.length,
+    haystack: messages.map(messageSearchText).join("\n")
+  };
+}
+
+function bbAlreadyPostedMatch(candidate, context) {
+  if (!context) return null;
+  const ca = String(candidate.ca || "").toLowerCase();
+  const symbol = String(candidate.symbol || "").toLowerCase();
+  const symbolAlreadyPosted = symbol && symbol !== "unknown" && context.haystack.includes(`$${symbol}`);
+  const caAlreadyPosted = ca && context.haystack.includes(ca);
+  return caAlreadyPosted ? "ca" : symbolAlreadyPosted ? "symbol" : null;
+}
+
+function markBbAlreadyPosted(candidate, context) {
+  const match = bbAlreadyPostedMatch(candidate, context);
+  if (!match) return null;
+  return {
+    ...candidate,
+    bbScore: Math.min(Number(candidate.bbScore || 0), config.minBbScore - 1),
+    metrics: {
+      ...(candidate.metrics || {}),
+      bbAlreadyPosted: true,
+      bbLookbackChecked: context.checkedCount,
+      bbPostedMatch: match
+    }
+  };
+}
+
+async function prepareBbHistoryContext() {
   try {
-    const messages = await getRecentMessages(config.discordToken, config.alertChannelId, config.bbLookbackMessages);
-    const checkedCount = messages.length;
-    const haystack = messages.map(messageSearchText).join("\n");
+    return await getBbHistoryContext();
+  } catch (error) {
+    console.error("bb history prefilter skipped:", error.message);
+    return null;
+  }
+}
+
+async function scanRadarWithBbPrefilter() {
+  const context = await prepareBbHistoryContext();
+  const result = await scanAlphaCandidatesDetailed({
+    preEnrichmentReject: context ? (candidate) => markBbAlreadyPosted(candidate, context) : null
+  });
+  return applyBbUnpostedFilter(result, context);
+}
+
+async function applyBbUnpostedFilter(result, context = null) {
+  try {
+    const history = context || await getBbHistoryContext();
     const candidates = [];
     const rejected = [...(result.rejected || [])];
 
     for (const candidate of result.candidates || []) {
-      const ca = String(candidate.ca || "").toLowerCase();
-      const symbol = String(candidate.symbol || "").toLowerCase();
-      const symbolAlreadyPosted = symbol && symbol !== "unknown" && haystack.includes(`$${symbol}`);
-      const caAlreadyPosted = ca && haystack.includes(ca);
-      if (caAlreadyPosted || symbolAlreadyPosted) {
-        rejected.unshift({
-          ...candidate,
-          bbScore: Math.min(Number(candidate.bbScore || 0), config.minBbScore - 1),
-          metrics: {
-            ...(candidate.metrics || {}),
-            bbAlreadyPosted: true,
-            bbLookbackChecked: checkedCount,
-            bbPostedMatch: caAlreadyPosted ? "ca" : "symbol"
-          }
-        });
+      const bbRejected = markBbAlreadyPosted(candidate, history);
+      if (bbRejected) {
+        rejected.unshift(bbRejected);
       } else {
         candidates.push({
           ...candidate,
           metrics: {
             ...(candidate.metrics || {}),
             bbAlreadyPosted: false,
-            bbLookbackChecked: checkedCount
+            bbLookbackChecked: history.checkedCount
           }
         });
       }
@@ -116,7 +150,7 @@ async function applyBbUnpostedFilter(result) {
 async function runRadarOnce() {
   const startedAt = new Date();
   console.log(`[auto radar] started at ${startedAt.toLocaleString()} (min score ${config.minBbScore}, limit ${config.radarDisplayLimit}).`);
-  const result = await applyBbUnpostedFilter(await scanAlphaCandidatesDetailed());
+  const result = await scanRadarWithBbPrefilter();
   saveScanSummary(result, "auto");
   const candidates = result.candidates;
   const notifyCandidates = applyNotificationPolicy(candidates).slice(0, config.radarDisplayLimit);
@@ -208,7 +242,7 @@ async function handleRadar(interaction) {
   await deferInteraction(config.discordToken, interaction.id, interaction.token);
 
   try {
-    const result = await applyBbUnpostedFilter(await scanAlphaCandidatesDetailed());
+    const result = await scanRadarWithBbPrefilter();
     lastRadarStatus = {
       at: new Date().toISOString(),
       scannedCount: result.scannedCount,
@@ -272,14 +306,11 @@ async function handleRadar(interaction) {
 async function handleHealth(interaction) {
   await deferInteraction(config.discordToken, interaction.id, interaction.token);
 
-  let nansenOk = false;
-  let nansenMessage = "";
-  try {
-    await getSolanaSmartMoneyNetflow(1);
-    nansenOk = true;
-  } catch (error) {
-    nansenMessage = error.message.slice(0, 120);
-  }
+  const lastRadarErrors = lastRadarStatus?.sourceErrors || [];
+  const nansenOk = Boolean(config.nansenApiKey) && !lastRadarErrors.length;
+  const nansenMessage = lastRadarStatus
+    ? (lastRadarErrors.length ? lastRadarErrors.join(" / ").slice(0, 120) : "直近Radarで確認済み")
+    : "未スキャン。/radar で確認";
   const nansenCli = await checkNansenCli();
 
   await editInteractionReply(
