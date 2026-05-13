@@ -672,6 +672,13 @@ function radarWhyNowLine(candidate) {
   return parts.join(" / ") || candidate.reason || "Smart Money側に早い反応があります。";
 }
 
+function radarVerifyLine(candidate) {
+  return [
+    "Dex / gmgn / Nansenで確認",
+    `/flow ${candidate.ca}`
+  ].join("\n");
+}
+
 function radarRiskLine(candidate) {
   const parts = [];
   const metrics = candidate.metrics || {};
@@ -692,12 +699,11 @@ function riskLine(candidate) {
 
 function radarTraceLine(candidate) {
   const metrics = candidate.metrics || {};
-  const items = [
-    `MC ${candidate.marketCap || formatUsd(metrics.marketCapUsd)}`,
-    `${finalAge(candidate)} old`,
-    `SM ${finalSm(candidate)}`,
-    flowLine(candidate)
-  ];
+  const flow = candidate.nansenDeepDive?.flow;
+  if (flow) return `${flow.bias} / net ${formatUsd(flow.netflowUsd)}`;
+  const items = [];
+  if (Number(metrics.netflow24hUsd || 0) > 0) items.push(`24h flow ${formatUsd(metrics.netflow24hUsd)}`);
+  items.push(`SM ${finalSm(candidate)}`);
   const holders = holderLine(candidate);
   if (holders !== "n/a") items.push(`holders ${holders}`);
   return items.filter(Boolean).join(" / ");
@@ -707,28 +713,26 @@ export function formatRadarIntroWinning(candidates) {
   const count = Math.min(candidates.length, config.radarDisplayLimit);
   return [
     "**bb Native Alpha Radar**",
-    `SCAN: ${count} Radar signal${count === 1 ? "" : "s"} detected`,
-    "bbで広がる前のSolana lowcap反応だけ拾っています。",
-    "触る前に DexScreener / gmgn / Nansen で確認。"
+    `SCAN RESULT: ${count} ${count === 1 ? "SIGNAL" : "SIGNALS"} DETECTED`,
+    "Pre-CA Radar is active. Verify before touching."
   ].join("\n");
 }
 
 export function formatRadarEmbedsWinning(candidates) {
   return candidates.slice(0, config.radarDisplayLimit).map((candidate, index) => {
     const state = radarSignalState(candidate);
-    const confidence = radarConfidence(candidate);
     return {
       title: `${radarCallLabel(candidate)} | ${state.tag} | $${candidate.symbol}`,
-      description: `${state.label}\n${state.summary}`,
+      description: `${state.label}\n\n${state.summary}`,
       color: state.color,
       fields: [
-        { name: "WHY NOW", value: shortText(radarWhyNowLine(candidate), 180) },
-        { name: "NANSEN TRACE", value: shortText(radarTraceLine(candidate), 260) },
-        { name: "WATCH RISK", value: shortText(radarRiskLine(candidate), 160), inline: true },
-        { name: "NEXT", value: shortText(`${state.action}\n/flowで深掘り。`, 160), inline: true },
-        { name: "CA / COMMAND", value: `\`/flow ${candidate.ca}\`\nCA: \`${candidate.ca}\`` }
+        { name: "RADAR NOTICE", value: shortText(radarWhyNowLine(candidate), 180) },
+        { name: "VERIFY NOW", value: shortText(radarVerifyLine(candidate), 180) },
+        { name: "WATCH FOR", value: shortText(radarRiskLine(candidate), 160), inline: true },
+        { name: "TRACE", value: shortText(radarTraceLine(candidate), 220), inline: true },
+        { name: "CA", value: `\`${candidate.ca}\`` }
       ],
-      footer: { text: `Radar confidence ${confidence} | NFA / DYOR | CAは検証用` },
+      footer: { text: "NFA / DYOR | VERIFY before touching" },
       timestamp: new Date().toISOString()
     };
   });
@@ -752,37 +756,45 @@ function rejectedReasonFromScan(item) {
   return rejectedReason(item);
 }
 
+function compactRejectedLine(candidate) {
+  return `$${candidate.symbol}: ${rejectedReasonFromScan(candidate)}`;
+}
+
 export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
   const lines = [
     "**bb Native Alpha Radar**",
     "**NO STRONG SIGNALS**",
     "",
-    "今はbbに流す強いRadar反応はありません。",
-    `条件: bb反応度${config.minBbScore}以上 / Nansen flow / holder / DEX確認`,
-    "弱い候補は通知せず、見送りとして残します。"
+    "**SCAN RESULT**",
+    "今は流しません。"
   ];
   const topReasons = stats?.scans?.topReasons || [];
+
   if (topReasons.length) {
     lines.push("", "**FILTERED**");
     topReasons.slice(0, 3).forEach((item) => {
-      lines.push(`・${reasonLabel(item.reason)}: ${item.count}`);
+      lines.push(`${reasonLabel(item.reason)} ${item.count}`);
     });
   }
+
   if (rejected.length) {
     lines.push("", "**WATCH ONLY**");
-    rejected.slice(0, 2).forEach((candidate, index) => {
-      lines.push(`${index + 1}. $${candidate.symbol}`);
-      lines.push(`・Score: ${candidate.bbScore}/100`);
-      lines.push(`・理由: ${rejectedReasonFromScan(candidate)}`);
-      lines.push(`・状態: ${candidate.reasons?.includes?.("bb_already_posted") ? "通知不要" : "監視のみ"}`);
+    rejected.slice(0, 2).forEach((candidate) => {
+      lines.push(compactRejectedLine(candidate));
     });
   } else if (scannedCount > 0) {
-    lines.push("", `一次候補は${scannedCount}件あったけど、Nansen深掘り後に条件未満だったよ。`);
+    lines.push("", "**WATCH ONLY**");
+    lines.push(`一次候補 ${scannedCount}件 -> 条件未満`);
   } else {
-    lines.push("", "一次条件を通過した候補もなかったよ。");
+    lines.push("", "**WATCH ONLY**");
+    lines.push("一次候補なし");
   }
-  lines.push("", "今日は無理に流しません。Radarは静かな時も価値です。");
-  lines.push("※ 条件は `/criteria`、履歴は `/stats`、見送り理由は `/rejections` で確認できます。");
+
+  lines.push("", "**NEXT**");
+  lines.push("`/rejections` FILTERED");
+  lines.push("`/stats` Daily Radar");
+  lines.push("`/criteria` Rules");
+  lines.push("", "Weak signals were filtered. Radar stayed silent.");
   return lines.join("\n");
 }
 
