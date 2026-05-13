@@ -3,6 +3,9 @@ import path from "node:path";
 import { config } from "./config.js";
 
 const historyPath = path.join(config.dataDir, "alerts.json");
+const scanHistoryPath = path.join(config.dataDir, "scans.json");
+const dailySummaryPath = path.join(config.dataDir, "daily-summary.json");
+const SCORE_VERSION = "holders-flow-v2";
 
 function parseUsd(value) {
   if (typeof value === "number") return value;
@@ -16,7 +19,11 @@ function parseUsd(value) {
 export function readAlerts() {
   if (!fs.existsSync(historyPath)) return [];
   try {
-    return JSON.parse(fs.readFileSync(historyPath, "utf8"));
+    const alerts = JSON.parse(fs.readFileSync(historyPath, "utf8"));
+    const total = Array.isArray(alerts) ? alerts.length : 0;
+    return Array.isArray(alerts)
+      ? alerts.map((alert, index) => withRadarCallFallback(alert, total - index))
+      : [];
   } catch {
     return [];
   }
@@ -27,16 +34,86 @@ function writeAlerts(alerts) {
   fs.writeFileSync(historyPath, JSON.stringify(alerts.slice(0, 300), null, 2));
 }
 
+function readScanHistory() {
+  if (!fs.existsSync(scanHistoryPath)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(scanHistoryPath, "utf8"));
+  } catch {
+    return [];
+  }
+}
+
+export function readDailySummaryState() {
+  if (!fs.existsSync(dailySummaryPath)) return {};
+  try {
+    const state = JSON.parse(fs.readFileSync(dailySummaryPath, "utf8"));
+    return state && typeof state === "object" ? state : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeDailySummaryState(state) {
+  fs.mkdirSync(config.dataDir, { recursive: true });
+  fs.writeFileSync(dailySummaryPath, JSON.stringify(state, null, 2));
+}
+
+function writeScanHistory(scans) {
+  fs.mkdirSync(config.dataDir, { recursive: true });
+  fs.writeFileSync(scanHistoryPath, JSON.stringify(scans.slice(0, 300), null, 2));
+}
+
+function localDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: config.dailySummaryTimezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function isLocalDateKey(value, dateKey) {
+  const time = new Date(value || 0);
+  return Number.isFinite(time.getTime()) && localDateKey(time) === dateKey;
+}
+
+function withRadarCallFallback(alert, fallbackId) {
+  if (alert?.radarCall?.id) return alert;
+  const id = Number(fallbackId);
+  return {
+    ...alert,
+    radarCall: {
+      id: Number.isFinite(id) && id > 0 ? id : 1,
+      label: `Radar Call #${Number.isFinite(id) && id > 0 ? id : 1}`,
+      fallback: true
+    }
+  };
+}
+
+function nextRadarCallId(alerts) {
+  const maxId = alerts.reduce((max, alert) => {
+    const id = Number(alert.radarCall?.id);
+    return Number.isFinite(id) ? Math.max(max, id) : max;
+  }, 0);
+  return maxId + 1;
+}
+
 export function saveAlert(alert, source = "manual") {
   fs.mkdirSync(config.dataDir, { recursive: true });
   const alerts = readAlerts();
   const now = new Date().toISOString();
   const notificationMarketCapUsd = alert.metrics?.marketCapUsd || parseUsd(alert.marketCap);
+  const radarCallId = alert.radarCall?.id || nextRadarCallId(alerts);
 
   const record = {
     ...alert,
+    radarCall: {
+      id: radarCallId,
+      label: `Radar Call #${radarCallId}`
+    },
     chain: "solana",
     source,
+    scoreVersion: SCORE_VERSION,
     savedAt: now,
     notification: {
       notifiedAt: now,
@@ -53,6 +130,13 @@ export function saveAlert(alert, source = "manual") {
       maxGainPercent: 0,
       bbMentioned: false,
       updatedAt: null
+    },
+    reactions: {
+      fire: 0,
+      eyes: 0,
+      warning: 0,
+      skull: 0,
+      updatedAt: null
     }
   };
 
@@ -61,9 +145,45 @@ export function saveAlert(alert, source = "manual") {
   return record;
 }
 
+export function attachDiscordMessageToAlerts(savedAlerts, message) {
+  if (!message?.id || !Array.isArray(savedAlerts) || savedAlerts.length === 0) return [];
+  const alerts = readAlerts();
+  const ids = new Set(savedAlerts.map((alert) => Number(alert.radarCall?.id)).filter(Number.isFinite));
+  const updated = alerts.map((alert) => {
+    if (!ids.has(Number(alert.radarCall?.id))) return alert;
+    return {
+      ...alert,
+      discord: {
+        channelId: message.channel_id || config.alertChannelId,
+        messageId: message.id
+      }
+    };
+  });
+  writeAlerts(updated);
+  return updated.filter((alert) => ids.has(Number(alert.radarCall?.id)));
+}
+
+export function updateAlertReactions(radarCallId, reactions) {
+  const alerts = readAlerts();
+  const id = Number(radarCallId);
+  if (!Number.isFinite(id)) return null;
+  const index = alerts.findIndex((alert) => Number(alert.radarCall?.id) === id);
+  if (index === -1) return null;
+  alerts[index] = {
+    ...alerts[index],
+    reactions: {
+      ...(alerts[index].reactions || {}),
+      ...reactions,
+      updatedAt: new Date().toISOString()
+    }
+  };
+  writeAlerts(alerts);
+  return alerts[index];
+}
+
 export function findAlertByCa(ca) {
   const matches = readAlerts().filter((alert) => alert.ca.toLowerCase() === ca.toLowerCase());
-  return matches.find(hasValidRadarMetrics) || matches[0];
+  return matches.find(hasValidRadarMetrics) || null;
 }
 
 export function wasRecentlyNotified(ca, hours = config.dedupeHours) {
@@ -76,9 +196,9 @@ export function wasRecentlyNotified(ca, hours = config.dedupeHours) {
 }
 
 export function countTodayAutoAlerts() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateKey();
   return readAlerts().filter((alert) => {
-    return String(alert.savedAt || "").startsWith(today) && alert.source === "auto";
+    return isLocalDateKey(alert.savedAt, today) && alert.source === "auto";
   }).length;
 }
 
@@ -92,12 +212,48 @@ export function applyNotificationPolicy(candidates) {
     .slice(0, remainingDailySlots);
 }
 
+function rejectionReasonTags(candidate) {
+  const metrics = candidate.metrics || {};
+  const tags = [];
+  if (Number(metrics.holderPenalty || 0) > 0) tags.push("holder_concentration");
+  if (Number(metrics.flowAdjustment || 0) < 0) tags.push("flow_outflow");
+  if (metrics.bbAlreadyPosted) tags.push("bb_already_posted");
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  if (sm <= 1) tags.push("single_sm_trader");
+  if (!tags.length && Number(candidate.bbScore || 0) < config.minBbScore) tags.push("low_score");
+  return tags;
+}
+
+export function saveScanSummary(result, source = "manual") {
+  const scans = readScanHistory();
+  const rejected = Array.isArray(result?.rejected) ? result.rejected : [];
+  const candidates = Array.isArray(result?.candidates) ? result.candidates : [];
+  const record = {
+    scannedAt: new Date().toISOString(),
+    source,
+    scannedCount: Number(result?.scannedCount || candidates.length + rejected.length || 0),
+    passedCount: candidates.length,
+    rejectedCount: rejected.length,
+    rejected: rejected.slice(0, 5).map((candidate) => ({
+      symbol: candidate.symbol,
+      ca: candidate.ca,
+      bbScore: candidate.bbScore,
+      marketCap: candidate.marketCap,
+      reasons: rejectionReasonTags(candidate)
+    }))
+  };
+  scans.unshift(record);
+  writeScanHistory(scans);
+  return record;
+}
+
 export function getStats() {
   const alerts = readAlerts();
-  const today = new Date().toISOString().slice(0, 10);
+  const scans = readScanHistory();
+  const today = localDateKey();
   const validAlerts = alerts.filter(hasValidRadarMetrics);
-  const todayManualAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today) && alert.source === "manual");
-  const todayAutoAlerts = validAlerts.filter((alert) => String(alert.savedAt || "").startsWith(today) && alert.source === "auto");
+  const todayManualAlerts = validAlerts.filter((alert) => isLocalDateKey(alert.savedAt, today) && alert.source === "manual");
+  const todayAutoAlerts = validAlerts.filter((alert) => isLocalDateKey(alert.savedAt, today) && alert.source === "auto");
   const best = validAlerts.reduce((current, alert) => {
     const score = Number(alert.bbScore || 0);
     const currentScore = Number(current?.bbScore || 0);
@@ -109,9 +265,89 @@ export function getStats() {
     rawTotal: alerts.length,
     todayManual: todayManualAlerts.length,
     todayAuto: todayAutoAlerts.length,
+    today: dailyRadarStats(validAlerts, scans, today),
     best,
     recent: uniqueRecent(validAlerts).slice(0, 5),
-    tracking: trackingStats(validAlerts)
+    tracking: trackingStats(validAlerts),
+    scans: scanStats(scans)
+  };
+}
+
+function reactionTotals(alerts) {
+  return alerts.reduce((totals, alert) => {
+    const reactions = alert.reactions || {};
+    totals.fire += Number(reactions.fire || 0);
+    totals.eyes += Number(reactions.eyes || 0);
+    totals.warning += Number(reactions.warning || 0);
+    totals.skull += Number(reactions.skull || 0);
+    return totals;
+  }, { fire: 0, eyes: 0, warning: 0, skull: 0 });
+}
+
+function todayReasonCounts(scans) {
+  const reasonCounts = {};
+  for (const scan of scans) {
+    for (const rejected of scan.rejected || []) {
+      for (const reason of rejected.reasons || []) {
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      }
+    }
+  }
+  return Object.entries(reasonCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([reason, count]) => ({ reason, count }));
+}
+
+function dailyRadarStats(validAlerts, scans, today) {
+  const todayAlerts = validAlerts.filter((alert) => isLocalDateKey(alert.savedAt, today));
+  const todayScans = scans.filter((scan) => isLocalDateKey(scan.scannedAt, today));
+  const strongCandidates = todayAlerts.filter((alert) => Number(alert.bbScore || 0) >= config.minBbScore);
+  const bestRadar = todayAlerts.reduce((current, alert) => {
+    const gain = Number(alert.tracking?.maxGainPercent || 0);
+    const currentGain = Number(current?.tracking?.maxGainPercent || 0);
+    const score = Number(alert.bbScore || 0);
+    const currentScore = Number(current?.bbScore || 0);
+    if (!current || gain > currentGain || (gain === currentGain && score > currentScore)) return alert;
+    return current;
+  }, null);
+  const topRejectReasons = todayReasonCounts(todayScans);
+
+  return {
+    date: today,
+    radarCalls: todayAlerts.length,
+    strongCandidates: strongCandidates.length,
+    rejected: todayScans.reduce((sum, scan) => sum + Number(scan.rejectedCount || 0), 0),
+    scans: todayScans.length,
+    bestRadar,
+    topRejectReason: topRejectReasons[0] || null,
+    topRejectReasons,
+    reactions: reactionTotals(todayAlerts)
+  };
+}
+
+function scanStats(scans) {
+  const today = localDateKey();
+  const todayScans = scans.filter((scan) => isLocalDateKey(scan.scannedAt, today));
+  const reasonCounts = {};
+  for (const scan of scans.slice(0, 50)) {
+    for (const rejected of scan.rejected || []) {
+      for (const reason of rejected.reasons || []) {
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+      }
+    }
+  }
+  const topReasons = Object.entries(reasonCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([reason, count]) => ({ reason, count }));
+
+  return {
+    total: scans.length,
+    today: todayScans.length,
+    rejectedTotal: scans.reduce((sum, scan) => sum + Number(scan.rejectedCount || 0), 0),
+    recentRejected: scans.flatMap((scan) => scan.rejected || []).slice(0, 5),
+    topReasons
   };
 }
 
@@ -191,6 +427,7 @@ export function updateAlertTracking(ca, marketData, now = new Date()) {
 }
 
 function hasValidRadarMetrics(alert) {
+  if (alert.scoreVersion !== SCORE_VERSION) return false;
   const age = Number(alert.metrics?.tokenAgeDays);
   const mcap = Number(alert.metrics?.marketCapUsd);
   return Number.isFinite(age) && age > 0 && age <= config.tokenAgeMaxDays

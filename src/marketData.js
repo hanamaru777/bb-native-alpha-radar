@@ -30,6 +30,14 @@ export async function getSolanaTokenMarketData(ca) {
   const priceUsd = numberFrom(pair.priceUsd);
   const volume24hUsd = numberFrom(pair.volume?.h24);
   const liquidityUsd = numberFrom(pair.liquidity?.usd);
+  const priceChange5m = numberFrom(pair.priceChange?.m5);
+  const priceChange1h = numberFrom(pair.priceChange?.h1);
+  const priceChange6h = numberFrom(pair.priceChange?.h6);
+  const priceChange24h = numberFrom(pair.priceChange?.h24);
+  const buys1h = numberFrom(pair.txns?.h1?.buys);
+  const sells1h = numberFrom(pair.txns?.h1?.sells);
+  const buys24h = numberFrom(pair.txns?.h24?.buys);
+  const sells24h = numberFrom(pair.txns?.h24?.sells);
 
   return {
     ca,
@@ -39,6 +47,15 @@ export async function getSolanaTokenMarketData(ca) {
     priceUsd,
     volume24hUsd,
     liquidityUsd,
+    priceChange5m,
+    priceChange1h,
+    priceChange6h,
+    priceChange24h,
+    buys1h,
+    sells1h,
+    buys24h,
+    sells24h,
+    pairCreatedAt: pair.pairCreatedAt || null,
     pairUrl: pair.url || null,
     fetchedAt: new Date().toISOString()
   };

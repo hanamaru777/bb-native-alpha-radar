@@ -26,6 +26,31 @@ export async function postMessage(token, channelId, content, components = [], em
   });
 }
 
+export async function getRecentMessages(token, channelId, limit = 100) {
+  const target = Math.max(1, Math.min(Number(limit) || 100, 500));
+  const messages = [];
+  let before = "";
+
+  while (messages.length < target) {
+    const pageLimit = Math.min(100, target - messages.length);
+    const query = new URLSearchParams({ limit: String(pageLimit) });
+    if (before) query.set("before", before);
+
+    const page = await discordRequest(token, `/channels/${channelId}/messages?${query.toString()}`);
+    if (!Array.isArray(page) || page.length === 0) break;
+
+    messages.push(...page);
+    before = page[page.length - 1].id;
+    if (page.length < pageLimit) break;
+  }
+
+  return messages;
+}
+
+export async function getMessage(token, channelId, messageId) {
+  return discordRequest(token, `/channels/${channelId}/messages/${messageId}`);
+}
+
 export async function replyInteraction(token, interactionId, interactionToken, content) {
   return discordRequest(token, `/interactions/${interactionId}/${interactionToken}/callback`, {
     method: "POST",
@@ -61,13 +86,10 @@ export async function getApplication(token) {
 
 export async function registerCommands(token, applicationId, guildId = "") {
   const commands = [
-    {
-      name: "radar",
-      description: "NansenからSolana lowcap候補を表示します"
-    },
+    { name: "radar", description: "Show Solana lowcap radar candidates" },
     {
       name: "flow",
-      description: "CAを指定して簡易フロー分析を表示します",
+      description: "Deep-dive a Solana token CA",
       options: [
         {
           name: "ca",
@@ -77,30 +99,27 @@ export async function registerCommands(token, applicationId, guildId = "") {
         }
       ]
     },
+    { name: "criteria", description: "Show radar filters and score rules" },
+    { name: "help", description: "Show bot usage guide" },
     {
-      name: "criteria",
-      description: "Radarの抽出条件を表示します"
+      name: "why",
+      description: "Explain why a Radar Call picked a CA",
+      options: [
+        {
+          name: "ca",
+          description: "Solana token contract address",
+          type: 3,
+          required: true
+        }
+      ]
     },
-    {
-      name: "help",
-      description: "Botの使い方を表示します"
-    },
-    {
-      name: "stats",
-      description: "通知履歴と検知実績を表示します"
-    },
-    {
-      name: "report",
-      description: "READMEや提出に使える実績レポートを表示します"
-    },
-    {
-      name: "config",
-      description: "現在のRadar設定を表示します"
-    },
-    {
-      name: "export",
-      description: "GitHub用のREPORT.mdを生成します"
-    }
+    { name: "leaderboard", description: "Show best tracked Radar Calls" },
+    { name: "rejections", description: "Show why candidates were skipped" },
+    { name: "stats", description: "Show today's radar daily summary" },
+    { name: "report", description: "Show short submission report" },
+    { name: "config", description: "Show current radar config" },
+    { name: "health", description: "Check bot and Nansen status" },
+    { name: "export", description: "Update REPORT.md for GitHub" }
   ];
 
   const path = guildId

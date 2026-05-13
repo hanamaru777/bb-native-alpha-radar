@@ -32,10 +32,16 @@ export const config = {
   trackingIntervalMinutes: numberEnv("TRACKING_INTERVAL_MINUTES", 15),
   marketCapMaxUsd: numberEnv("MARKET_CAP_MAX_USD", 500000),
   tokenAgeMaxDays: numberEnv("TOKEN_AGE_MAX_DAYS", 30),
-  minBbScore: numberEnv("MIN_BB_SCORE", 70),
+  minBbScore: numberEnv("MIN_BB_SCORE", 88),
+  radarDisplayLimit: numberEnv("RADAR_DISPLAY_LIMIT", 2),
   maxDailyAlerts: numberEnv("MAX_DAILY_ALERTS", 8),
   dedupeHours: numberEnv("DEDUPE_HOURS", 6),
   minSmartMoneyTraders: numberEnv("MIN_SMART_MONEY_TRADERS", 3),
+  bbLookbackMessages: numberEnv("BB_LOOKBACK_MESSAGES", 300),
+  dailySummaryEnabled: (process.env.DAILY_SUMMARY_ENABLED || "false").toLowerCase() === "true",
+  dailySummaryHour: numberEnv("DAILY_SUMMARY_HOUR", 23),
+  dailySummaryMinute: numberEnv("DAILY_SUMMARY_MINUTE", 50),
+  dailySummaryTimezone: process.env.DAILY_SUMMARY_TIMEZONE || "Asia/Tokyo",
   mockMode: (process.env.MOCK_MODE || "true").toLowerCase() !== "false",
   dataDir: path.join(rootDir, "data")
 };

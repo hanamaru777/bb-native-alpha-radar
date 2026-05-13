@@ -7,6 +7,8 @@ import {
   getTokenHolders,
   toCandidate
 } from "./nansen.js";
+import { getSolanaTokenMarketData } from "./marketData.js";
+import { formatReactionSummary } from "./reactions.js";
 
 const mockCandidates = [
   {
@@ -18,7 +20,7 @@ const mockCandidates = [
     bbScore: 82,
     reason: "Smart Moneyが短時間で複数流入。低capのまま買いが先行。",
     caution: "低capのため急落リスクあり。出来高継続と上位ホルダー売りを確認。",
-    metrics: { netflow24hUsd: 5700, tokenAgeDays: 1, traderCount: 4, dexTradeMatches: 2 }
+    metrics: { marketCapUsd: 63100, netflow24hUsd: 5700, tokenAgeDays: 1, traderCount: 4, dexTradeMatches: 2 }
   },
   {
     symbol: "HALF",
@@ -29,7 +31,7 @@ const mockCandidates = [
     bbScore: 74,
     reason: "新規ウォレット増加とSmart Money流入が同時発生。",
     caution: "流動性はまだ薄い。DexScreenerで板と出来高を確認。",
-    metrics: { netflow24hUsd: 4100, tokenAgeDays: 1, traderCount: 3, dexTradeMatches: 1 }
+    metrics: { marketCapUsd: 76800, netflow24hUsd: 4100, tokenAgeDays: 1, traderCount: 3, dexTradeMatches: 1 }
   }
 ];
 
@@ -39,12 +41,21 @@ function uniqueByCa(candidates) {
   const seen = new Set();
   const result = [];
   for (const candidate of candidates) {
-    const key = candidate.ca.toLowerCase();
-    if (!key || seen.has(key)) continue;
+    const key = String(candidate.ca || "").toLowerCase();
+    if (!key || seen.has(key) || key.endsWith("address-not-returned")) continue;
     seen.add(key);
     result.push(candidate);
   }
   return result;
+}
+
+function compareByScoreThenFlow(a, b) {
+  return Number(b.bbScore || 0) - Number(a.bbScore || 0)
+    || Number(b.metrics?.netflow24hUsd || 0) - Number(a.metrics?.netflow24hUsd || 0);
+}
+
+function sortByScoreThenFlow(candidates) {
+  return [...candidates].sort(compareByScoreThenFlow);
 }
 
 function getCandidateSafetyText(candidate) {
@@ -59,207 +70,97 @@ function getCandidateSafetyText(candidate) {
     raw.name,
     raw.base_token_name,
     raw.pair_name
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+  ].filter(Boolean).join(" ").toLowerCase();
 }
 
 function isUnsafeForPublicChannel(candidate) {
   const text = getCandidateSafetyText(candidate);
   const blocked = [
-    "scam",
-    "rug",
-    "honeypot",
-    "drain",
-    "hack",
-    "nigga",
-    "nigger",
-    "faggot",
-    "retard",
-    "rape",
-    "nazi",
-    "hitler",
-    "kkk",
-    "porn",
-    "sex",
-    "xxx",
-    "hentai",
-    "onlyfans",
-    "fuck"
+    "scam", "rug", "honeypot", "drain", "hack",
+    "nigga", "nigger", "faggot", "retard", "rape",
+    "nazi", "hitler", "kkk", "porn", "sex", "xxx",
+    "hentai", "onlyfans", "fuck"
   ];
   return blocked.some((word) => text.includes(word));
 }
 
-function compareByScoreThenFlow(a, b) {
-  const scoreDiff = b.bbScore - a.bbScore;
-  if (scoreDiff !== 0) return scoreDiff;
-  const bFlow = Number(b.metrics?.netflow24hUsd || 0);
-  const aFlow = Number(a.metrics?.netflow24hUsd || 0);
-  return bFlow - aFlow;
+function formatUsd(value) {
+  if (value === null || value === undefined || value === "") return "n/a";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value);
+  const sign = number < 0 ? "-" : "";
+  const abs = Math.abs(number);
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`;
+  return `${sign}$${Math.round(abs).toLocaleString()}`;
 }
 
-function sortByScoreThenFlow(candidates) {
-  return [...candidates].sort(compareByScoreThenFlow);
+function formatGain(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "n/a";
+  return `${number >= 0 ? "+" : ""}${number}%`;
 }
 
-export async function scanAlphaCandidates() {
-  const result = await scanAlphaCandidatesDetailed();
-  return result.candidates;
+function shortText(value, max = 900) {
+  const text = String(value || "n/a");
+  return text.length > max ? `${text.slice(0, max - 1)}...` : text;
 }
 
-export async function scanAlphaCandidatesDetailed() {
-  if (config.mockMode || !config.nansenApiKey) {
-    const rotated = [
-      mockCandidates[mockIndex % mockCandidates.length],
-      mockCandidates[(mockIndex + 1) % mockCandidates.length]
-    ];
-    mockIndex += 1;
-    return {
-      candidates: rotated.map((candidate) => ({
-        ...candidate,
-        detectedAt: new Date().toISOString(),
-        source: "mock"
-      })),
-      rejected: [],
-      scannedCount: rotated.length
-    };
-  }
-
-  const [netflows, dexTrades, screenerTokens] = await Promise.all([
-    getSolanaSmartMoneyNetflow(25),
-    getSolanaSmartMoneyDexTrades(60),
-    getSolanaTokenScreener(80)
-  ]);
-
-  const rows = [...netflows, ...screenerTokens];
-  const baseCandidates = uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
-    .filter((candidate) => candidate.symbol !== "UNKNOWN")
-    .filter((candidate) => !candidate.ca.endsWith("address-not-returned"))
-    .filter((candidate) => !isUnsafeForPublicChannel(candidate))
-    .filter((candidate) => {
-      const metrics = candidate.metrics || {};
-      const lowEnough = !metrics.marketCapUsd || metrics.marketCapUsd <= config.marketCapMaxUsd;
-      const hasFlow = (metrics.netflow24hUsd || 0) > 0 || (metrics.traderCount || 0) >= config.minSmartMoneyTraders;
-      const hasAge = Number.isFinite(metrics.tokenAgeDays) && metrics.tokenAgeDays > 0;
-      const freshEnough = hasAge && metrics.tokenAgeDays <= config.tokenAgeMaxDays;
-      return lowEnough && hasFlow && freshEnough;
-    })
-    .sort(compareByScoreThenFlow)
-    .slice(0, 8);
-
-  const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
-  const sorted = sortByScoreThenFlow(enrichedCandidates);
-  return {
-    candidates: sorted.filter((candidate) => candidate.bbScore >= config.minBbScore).slice(0, 5),
-    rejected: sorted.filter((candidate) => candidate.bbScore < config.minBbScore).slice(0, 3),
-    scannedCount: baseCandidates.length
-  };
+function flowDisplay(value) {
+  if (value === null || value === undefined || value === "" || value === "n/a") return "取得待ち";
+  return String(value);
 }
 
-async function enrichRadarCandidate(candidate) {
-  try {
-    const [holders, flow] = await Promise.all([
-      getTokenHolders("solana", candidate.ca, 20),
-      getFlowIntelligence("solana", candidate.ca, "1d")
-    ]);
-    return applyNansenQualityAdjustments(candidate, summarizeHolders(holders), summarizeFlowIntelligence(flow));
-  } catch (error) {
-    return {
-      ...candidate,
-      metrics: {
-        ...(candidate.metrics || {}),
-        enrichmentError: error.message
-      }
-    };
-  }
+function cleanDexSummary(summary) {
+  return String(summary || "")
+    .replace(/^DEX data:\s*/i, "")
+    .replace("大きな警戒なし", "大きな警戒なし");
 }
 
-function applyNansenQualityAdjustments(candidate, holders, flow) {
-  const metrics = candidate.metrics || {};
-  const scoreBreakdown = metrics.scoreBreakdown || {};
-  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  const top1 = Number(holders.top1Percent);
-  const top5 = Number(holders.top5Percent);
-  const holderPenalty = (Number.isFinite(top1) && top1 >= 20) || (Number.isFinite(top5) && top5 >= 55)
-    ? 20
-    : (Number.isFinite(top1) && top1 >= 15) || (Number.isFinite(top5) && top5 >= 40)
-      ? 10
-      : 0;
-  const flowAdjustment = Number.isFinite(flow.netflowUsd)
-    ? flow.netflowUsd > 0
-      ? 6
-      : flow.netflowUsd < 0
-        ? -10
-        : 0
-    : 0;
-  const singleSmHolderPenalty = sm <= 1 && holderPenalty > 0 ? 12 : 0;
-  const confidenceCap = Number.isFinite(scoreBreakdown.confidenceCap) ? scoreBreakdown.confidenceCap : 95;
-  const adjustedScore = Math.max(25, Math.min(confidenceCap, candidate.bbScore + flowAdjustment - holderPenalty - singleSmHolderPenalty));
-  const holderHighRisk = sm <= 1 && holderPenalty >= 20;
-  const holderLine = `holders top1 ${Number.isFinite(top1) ? `${top1.toFixed(1)}%` : "n/a"} / top5 ${Number.isFinite(top5) ? `${top5.toFixed(1)}%` : "n/a"}`;
-  const flowLine = Number.isFinite(flow.netflowUsd) ? `Nansen flow ${formatUsd(flow.netflowUsd)}` : "Nansen flow n/a";
-  const cautionAdd = holderPenalty > 0
-    ? ` 上位ホルダー集中に注意。${holderLine}。`
-    : ` ${holderLine}。`;
-
-  return {
-    ...candidate,
-    bbScore: adjustedScore,
-    caution: `${candidate.caution}${cautionAdd}`,
-    reason: `${candidate.reason} / ${flowLine}`,
-    nansenDeepDive: {
-      ...(candidate.nansenDeepDive || {}),
-      holders,
-      flow
-    },
-    metrics: {
-      ...metrics,
-      holderPenalty,
-      flowAdjustment,
-      singleSmHolderPenalty,
-      holderHighRisk,
-      scoreBreakdown: {
-        ...scoreBreakdown,
-        holderPenalty,
-        flowAdjustment,
-        singleSmHolderPenalty
-      }
-    }
-  };
+export function radarCallLabel(candidate) {
+  const id = Number(candidate?.radarCall?.id);
+  return Number.isFinite(id) && id > 0 ? `Radar Call #${id}` : "Radar Call";
 }
 
-export async function analyzeTokenFlow(ca) {
-  if (config.mockMode || !config.nansenApiKey) return null;
+export function radarConfidence(candidate) {
+  const score = Number(candidate?.bbScore || 0);
+  const metrics = candidate?.metrics || {};
+  const sm = Number(candidate?.smartMoneyInflows || metrics.traderCount || 0);
+  const flowAdjustment = Number(metrics.flowAdjustment || 0);
+  const holderPenalty = Number(metrics.holderPenalty || 0);
+  const marketPenalty = Number(metrics.marketPenalty || 0);
 
-  const [holders, flow] = await Promise.all([
-    getTokenHolders("solana", ca, 20),
-    getFlowIntelligence("solana", ca, "1d")
-  ]);
+  if (score >= 92 && sm >= 3 && flowAdjustment >= 0 && holderPenalty <= 10 && marketPenalty < 12) return "HIGH";
+  if (score >= config.minBbScore && sm >= 2 && holderPenalty < 20 && marketPenalty < 18) return "MEDIUM";
+  return "LOW";
+}
 
-  const holderSummary = summarizeHolders(holders);
-  const flowSummary = summarizeFlowIntelligence(flow);
+function confidenceNote(confidence) {
+  if (confidence === "HIGH") return "強め。Nansen根拠がそろっているよ。";
+  if (confidence === "MEDIUM") return "監視向き。追加確認してね。";
+  return "弱め。無理に触らず確認優先だよ。";
+}
 
-  return {
-    symbol: "NANSEN",
-    ca,
-    marketCap: "Nansen分析",
-    smartMoneyInflows: "Nansen API",
-    newWalletGrowth: `${holderSummary.rowCount} holder rows`,
-    bbScore: "分析中",
-    reason: `Token holders ${holderSummary.rowCount}件とFlow Intelligenceを取得しました。`,
-    caution: flowSummary.summary,
-    nansenDeepDive: {
-      holders: holderSummary,
-      flow: flowSummary
-    }
-  };
+function compactDate(value) {
+  const time = new Date(value || 0);
+  if (!Number.isFinite(time.getTime())) return "取得待ち";
+  const diffMs = Date.now() - time.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diffMs >= 0 && diffMs < hour) return `${Math.max(1, Math.round(diffMs / minute))}分前`;
+  if (diffMs >= 0 && diffMs < day) return `${Math.round(diffMs / hour)}時間前`;
+  return time.toLocaleString("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
 }
 
 function findNumberDeep(value, keyHints, depth = 0) {
-  if (depth > 4 || value === null || value === undefined) return null;
-  if (typeof value !== "object") return null;
-
+  if (depth > 4 || value === null || value === undefined || typeof value !== "object") return null;
   if (Array.isArray(value)) {
     for (const item of value) {
       const found = findNumberDeep(item, keyHints, depth + 1);
@@ -267,19 +168,16 @@ function findNumberDeep(value, keyHints, depth = 0) {
     }
     return null;
   }
-
   for (const [key, item] of Object.entries(value)) {
     const normalizedKey = key.toLowerCase();
     const matches = keyHints.some((hint) => normalizedKey.includes(hint));
     const number = Number(item);
     if (matches && Number.isFinite(number)) return number;
   }
-
   for (const item of Object.values(value)) {
     const found = findNumberDeep(item, keyHints, depth + 1);
     if (found !== null) return found;
   }
-
   return null;
 }
 
@@ -296,17 +194,14 @@ function rowNumber(row, keyHints) {
 
 function collectLabelText(value, output = [], depth = 0) {
   if (depth > 4 || value === null || value === undefined) return output;
-
   if (typeof value === "string") {
     if (value.trim()) output.push(value);
     return output;
   }
-
   if (Array.isArray(value)) {
     for (const item of value) collectLabelText(item, output, depth + 1);
     return output;
   }
-
   if (typeof value === "object") {
     for (const [key, item] of Object.entries(value)) {
       const normalizedKey = key.toLowerCase();
@@ -315,24 +210,21 @@ function collectLabelText(value, output = [], depth = 0) {
       if (typeof item === "object") collectLabelText(item, output, depth + 1);
     }
   }
-
   return output;
 }
 
 function summarizeWalletLabels(rows) {
   const text = collectLabelText(rows).join(" | ").toLowerCase();
   const categories = [
-    { key: "smart", label: "Smart Money系", words: ["smart", "smart money", "sm "] },
-    { key: "whale", label: "whale系", words: ["whale", "large holder"] },
-    { key: "fund", label: "fund/VC系", words: ["fund", "vc", "capital", "ventures", "labs"] },
-    { key: "cex", label: "CEX/取引所系", words: ["binance", "coinbase", "okx", "bybit", "kucoin", "exchange", "cex"] },
-    { key: "degen", label: "degen/trader系", words: ["degen", "trader", "meme", "pump"] }
+    { label: "Smart Money系", words: ["smart", "smart money", "sm "] },
+    { label: "whale系", words: ["whale", "large holder"] },
+    { label: "fund/VC系", words: ["fund", "vc", "capital", "ventures", "labs"] },
+    { label: "CEX/取引所系", words: ["binance", "coinbase", "okx", "bybit", "kucoin", "exchange", "cex"] },
+    { label: "degen/trader系", words: ["degen", "trader", "meme", "pump"] }
   ];
-
   const detected = categories
     .filter((category) => category.words.some((word) => text.includes(word)))
     .map((category) => category.label);
-
   return {
     detected,
     summary: detected.length ? detected.join(" / ") : "目立つラベル未検出"
@@ -346,7 +238,6 @@ function summarizeHolders(holders) {
     .filter((value) => Number.isFinite(value))
     .map((value) => (value > 1 ? value : value * 100))
     .sort((a, b) => b - a);
-
   const top1Percent = holderShares[0] ?? null;
   const top5Percent = holderShares.slice(0, 5).reduce((sum, value) => sum + value, 0) || null;
   const concentration = top1Percent === null
@@ -356,7 +247,6 @@ function summarizeHolders(holders) {
       : top1Percent >= 10 || (top5Percent !== null && top5Percent >= 35)
         ? "やや集中"
         : "分散寄り";
-
   return {
     rowCount: rows.length,
     top1Percent,
@@ -371,19 +261,12 @@ function summarizeFlowIntelligence(flow) {
   const outflowUsd = findNumberDeep(flow, ["outflow", "out_flow", "sell"]);
   const netflowUsd = findNumberDeep(flow, ["netflow", "net_flow", "net"]);
   const inferredNetflowUsd = netflowUsd ?? (
-    Number.isFinite(inflowUsd) && Number.isFinite(outflowUsd)
-      ? inflowUsd - outflowUsd
-      : null
+    Number.isFinite(inflowUsd) && Number.isFinite(outflowUsd) ? inflowUsd - outflowUsd : null
   );
-
-  const bias = inferredNetflowUsd === null
-    ? "未判定"
-    : inferredNetflowUsd > 0
-      ? "流入優勢"
-      : inferredNetflowUsd < 0
-        ? "流出優勢"
-        : "中立";
-
+  let bias = "未判定";
+  if (Number(inferredNetflowUsd) > 0) bias = "流入優勢";
+  if (Number(inferredNetflowUsd) < 0) bias = "流出優勢";
+  if (Number(inferredNetflowUsd) === 0) bias = "中立";
   return {
     inflowUsd,
     outflowUsd,
@@ -393,586 +276,1124 @@ function summarizeFlowIntelligence(flow) {
   };
 }
 
-function formatUsd(value) {
-  if (value === null || value === undefined || value === "") return "n/a";
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "n/a";
-  if (Math.abs(number) >= 1_000_000) return `$${(number / 1_000_000).toFixed(2)}M`;
-  if (Math.abs(number) >= 1_000) return `$${(number / 1_000).toFixed(1)}K`;
-  return `$${Math.round(number).toLocaleString()}`;
+function summarizeMarketQuality(market) {
+  if (!market) {
+    return {
+      summary: "DEX data: 取得待ち",
+      penalty: 0,
+      bonus: 0,
+      hardReject: false,
+      reasons: []
+    };
+  }
+
+  const reasons = [];
+  const liquidity = Number(market.liquidityUsd);
+  const volume24h = Number(market.volume24hUsd);
+  const change1h = Number(market.priceChange1h);
+  const change24h = Number(market.priceChange24h);
+  const buys1h = Number(market.buys1h);
+  const sells1h = Number(market.sells1h);
+  let penalty = 0;
+  let bonus = 0;
+  let hardReject = false;
+
+  if (Number.isFinite(liquidity) && liquidity < 5_000) {
+    penalty += 14;
+    reasons.push("流動性が薄い");
+  }
+  if (Number.isFinite(volume24h) && volume24h < 20_000) {
+    penalty += 6;
+    reasons.push("出来高が薄い");
+  }
+  if (Number.isFinite(change1h) && change1h <= -35) {
+    penalty += 18;
+    hardReject = true;
+    reasons.push("1h急落中");
+  } else if (Number.isFinite(change1h) && change1h <= -15) {
+    penalty += 8;
+    reasons.push("1h下落");
+  }
+  if (Number.isFinite(change24h) && change24h <= -50) {
+    penalty += 10;
+    reasons.push("24h大幅下落");
+  }
+  if (Number.isFinite(buys1h) && Number.isFinite(sells1h) && sells1h > buys1h * 1.4) {
+    penalty += 8;
+    reasons.push("直近売り優勢");
+  }
+  if (Number.isFinite(volume24h) && Number.isFinite(liquidity) && liquidity > 0 && volume24h / liquidity >= 3) {
+    bonus += 4;
+    reasons.push("出来高あり");
+  }
+
+  return {
+    summary: reasons.length ? reasons.join(" / ") : "DEX data: 大きな警戒なし",
+    penalty,
+    bonus,
+    hardReject,
+    liquidityUsd: market.liquidityUsd,
+    volume24hUsd: market.volume24hUsd,
+    priceChange1h: market.priceChange1h,
+    priceChange24h: market.priceChange24h,
+    buys1h: market.buys1h,
+    sells1h: market.sells1h,
+    reasons
+  };
 }
 
-function formatGain(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return "n/a";
-  return `${number >= 0 ? "+" : ""}${number}%`;
-}
-
-function metricLine(candidate) {
+function inferAlphaSignals(candidate, holders, flow) {
   const metrics = candidate.metrics || {};
-  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
-  const netflow = Number.isFinite(metrics.netflow24hUsd) ? `$${Math.round(metrics.netflow24hUsd).toLocaleString()}` : "n/a";
-  return `MC ${candidate.marketCap} | SM ${candidate.smartMoneyInflows} | 24h flow ${netflow} | age ${age}`;
-}
-
-function scoreColor(score) {
-  const number = Number(score || 0);
-  if (number >= 90) return 0x37d67a;
-  if (number >= 80) return 0xf5c542;
-  return 0x7aa2ff;
-}
-
-function shortText(value, max = 900) {
-  const text = String(value || "n/a");
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
-}
-
-function candidateFields(candidate) {
-  const metrics = candidate.metrics || {};
-  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
-  const netflow = Number.isFinite(metrics.netflow24hUsd) ? formatUsd(metrics.netflow24hUsd) : "n/a";
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  const score = metrics.scoreBreakdown || {};
-  const signalQuality = sm >= 10
-    ? "強い: SM 10人以上"
-    : sm >= 3
-      ? "中: 複数SMが反応"
-      : "監視: flow先行 / SM少なめ";
-  const scoreParts = Number.isFinite(score.confidenceCap)
-    ? `低cap +${score.lowCapBonus} / 若さ +${score.youngTokenBonus} / flow +${score.flowScore} / SM +${score.smScore} / holders -${score.holderPenalty || 0} / FI ${score.flowAdjustment || 0} / 上限 ${score.confidenceCap}`
-    : "低cap・若さ・SM流入・24h flowを合成";
-  return [
-    { name: "MC", value: candidate.marketCap || "n/a", inline: true },
-    { name: "SM", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
-    { name: "24h flow", value: netflow, inline: true },
-    { name: "age", value: age, inline: true },
-    { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
-    { name: "根拠強度", value: signalQuality, inline: true },
-    { name: "スコア内訳", value: scoreParts },
-    { name: "CA", value: `\`${candidate.ca}\`` },
-    { name: "見る理由", value: shortText(candidate.reason, 500) },
-    { name: "警戒点", value: shortText(candidate.caution, 500) }
-  ];
-}
-
-function flowJudge(candidate) {
-  const metrics = candidate.metrics || {};
-  const holders = candidate.nansenDeepDive?.holders || null;
-  const flow = candidate.nansenDeepDive?.flow || null;
-  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  const score = Number(candidate.bbScore || 0);
-  const netflow = Number(metrics.netflow24hUsd || 0);
+  const marketCap = Number(metrics.marketCapUsd || 0);
   const age = Number(metrics.tokenAgeDays || 0);
-  const mcap = Number(metrics.marketCapUsd || 0);
-  const dexMatches = Number(metrics.dexTradeMatches || 0);
+  const netflow = Number(flow?.netflowUsd);
+  const rawText = getCandidateSafetyText(candidate);
+  const narratives = [];
+  if (/cto|community takeover/i.test(rawText)) narratives.push("CTO");
+  if (/korea|korean|upbit|bithumb/i.test(rawText)) narratives.push("Korea/CEX");
+  if (/cex|listing|binance|coinbase|okx|bybit/i.test(rawText)) narratives.push("CEX/listing");
+  if (/pump|solana|meme/i.test(rawText)) narratives.push("SOL meme");
 
-  const driver = sm >= 10
-    ? holders?.labels?.detected?.length
-      ? `Smart Money主導が強め / ${holders.labels.summary}`
-      : "Smart Money主導が強め"
-    : sm >= 3
-      ? "初期degen + Smart Money反応"
-      : "まだ薄い初期反応";
+  const winnerWalletProxy = sm >= 10 ? "winner probable" : sm >= 3 ? "SM proxy" : "thin";
+  const newWalletProxy = String(candidate.newWalletGrowth || "").match(/\d/) ? candidate.newWalletGrowth : "n/a";
+  const sellerBuyPressure = Number.isFinite(netflow) && netflow < 0
+    ? "seller pressure"
+    : Number.isFinite(netflow) && netflow > 0
+      ? "buyer pressure"
+      : "unknown";
+  const scoreAdjustment =
+    (sm >= 10 ? 6 : sm >= 3 ? 3 : 0)
+    + (marketCap > 0 && marketCap <= 100_000 ? 4 : 0)
+    + (age > 0 && age <= 2 ? 4 : 0)
+    + (Number.isFinite(netflow) && netflow > 0 ? 4 : Number.isFinite(netflow) && netflow < 0 ? -6 : 0)
+    + Math.min(4, narratives.length * 2);
 
-  const stage = age > 0 && age <= 3 && mcap > 0 && mcap <= 250000
-    ? "初動寄り"
-    : age > 7 || mcap > 400000
-      ? "回転・継続監視寄り"
-      : "初動から拡散前の中間";
+  return {
+    winnerWalletProxy,
+    newWalletProxy,
+    sellerBuyPressure,
+    narratives,
+    scoreAdjustment,
+    reason: `${winnerWalletProxy} / new wallets ${newWalletProxy} / ${sellerBuyPressure} / narrative ${narratives.join(", ") || "none"}`
+  };
+}
 
-  const pressure = flow?.bias === "流入優勢"
-    ? "Nansen Flowは流入優勢"
-    : flow?.bias === "流出優勢"
-      ? "Nansen Flowは流出優勢。買い圧より出口確認を優先"
-      : netflow > 5000 && sm >= 5
-    ? "買い圧は強め"
-    : netflow > 0
-      ? "買い圧は確認できるが継続確認"
-      : "買い圧は弱め";
+function applyNansenQualityAdjustments(candidate, holders = summarizeHolders([]), flow = summarizeFlowIntelligence(null), marketQuality = summarizeMarketQuality(null)) {
+  const metrics = candidate.metrics || {};
+  const scoreBreakdown = metrics.scoreBreakdown || {};
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const top1 = Number(holders.top1Percent);
+  const top5 = Number(holders.top5Percent);
+  const holderPenalty = (Number.isFinite(top1) && top1 >= 20) || (Number.isFinite(top5) && top5 >= 55)
+    ? 20
+    : (Number.isFinite(top1) && top1 >= 15) || (Number.isFinite(top5) && top5 >= 40)
+      ? 10
+      : 0;
+  const flowAdjustment = Number.isFinite(flow.netflowUsd)
+    ? flow.netflowUsd > 0 ? 8 : flow.netflowUsd < 0 ? -18 : 0
+    : 0;
+  const singleSmHolderPenalty = sm <= 1 && holderPenalty > 0 ? 12 : 0;
+  const alphaSignals = inferAlphaSignals(candidate, holders, flow);
+  const baseConfidenceCap = Number.isFinite(scoreBreakdown.confidenceCap) ? scoreBreakdown.confidenceCap : 95;
+  const confidenceCap = Number.isFinite(flow.netflowUsd) && flow.netflowUsd < 0
+    ? Math.min(baseConfidenceCap, config.minBbScore - 1)
+    : baseConfidenceCap;
+  const adjustedScore = Math.max(
+    25,
+    Math.min(
+      confidenceCap,
+      Number(candidate.bbScore || 0)
+        + flowAdjustment
+        + alphaSignals.scoreAdjustment
+        + Number(marketQuality.bonus || 0)
+        - holderPenalty
+        - singleSmHolderPenalty
+        - Number(marketQuality.penalty || 0)
+    )
+  );
+  const holderLine = `holders top1 ${Number.isFinite(top1) ? `${top1.toFixed(1)}%` : "n/a"} / top5 ${Number.isFinite(top5) ? `${top5.toFixed(1)}%` : "n/a"}`;
+  const flowLine = Number.isFinite(flow.netflowUsd) ? `Nansen flow ${formatUsd(flow.netflowUsd)}` : "Nansen flow n/a";
+  const cautionAdd = holderPenalty > 0 ? ` 上位ホルダー集中に注意。${holderLine}。` : ` ${holderLine}。`;
+  return {
+    ...candidate,
+    bbScore: adjustedScore,
+    caution: `${candidate.caution || ""}${cautionAdd}`,
+    reason: `${candidate.reason || ""} / ${flowLine} / ${alphaSignals.reason}`,
+    nansenDeepDive: { ...(candidate.nansenDeepDive || {}), holders, flow, alphaSignals, marketQuality },
+    metrics: {
+      ...metrics,
+      holderPenalty,
+      flowAdjustment,
+      marketPenalty: marketQuality.penalty || 0,
+      marketBonus: marketQuality.bonus || 0,
+      marketHardReject: Boolean(marketQuality.hardReject),
+      singleSmHolderPenalty,
+      alphaSignals,
+      liquidityUsd: marketQuality.liquidityUsd ?? metrics.liquidityUsd,
+      volume24hUsd: marketQuality.volume24hUsd ?? metrics.volume24hUsd,
+      priceChange1h: marketQuality.priceChange1h ?? metrics.priceChange1h,
+      priceChange24h: marketQuality.priceChange24h ?? metrics.priceChange24h,
+      scoreBreakdown: { ...scoreBreakdown, holderPenalty, flowAdjustment, marketPenalty: marketQuality.penalty || 0, marketBonus: marketQuality.bonus || 0, singleSmHolderPenalty, alphaSignals }
+    }
+  };
+}
 
-  const holderRisk = holders?.concentration === "集中高め"
-    ? "上位ホルダー集中が高め。売り圧と分散状況を強めに確認"
-    : holders?.concentration === "やや集中"
-      ? "上位ホルダーはやや集中。上位売りを確認"
-      : "";
-  const baseRisk = mcap > 400000
-    ? "MCが上限に近いので出口速度に注意"
-    : dexMatches === 0
-      ? "板・出来高・上位ホルダー売りを要確認"
-      : "低capなので板・出来高・上位ホルダー売りを確認";
-  const risk = holderRisk || baseRisk;
+async function enrichRadarCandidate(candidate) {
+  const [holdersResult, flowResult, marketResult] = await Promise.allSettled([
+    getTokenHolders("solana", candidate.ca, 20),
+    getFlowIntelligence("solana", candidate.ca, "1d"),
+    getSolanaTokenMarketData(candidate.ca)
+  ]);
+  const holders = holdersResult.status === "fulfilled" ? summarizeHolders(holdersResult.value) : summarizeHolders([]);
+  const flow = flowResult.status === "fulfilled" ? summarizeFlowIntelligence(flowResult.value) : summarizeFlowIntelligence(null);
+  const marketQuality = summarizeMarketQuality(marketResult.status === "fulfilled" ? marketResult.value : null);
+  const enrichmentErrors = [];
+  if (holdersResult.status === "rejected") enrichmentErrors.push(`holders: ${holdersResult.reason?.message || holdersResult.reason}`);
+  if (flowResult.status === "rejected") enrichmentErrors.push(`flow: ${flowResult.reason?.message || flowResult.reason}`);
+  if (marketResult.status === "rejected") enrichmentErrors.push(`market: ${marketResult.reason?.message || marketResult.reason}`);
+  const adjusted = applyNansenQualityAdjustments(candidate, holders, flow, marketQuality);
+  return {
+    ...adjusted,
+    metrics: { ...(adjusted.metrics || {}), enrichmentErrors }
+  };
+}
 
-  const verdict = flow?.bias === "流出優勢"
-    ? "条件は見えるが、Nansen Flowは流出寄り。無理に入らず再確認向き。"
-    : holders?.concentration === "集中高め"
-      ? "bb候補ではあるが、上位ホルダー集中が重い。板と売りを先に確認。"
-      : score >= 90
-    ? "bb初動候補。まず見る価値あり。"
-    : score >= 75
-      ? "Watch候補。条件は良いが確認必須。"
-      : "弱めの候補。無理に触らず監視向き。";
+export async function scanAlphaCandidatesDetailed() {
+  if (config.mockMode || !config.nansenApiKey) {
+    const rotated = [
+      mockCandidates[mockIndex % mockCandidates.length],
+      mockCandidates[(mockIndex + 1) % mockCandidates.length]
+    ];
+    mockIndex += 1;
+    return {
+      candidates: rotated.map((candidate) => ({ ...candidate, detectedAt: new Date().toISOString(), source: "mock" })),
+      rejected: [],
+      scannedCount: rotated.length,
+      sourceErrors: []
+    };
+  }
 
-  return { driver, stage, pressure, risk, verdict };
+  const fetches = await Promise.allSettled([
+    getSolanaSmartMoneyNetflow(25),
+    getSolanaSmartMoneyDexTrades(60),
+    getSolanaTokenScreener(80)
+  ]);
+  const netflows = fetches[0].status === "fulfilled" ? fetches[0].value : [];
+  const dexTrades = fetches[1].status === "fulfilled" ? fetches[1].value : [];
+  const screenerTokens = fetches[2].status === "fulfilled" ? fetches[2].value : [];
+  const sourceNames = ["smart-money/netflow", "smart-money/dex-trades", "token-screener"];
+  const sourceErrors = fetches
+    .map((result, index) => result.status === "rejected" ? `${sourceNames[index]}: ${result.reason?.message || result.reason}` : null)
+    .filter(Boolean);
+
+  if (!netflows.length && !dexTrades.length && !screenerTokens.length) {
+    throw new Error(`Nansen radar sources unavailable: ${sourceErrors.join(" / ") || "no rows returned"}`);
+  }
+
+  const rows = [...netflows, ...screenerTokens];
+  const baseCandidates = uniqueByCa(rows.map((row) => toCandidate(row, dexTrades)))
+    .filter((candidate) => candidate.symbol !== "UNKNOWN")
+    .filter((candidate) => !isUnsafeForPublicChannel(candidate))
+    .filter((candidate) => {
+      const metrics = candidate.metrics || {};
+      const lowEnough = !metrics.marketCapUsd || metrics.marketCapUsd <= config.marketCapMaxUsd;
+      const hasFlow = (metrics.netflow24hUsd || 0) > 0 || (metrics.traderCount || 0) >= config.minSmartMoneyTraders;
+      const freshEnough = Number.isFinite(metrics.tokenAgeDays) && metrics.tokenAgeDays > 0 && metrics.tokenAgeDays <= config.tokenAgeMaxDays;
+      return lowEnough && hasFlow && freshEnough;
+    })
+    .sort(compareByScoreThenFlow)
+    .slice(0, 8);
+
+  const enrichedCandidates = await Promise.all(baseCandidates.map(enrichRadarCandidate));
+  const sorted = sortByScoreThenFlow(enrichedCandidates);
+  const passed = sorted.filter(passesAutoAlertPolicy);
+  return {
+    candidates: passed.slice(0, 5),
+    rejected: sorted.filter((candidate) => !passesAutoAlertPolicy(candidate)).slice(0, 3),
+    scannedCount: baseCandidates.length,
+    sourceErrors
+  };
+}
+
+export async function scanAlphaCandidates() {
+  const result = await scanAlphaCandidatesDetailed();
+  return result.candidates;
+}
+
+function passesAutoAlertPolicy(candidate) {
+  const metrics = candidate.metrics || {};
+  const flow = candidate.nansenDeepDive?.flow;
+  if (Number(candidate.bbScore || 0) < config.minBbScore) return false;
+  if (Number(metrics.flowAdjustment || 0) < 0) return false;
+  if (flow?.bias === "流出優勢") return false;
+  if (metrics.marketHardReject) return false;
+  if (Number(metrics.marketPenalty || 0) >= 18) return false;
+  return true;
+}
+
+export async function analyzeTokenFlow(ca) {
+  const [holdersResult, flowResult, marketResult] = await Promise.allSettled([
+    getTokenHolders("solana", ca, 20),
+    getFlowIntelligence("solana", ca, "1d"),
+    getSolanaTokenMarketData(ca)
+  ]);
+  const holders = holdersResult.status === "fulfilled" ? summarizeHolders(holdersResult.value) : null;
+  const flow = flowResult.status === "fulfilled" ? summarizeFlowIntelligence(flowResult.value) : null;
+  const market = marketResult.status === "fulfilled" ? marketResult.value : null;
+  const errors = [];
+  if (holdersResult.status === "rejected") errors.push(`holders: ${holdersResult.reason?.message || holdersResult.reason}`);
+  if (flowResult.status === "rejected") errors.push(`flow: ${flowResult.reason?.message || flowResult.reason}`);
+  if (marketResult.status === "rejected") errors.push(`market: ${marketResult.reason?.message || marketResult.reason}`);
+  if (!holders && !flow && !market) throw new Error(errors.join(" / ") || "Nansen flow unavailable");
+  return {
+    symbol: market?.symbol || "UNKNOWN",
+    ca,
+    marketCap: market?.marketCapUsd ? formatUsd(market.marketCapUsd) : "Nansen analysis",
+    smartMoneyInflows: "Nansen API",
+    newWalletGrowth: holders ? `${holders.rowCount} holder rows` : "n/a",
+    bbScore: "分析中",
+    reason: holders ? `Token holders ${holders.rowCount}件を取得。` : "holder取得なし。",
+    caution: flow?.summary || errors.join(" / "),
+    nansenDeepDive: { holders, flow },
+    metrics: {
+      enrichmentErrors: errors,
+      marketCapUsd: market?.marketCapUsd,
+      volume24hUsd: market?.volume24hUsd,
+      liquidityUsd: market?.liquidityUsd
+    }
+  };
 }
 
 function linksFor(candidate) {
-  const ca = encodeURIComponent(candidate.ca);
+  const ca = encodeURIComponent(candidate.ca || "");
   return {
     dex: `https://dexscreener.com/solana/${ca}`,
     gmgn: `https://gmgn.ai/sol/token/${ca}`,
-    nansen: `https://app.nansen.ai/token-god-mode?chain=solana&token_address=${ca}`
+    nansen: `https://app.nansen.ai/token-god-mode?tokenAddress=${ca}&chain=solana&tab=transactions`
   };
 }
 
 export function formatRadarButtons(candidates) {
-  return candidates.slice(0, 5).map((candidate, index) => {
+  return candidates.slice(0, 2).map((candidate, index) => {
     const links = linksFor(candidate);
     const n = index + 1;
+    const prefix = candidates.length > 1 ? `${n} ` : "";
     return {
       type: 1,
       components: [
-        { type: 2, style: 5, label: `${n} Dex`, url: links.dex },
-        { type: 2, style: 5, label: `${n} gmgn`, url: links.gmgn },
-        { type: 2, style: 5, label: `${n} Nansen`, url: links.nansen }
+        { type: 2, style: 5, label: `${prefix}DexScreener`, url: links.dex },
+        { type: 2, style: 5, label: `${prefix}gmgn`, url: links.gmgn },
+        { type: 2, style: 5, label: `${prefix}Nansen`, url: links.nansen }
       ]
     };
   });
 }
 
-export function formatRejectedRadarButtons(candidates) {
-  return candidates.slice(0, 3).map((candidate, index) => {
-    const links = linksFor(candidate);
-    const n = index + 1;
-    return {
-      type: 1,
-      components: [
-        { type: 2, style: 5, label: `見送り${n} Dex`, url: links.dex },
-        { type: 2, style: 5, label: `見送り${n} gmgn`, url: links.gmgn },
-        { type: 2, style: 5, label: `見送り${n} Nansen`, url: links.nansen }
-      ]
-    };
-  });
+export function formatRejectedRadarButtons(rejected = []) {
+  return formatRadarButtons(rejected.slice(0, 2));
 }
 
-export function formatRadarReport(candidates) {
-  if (!candidates.length) {
-    return [
-      "🚨 **bb Native Alpha Radar**",
-      "",
-      "今の条件では候補がありませんでした。",
-      "条件は `/criteria`、使い方は `/help` で確認できます。"
-    ].join("\n");
-  }
-
-  const lines = [
-    "🚨 **bb Native Alpha Radar**",
-    "",
-    "Nansen Smart Money / lowcap Solana radar",
-    "CAが貼られる前に見る候補だけを短く出します。",
-    `bb反応度 = 低cap感、${config.tokenAgeMaxDays}日以内の若さ、SM流入、24h flowを合成した独自スコア。`,
-    `Filter: Solana / MC <= $${Math.round(config.marketCapMaxUsd / 1000)}K / age <= ${config.tokenAgeMaxDays}d / SM flow or SM traders / scam系除外`,
-    ""
-  ];
-
-  candidates.forEach((candidate, index) => {
-    lines.push(
-      `**${index + 1}. $${candidate.symbol}**  bb反応度 ${candidate.bbScore}/100`,
-      metricLine(candidate),
-      `CA: \`${candidate.ca}\``,
-      `見る理由: ${candidate.reason}`,
-      `警戒点: ${candidate.caution}`,
-      `Links: ${index + 1} Dex / ${index + 1} gmgn / ${index + 1} Nansen`,
-      ""
-    );
-  });
-
-  lines.push("※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。");
-  lines.push("※ Nansenの最新データを毎回取得するため、表示候補は実行タイミングで変わります。");
-  lines.push("※ 上位ホルダー濃度とFlow Intelligenceは `/flow <CA>` で確認できます。");
-  lines.push("※ ボタン番号は候補番号に対応しています。気になるCAは `/flow <CA>`。");
-  return lines.join("\n");
+function finalAge(candidate) {
+  const age = Number(candidate.metrics?.tokenAgeDays);
+  return Number.isFinite(age) && age > 0 ? `${age.toFixed(age < 10 ? 1 : 0)}d` : "n/a";
 }
 
-export function formatRadarCardIntro(candidates) {
-  if (!candidates.length) {
-    return [
-      "🚨 **bb Native Alpha Radar**",
-      "今の条件では候補がありませんでした。`/criteria` で抽出条件を確認できます。"
-    ].join("\n");
-  }
+function finalSm(candidate) {
+  return String(candidate.smartMoneyInflows || candidate.metrics?.traderCount || "n/a");
+}
 
+function finalNetflow(candidate) {
+  return formatUsd(candidate.metrics?.netflow24hUsd);
+}
+
+function holderLine(candidate) {
+  const holders = candidate.nansenDeepDive?.holders;
+  if (!holders) return "n/a";
+  const top1 = holders.top1Percent === null || holders.top1Percent === undefined ? "n/a" : `${holders.top1Percent.toFixed(1)}%`;
+  const top5 = holders.top5Percent === null || holders.top5Percent === undefined ? "n/a" : `${holders.top5Percent.toFixed(1)}%`;
+  return `${holders.concentration} / top1 ${top1} / top5 ${top5}`;
+}
+
+function flowLine(candidate) {
+  const flow = candidate.nansenDeepDive?.flow;
+  return flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : `24h SM netflow ${finalNetflow(candidate)}`;
+}
+
+function radarGrade(candidate) {
+  const score = Number(candidate.bbScore || 0);
+  const sm = Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0);
+  const holderPenalty = Number(candidate.metrics?.holderPenalty || 0);
+  const flowAdjustment = Number(candidate.metrics?.flowAdjustment || 0);
+  if (score >= 88 && sm >= 3 && holderPenalty <= 10 && flowAdjustment >= 0) {
+    return { label: "本命候補", color: 0x22c55e, action: "Dex/gmgnで板と出来高を見てね。問題なさそうなら、bbで話題にしてよさそう。" };
+  }
+  if (score >= config.minBbScore && sm >= 3) {
+    return { label: "監視候補", color: 0xfacc15, action: "もう少し見張るよ。追加SM流入、出来高継続、上位売りを確認してね。" };
+  }
+  return { label: "監視候補", color: 0x60a5fa, action: "反応はあるけど、まだ決定打は弱め。無理に触らず見張るよ。" };
+}
+
+function whyLine(candidate) {
+  const parts = [];
+  const metrics = candidate.metrics || {};
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const flow = Number(metrics.netflow24hUsd || 0);
+  const age = Number(metrics.tokenAgeDays || 0);
+  const mcap = Number(metrics.marketCapUsd || 0);
+  if (mcap > 0 && mcap <= 100_000) parts.push("低cap");
+  if (age > 0 && age <= 2) parts.push("若い");
+  if (sm >= 3) parts.push(`SM複数(${sm})`);
+  if (flow > 0) parts.push(`24h flow ${formatUsd(flow)}`);
+  const narratives = metrics.alphaSignals?.narratives || candidate.nansenDeepDive?.alphaSignals?.narratives || [];
+  if (narratives.length) parts.push(narratives.join(" / "));
+  return parts.join(" / ") || candidate.reason || "もう少し確認したい候補だよ";
+}
+
+function riskLine(candidate) {
+  const parts = [];
+  const metrics = candidate.metrics || {};
+  if (Number(metrics.holderPenalty || 0) > 0) parts.push("上位ホルダー集中");
+  if (Number(metrics.flowAdjustment || 0) < 0) parts.push("Nansen flow弱め");
+  if (Number(metrics.marketPenalty || 0) > 0) {
+    const marketReasons = candidate.nansenDeepDive?.marketQuality?.reasons || [];
+    parts.push(marketReasons.slice(0, 2).join(" / ") || "DEX側の警戒あり");
+  }
+  if (Number(candidate.smartMoneyInflows || metrics.traderCount || 0) <= 1) parts.push("Smart Moneyが少ない");
+  return parts.join(" / ") || "板・出来高・上位売りは見てね";
+}
+
+function signalStack(candidate) {
+  const metrics = candidate.metrics || {};
+  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
+  const quality = sm >= 10 ? "強い" : sm >= 3 ? "中" : "薄い";
+  const market = candidate.nansenDeepDive?.marketQuality;
+  const marketLine = market?.summary && market.summary !== "DEX data: 大きな警戒なし"
+    ? ` / DEX: ${cleanDexSummary(market.summary)}`
+    : "";
+  return `Smart Money人数: ${quality} / 上位ホルダー: ${holderLine(candidate)} / Nansen資金: ${flowLine(candidate)}${marketLine}`;
+}
+
+export function formatRadarIntroWinning(candidates) {
   return [
-    "🚨 **bb Native Alpha Radar**",
-    `Nansen Smart Moneyから ${candidates.length} 件のSolana lowcap候補を検出`,
-    `Filter: MC <= $${Math.round(config.marketCapMaxUsd / 1000)}K / age <= ${config.tokenAgeMaxDays}d / SM flowまたはSM traders`,
-    "詳細確認は各カード下のボタン、深掘りは `/flow <CA>`。"
+    "**bb Native Alpha Radar**",
+    "レーダー反応あり。まず確認してね。",
+    `Nansen Smart Moneyから、今見るべきSolana lowcap候補を${Math.min(candidates.length, config.radarDisplayLimit)}件だけ持ってきたよ。`,
+    `条件: 時価総額 $${Math.round(config.marketCapMaxUsd / 1000)}K以下 / 作成${config.tokenAgeMaxDays}日以内 / bb反応度${config.minBbScore}以上`,
+    "使い方: まずカードを見る -> Dex/gmgnで板確認 -> 気になれば `/flow <CA>` だよ。"
   ].join("\n");
 }
 
-export function formatRadarEmbeds(candidates) {
-  if (!candidates.length) return [];
-
-  return candidates.slice(0, 5).map((candidate, index) => ({
-    title: `${index + 1}. $${candidate.symbol} | bb反応度 ${candidate.bbScore}/100`,
-    color: scoreColor(candidate.bbScore),
-    fields: candidateFields(candidate),
-    footer: {
-      text: "Not financial advice | Verify with DexScreener / gmgn / Nansen"
-    },
-    timestamp: new Date().toISOString()
-  }));
+export function formatRadarEmbedsWinning(candidates) {
+  return candidates.slice(0, config.radarDisplayLimit).map((candidate, index) => {
+    const grade = radarGrade(candidate);
+    const confidence = radarConfidence(candidate);
+    return {
+      title: `${radarCallLabel(candidate)} | $${candidate.symbol}`,
+      description: `\`${candidate.ca}\``,
+      color: grade.color,
+      fields: [
+        { name: "判定", value: grade.label, inline: true },
+        { name: "Radar confidence", value: `${confidence}\n${confidenceNote(confidence)}`, inline: true },
+        { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
+        { name: "時価総額", value: candidate.marketCap || formatUsd(candidate.metrics?.marketCapUsd), inline: true },
+        { name: "作成から", value: finalAge(candidate), inline: true },
+        { name: "Smart Money人数", value: finalSm(candidate), inline: true },
+        { name: "Nansen根拠", value: shortText(signalStack(candidate), 420) },
+        { name: "なぜ今見るか", value: shortText(whyLine(candidate), 260) },
+        { name: "警戒点", value: shortText(riskLine(candidate), 220), inline: true },
+        { name: "次アクション", value: shortText(grade.action, 260), inline: true },
+        { name: "深掘りコマンド", value: `\`/flow ${candidate.ca}\`` }
+      ],
+      footer: { text: "Not financial advice | 見つけたよ。触る前に確認してね。" },
+      timestamp: new Date().toISOString()
+    };
+  });
 }
 
 function rejectedReason(candidate) {
   const metrics = candidate.metrics || {};
-  const holders = candidate.nansenDeepDive?.holders || null;
   const reasons = [];
-
-  if (Number(metrics.holderPenalty || 0) > 0) {
-    const top1 = holders?.top1Percent === null || holders?.top1Percent === undefined ? "n/a" : `${holders.top1Percent.toFixed(1)}%`;
-    const top5 = holders?.top5Percent === null || holders?.top5Percent === undefined ? "n/a" : `${holders.top5Percent.toFixed(1)}%`;
-    reasons.push(`上位ホルダー集中 top1 ${top1} / top5 ${top5}`);
-  }
-
-  if (Number(metrics.flowAdjustment || 0) < 0) {
-    reasons.push("Nansen Flow Intelligenceが流出寄り");
-  }
-
-  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  if (sm <= 1) reasons.push("SM tradersが1人のみ");
-  if (!reasons.length) reasons.push(`bb反応度が${config.minBbScore}未満`);
-  return reasons.join(" / ");
+  if (metrics.bbAlreadyPosted) reasons.push("bb内でCA投稿済み");
+  if (Number(metrics.flowAdjustment || 0) < 0) reasons.push("Nansen flow流出寄り");
+  if (Number(metrics.holderPenalty || 0) > 0) reasons.push("上位ホルダー集中");
+  if (Number(candidate.smartMoneyInflows || metrics.traderCount || 0) <= 1) reasons.push("Smart Moneyが少ない");
+  if (Number(candidate.bbScore || 0) < config.minBbScore) reasons.push(`bb反応度${config.minBbScore}未満`);
+  return reasons.join(" / ") || "条件未満";
 }
 
-export function formatRadarMissReport(rejected = [], scannedCount = 0) {
-  const lines = [
-    "🚨 **bb Native Alpha Radar**",
-    `現在、bb反応度${config.minBbScore}以上の強い候補はありません。`,
-    "上位ホルダー集中やNansen flowを加味して、弱い候補は監視候補に落としています。"
-  ];
+function rejectedReasonFromScan(item) {
+  if (Array.isArray(item?.reasons) && item.reasons.length) {
+    return item.reasons.map(reasonLabel).join(" / ");
+  }
+  return rejectedReason(item);
+}
 
+export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
+  const lines = [
+    "**bb Native Alpha Radar**",
+    "**今は見送り**",
+    "",
+    `bb反応度${config.minBbScore}以上とNansen条件を同時に満たす強いRadar候補は、今のところありません。`,
+    "Radarは「数」より「精度」を優先します。"
+  ];
+  const topReasons = stats?.scans?.topReasons || [];
+  if (topReasons.length) {
+    lines.push("", "**見送り理由サマリー**");
+    topReasons.slice(0, 3).forEach((item) => {
+      lines.push(`・${reasonLabel(item.reason)}: ${item.count}`);
+    });
+  }
   if (rejected.length) {
-    lines.push("", "**直近で見送った候補**");
-    rejected.slice(0, 3).forEach((candidate, index) => {
-      lines.push(
-        `${index + 1}. $${candidate.symbol} / bb反応度 ${candidate.bbScore}/100 / MC ${candidate.marketCap}`,
-        `理由: ${rejectedReason(candidate)}`,
-        `CA: \`${candidate.ca}\``
-      );
+    lines.push("", "**惜しかった候補**");
+    rejected.slice(0, 2).forEach((candidate, index) => {
+      lines.push(`${index + 1}. $${candidate.symbol}`);
+      lines.push(`・Score: ${candidate.bbScore}/100`);
+      lines.push(`・理由: ${rejectedReasonFromScan(candidate)}`);
+      lines.push(`・状態: ${candidate.reasons?.includes?.("bb_already_posted") ? "通知不要" : "監視のみ"}`);
     });
   } else if (scannedCount > 0) {
-    lines.push(
-      "",
-      `一次条件を通過した候補は${scannedCount}件ありましたが、Nansen追加確認後にすべてbb反応度${config.minBbScore}未満へ落ちました。`
-    );
+    lines.push("", `一次候補は${scannedCount}件あったけど、Nansen深掘り後に条件未満だったよ。`);
   } else {
-    lines.push(
-      "",
-      "一次条件を通過した候補もありませんでした。",
-      "MC、token age、Smart Money flow、公開チャンネル安全フィルタのいずれかで除外されています。"
-    );
+    lines.push("", "一次条件を通過した候補もなかったよ。");
   }
-
-  lines.push("", "見る価値がありそうな候補だけを少数表示します。条件は `/criteria` で確認できます。");
+  lines.push("", "今日は無理に流しません。");
+  lines.push("※ 条件は `/criteria`、履歴は `/stats`、見送り理由は `/rejections` で確認できます。");
   return lines.join("\n");
 }
 
-export function formatCriteria() {
+export function formatRadarCreditErrorProduction(error) {
+  const message = String(error?.message || error || "");
+  const credit = /insufficient credits/i.test(message);
+  const detail = shortText(message.replace(/\s+/g, " "), 260);
   return [
-    "📋 **bb Native Alpha Radar 抽出条件**",
-    "",
-    "**対象**",
-    "Solana lowcap meme候補のみ。",
-    "",
-    "**必須フィルタ**",
-    `・Market Cap: $${Math.round(config.marketCapMaxUsd / 1000)}K以下`,
-    `・Token age: ${config.tokenAgeMaxDays}日以内`,
-    `・24h Smart Money netflowがプラス、またはSmart Money tradersが${config.minSmartMoneyTraders}以上`,
-    "・表示前に上位候補だけNansen holders / Flow Intelligenceを追加確認",
-    "・上位ホルダー集中やNansen flowは除外ではなくbb反応度に減点/加点で反映",
-    "・SCAM / RUG / HONEYPOT / DRAIN / HACK / 不適切・NSFW系のシンボルは除外",
-    `・bb反応度: ${config.minBbScore}以上をRadar表示・自動通知対象`,
-    `・重複通知: ${config.dedupeHours}時間以内は同じCAを再通知しない`,
-    `・通知上限: 1日最大${config.maxDailyAlerts}件`,
-    "",
-    "**bb反応度**",
-    "低cap感、若さ、Smart Money流入、24h flow、上位ホルダー集中、Nansen Flow Intelligenceを合成した独自スコアです。",
-    "",
-    "**思想**",
-    "大量通知ではなく、bbアルト部屋でCAが貼られる前に見る価値がありそうな候補だけを少数表示します。",
-    "",
-    "※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。"
+    "**bb Native Alpha Radar**",
+    credit
+      ? "Nansen creditsが足りないかも。`/health` で状態を見てね。"
+      : "Nansen取得で一時エラーが出たよ。",
+    `詳細: ${detail}`,
+    "Bot本体とNansen CLIは `/health` で確認できるよ。",
+    "復旧したら `/radar` と自動通知はいつもどおり再開するよ。"
   ].join("\n");
 }
 
-export function formatHelp() {
-  return [
-    "🧭 **bb Native Alpha Radar Help**",
-    "",
-    "**/radar**",
-    "Nansen Smart Moneyデータから、今見るべきSolana lowcap候補を表示します。",
-    "",
-    "**/flow <CA>**",
-    "気になったCAを指定して、通知履歴またはNansen APIから簡易フロー分析を返します。",
-    "",
-    "**/criteria**",
-    "抽出条件とbb反応度の意味を表示します。",
-    "",
-    "**/stats**",
-    "通知履歴、追跡状況、通知後成績を表示します。",
-    "",
-    "**/report**",
-    "READMEや提出コメントに貼れる短い実績レポートを表示します。",
-    "",
-    "**/config**",
-    "現在の検知条件と通知設定を表示します。",
-    "",
-    "**/export**",
-    "GitHub提出用の `REPORT.md` を最新成績で生成します。",
-    "",
-    "**自動通知**",
-    `Botを起動したままにすると、${config.alertIntervalMinutes}分ごとにRadarを確認します。`,
-    `同じCAは${config.dedupeHours}時間以内は再通知せず、1日最大${config.maxDailyAlerts}件までです。`,
-    "",
-    "※ 投資助言ではありません。必ず自分で確認してください。"
-  ].join("\n");
+function flowClassification(candidate) {
+  const score = Number(candidate.bbScore || 0);
+  const flow = candidate.nansenDeepDive?.flow;
+  const holders = candidate.nansenDeepDive?.holders;
+  if (flow?.bias === "流出優勢" || holders?.concentration === "集中高め" || score < config.minBbScore) {
+    return {
+      label: "監視候補",
+      color: 0x60a5fa,
+      action: "追加のSM流入、出来高継続、SNS拡散を待とう。",
+      summary: "条件は見えるけど、決定打はまだ弱い候補だよ。"
+    };
+  }
+  if (score >= 88) {
+    return {
+      label: "強い初動候補",
+      color: 0x22c55e,
+      action: "Dex/gmgnで板・出来高・上位売りを見てね。bbで話題化前なら優先監視だよ。",
+      summary: "Smart Moneyとflowがそろった、短時間で判断したい候補だよ。"
+    };
+  }
+  return {
+    label: "確認候補",
+    color: 0xfacc15,
+    action: "無理に触らず、Nansen flowとholdersをもう一回見よう。",
+    summary: "保存履歴または外部データで最低限表示しているよ。"
+  };
 }
 
-export function formatStats(stats) {
-  const lines = [
-    "📈 **bb Native Alpha Radar Stats**",
-    "",
-    `有効な検知履歴: ${stats.total}件`,
-    `全保存履歴: ${stats.rawTotal}件`,
-    `今日の手動チェック: ${stats.todayManual}件`,
-    `今日の自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
-    ""
+export function formatFlowIntroProduction(candidate) {
+  return `**Flow Judge**\n気になる子だけ、深掘りするよ。\n${radarCallLabel(candidate)} / $${candidate.symbol}`;
+}
+
+export function formatFlowEmbedProduction(candidate) {
+  const classification = flowClassification(candidate);
+  const confidence = radarConfidence(candidate);
+  const tracking = candidate.tracking || {};
+  const holders = candidate.nansenDeepDive?.holders;
+  const flow = candidate.nansenDeepDive?.flow;
+  const marketQuality = candidate.nansenDeepDive?.marketQuality;
+  const scoreLabel = candidate.source ? "保存時bb反応度" : "bb反応度";
+  const alphaSignal = candidate.nansenDeepDive?.alphaSignals?.reason || "";
+  const trackingLine = Number.isFinite(Number(tracking.latestMarketCapUsd))
+    ? `now ${formatUsd(tracking.latestMarketCapUsd)} / max ${formatUsd(tracking.maxMarketCapUsd)} / ${formatGain(tracking.maxGainPercent)}`
+    : "取得待ち";
+  const fields = [
+    { name: "今やること", value: shortText(classification.action, 350) },
+    { name: "要約", value: shortText(classification.summary, 350) },
+    { name: "Radar confidence", value: `${confidence}\n${confidenceNote(confidence)}`, inline: true },
+    { name: "時価総額", value: flowDisplay(candidate.marketCap || formatUsd(candidate.metrics?.marketCapUsd)), inline: true },
+    { name: "Smart Money人数", value: flowDisplay(finalSm(candidate)), inline: true },
+    { name: "24h流入", value: flowDisplay(finalNetflow(candidate)), inline: true },
+    { name: "作成から", value: flowDisplay(finalAge(candidate)), inline: true },
+    { name: scoreLabel, value: `${candidate.bbScore}/100`, inline: true },
+    { name: "状態", value: classification.label, inline: true },
+    { name: "上位ホルダー", value: holders ? holderLine(candidate) : "取得待ち" },
+    { name: "ウォレットラベル", value: flowDisplay(holders?.labels?.summary), inline: true },
+    { name: "Nansen資金", value: flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : "取得待ち", inline: true }
   ];
-
-  if (stats.best) {
-    lines.push(
-      "**最高スコア**",
-      `$${stats.best.symbol} / bb反応度 ${stats.best.bbScore}/100 / MC ${stats.best.marketCap}`,
-      `CA: \`${stats.best.ca}\``,
-      ""
-    );
+  if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
+    const dexLine = [
+      cleanDexSummary(marketQuality.summary),
+      Number.isFinite(Number(marketQuality.priceChange1h)) ? `1h ${marketQuality.priceChange1h}%` : null,
+      Number.isFinite(Number(marketQuality.liquidityUsd)) ? `liq ${formatUsd(marketQuality.liquidityUsd)}` : null
+    ].filter(Boolean).join(" / ");
+    fields.push({ name: "DEX状況", value: dexLine });
   }
-
-  if (stats.recent.length > 0) {
-    lines.push("**直近候補**");
-    stats.recent.forEach((alert, index) => {
-      lines.push(`${index + 1}. $${alert.symbol} / score ${alert.bbScore}/100 / ${alert.marketCap}`);
-    });
-  } else {
-    lines.push("まだ通知履歴がありません。`/radar` を実行すると履歴が保存されます。");
+  if (alphaSignal && alphaSignal !== "n/a") {
+    fields.push({ name: "補足シグナル", value: alphaSignal });
   }
+  fields.push({ name: "通知後の動き", value: trackingLine });
 
-  lines.push(
-    "",
-    "**追跡状況**",
-    `更新済み: ${stats.tracking.tracked}件 / 6h完了: ${stats.tracking.completed}件`
-  );
-
-  if (stats.tracking.bestGain) {
-    const bestGain = stats.tracking.bestGain;
-    lines.push(
-      `最大上昇: $${bestGain.symbol} / ${formatGain(bestGain.tracking?.maxGainPercent)} / max ${formatUsd(bestGain.tracking?.maxMarketCapUsd)}`
-    );
-  }
-
-  if (stats.tracking.leaderboard.length > 0) {
-    lines.push("", "**通知後成績**");
-    stats.tracking.leaderboard.forEach((alert, index) => {
-      const tracking = alert.tracking || {};
-      lines.push(
-        `${index + 1}. $${alert.symbol} / ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} → max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)}`
-      );
-    });
-  }
-
-  lines.push("", "※ 履歴はローカルの data/alerts.json に保存されています。");
-  lines.push("※ statsは現在のRadar条件を満たす履歴だけを集計します。");
-  lines.push("※ 手動チェックは `/radar` 実行分、自動通知はBotが時間で投稿した分です。");
-  lines.push(`※ Bot起動中は${config.trackingIntervalMinutes}分ごとにMC推移を確認します。`);
-  return lines.join("\n");
+  return {
+    title: `${radarCallLabel(candidate)} | Flow Judge | $${candidate.symbol}`,
+    description: `\`${candidate.ca}\``,
+    color: classification.color,
+    fields,
+    footer: { text: "Not financial advice | 見つけたよ。触る前に確認してね。" },
+    timestamp: new Date().toISOString()
+  };
 }
 
-export function formatReport(stats) {
+function bbUnpostedLine(candidate) {
+  if (candidate.metrics?.bbAlreadyPosted === true) return "bb既出";
+  if (candidate.metrics?.bbAlreadyPosted === false) return "bb未投稿";
+  return "未確認";
+}
+
+function shortReasons(candidate) {
+  const reasons = [];
+  const sm = finalSm(candidate);
+  const netflow = finalNetflow(candidate);
+  const flow = flowLine(candidate);
+  const holders = holderLine(candidate);
+  if (sm !== "n/a") reasons.push(`Smart Money人数 ${sm}`);
+  if (netflow !== "n/a") reasons.push(`24h流入 ${netflow}`);
+  if (flow !== "n/a") reasons.push(`Nansen資金 ${flow}`);
+  if (holders !== "n/a") reasons.push(`上位ホルダー ${holders}`);
+  reasons.push(bbUnpostedLine(candidate));
+  return reasons.slice(0, 5);
+}
+
+export function formatWhyIntro(candidate) {
+  return `**Why Radar picked this**\n${radarCallLabel(candidate)}\n$${candidate.symbol} / Solana`;
+}
+
+export function formatWhyEmbed(candidate) {
+  const classification = flowClassification(candidate);
+  const confidence = radarConfidence(candidate);
+  const flow = flowLine(candidate);
+  const holder = holderLine(candidate);
+  const whyNow = [
+    bbUnpostedLine(candidate),
+    "低cap帯",
+    "Smart Money先行"
+  ].filter(Boolean).map((item) => `・${item}`).join("\n");
+  const bbCares = [
+    "Solana meme文脈",
+    "初動検証に向いている",
+    candidate.tracking?.maxGainPercent ? "Radar Call実績あり" : "Nansen確認に向いている"
+  ].map((item) => `・${item}`).join("\n");
+  return {
+    title: `${radarCallLabel(candidate)} | $${candidate.symbol}`,
+    description: `\`${candidate.ca}\``,
+    color: classification.color,
+    fields: [
+      { name: "判定", value: classification.label, inline: true },
+      { name: "Radar confidence", value: confidence, inline: true },
+      { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
+      { name: "Nansen根拠", value: [
+        `・Smart Money ${flowDisplay(finalSm(candidate))}`,
+        `・24h流入 ${flowDisplay(finalNetflow(candidate))}`,
+        `・Flow ${flowDisplay(flow)}`,
+        `・Holder ${flowDisplay(holder)}`
+      ].join("\n") },
+      { name: "Why now", value: whyNow, inline: true },
+      { name: "Why bb cares", value: bbCares, inline: true },
+      { name: "注意", value: [
+        "・SNS拡散と出来高継続を確認",
+        `・${shortText(riskLine(candidate), 180)}`
+      ].join("\n") },
+      { name: "次", value: `\`/flow ${candidate.ca}\` で深掘り\n下のボタンで DexScreener / gmgn / Nansen 確認` }
+    ],
+    footer: { text: "NFA / DYOR | 見つけた理由だけ短く見るよ。" },
+    timestamp: new Date().toISOString()
+  };
+}
+
+export function formatLeaderboardIntro(stats) {
+  const count = stats.tracking?.leaderboard?.length || 0;
+  return [
+    "**Radar Leaderboard**",
+    "Nansenとbb条件で拾ったRadar Callの追跡結果です。",
+    count ? `伸びた順に上位${Math.min(count, 5)}件を表示します。` : "まだ追跡済みのRadar Callがありません。"
+  ].join("\n");
+}
+
+export function formatLeaderboardEmbeds(stats) {
+  const rows = stats.tracking?.leaderboard || [];
+  return rows.slice(0, 5).map((alert, index) => {
+    const tracking = alert.tracking || {};
+    const links = linksFor(alert);
+    const reasons = shortReasons(alert).slice(0, 3).map((reason) => `・${reason}`).join("\n") || "取得待ち";
+    return {
+      title: `#${index + 1} ${radarCallLabel(alert)} | $${alert.symbol}`,
+      description: "Solana",
+      color: 0xfacc15,
+      fields: [
+        { name: "最大上昇", value: formatGain(tracking.maxGainPercent), inline: true },
+        { name: "MC推移", value: `${formatUsd(alert.notification?.marketCapUsd)} -> ${formatUsd(tracking.maxMarketCapUsd)}`, inline: true },
+        { name: "通知時刻", value: compactDate(alert.notification?.notifiedAt || alert.savedAt), inline: true },
+        { name: "Why Radar caught this", value: reasons },
+        { name: "Community", value: formatReactionSummary(alert.reactions) },
+        { name: "Verify", value: `[DexScreener](${links.dex}) / [gmgn](${links.gmgn}) / [Nansen](${links.nansen})` },
+        { name: "次", value: `理由: \`/why ${alert.ca}\`\n深掘り: \`/flow ${alert.ca}\`` }
+      ],
+      footer: { text: "NFA / DYOR" }
+    };
+  });
+}
+
+function reasonLabel(reason) {
+  const labels = {
+    holder_concentration: "🏦 上位Holder集中",
+    flow_outflow: "🌊 Flow流出寄り",
+    bb_already_posted: "📢 bb内で既出",
+    single_sm_trader: "👤 Smart Moneyが少ない",
+    low_score: "📉 bb反応度未満",
+    below_bb_score: "📉 bb反応度未満",
+    market_weak: "📊 DEX状況が弱い"
+  };
+  return labels[reason] || reason;
+}
+
+export function formatRejectionsIntro(stats) {
+  return [
+    "**見送り候補**",
+    "Radarは「数」より「精度」を優先します。",
+    "条件を満たさない候補は、通知せず見送りとして記録します。"
+  ].join("\n");
+}
+
+export function formatRejectionsEmbed(stats) {
+  const topReasons = stats.scans?.topReasons || [];
+  const recent = stats.scans?.recentRejected || [];
+  const reasonLines = topReasons.length
+    ? topReasons.map((item, index) => `${index + 1}. ${reasonLabel(item.reason)}: ${item.count}件`).join("\n")
+    : "まだReject理由の記録がないよ。";
+  const recentLines = recent.length
+    ? recent.slice(0, 5).map((item, index) => {
+        const reasons = (item.reasons || []).map(reasonLabel).join(" / ") || "条件未満";
+        const state = (item.reasons || []).includes("bb_already_posted") ? "通知不要" : "👀 監視のみ";
+        return `${index + 1}. $${item.symbol}\nScore: ${item.bbScore}/100\n理由: ${reasons}\n状態: ${state}`;
+      }).join("\n\n")
+    : "最近の見送り候補はないよ。";
+
+  return {
+    title: "見送り判断",
+    color: 0xf97316,
+    fields: [
+      { name: "見送り理由ランキング", value: shortText(reasonLines, 900) },
+      { name: "最近見送った候補", value: shortText(recentLines, 900) }
+    ],
+    footer: { text: "弱い候補を流さないこともRadarの価値です。" },
+    timestamp: new Date().toISOString()
+  };
+}
+
+export function formatStatsProduction(stats) {
   const lines = [
-    "📝 **bb Native Alpha Radar Report**",
+    "**bb Native Alpha Radar Stats**",
+    "今日の見張り結果をまとめたよ。",
     "",
-    "Nansen Smart Moneyデータから、bbアルト部屋でCAが貼られる前に見る候補を抽出するSolana lowcap radarです。",
-    "",
-    "**現在の実績**",
+    "**今日の運用**",
+    `・手動チェック: ${stats.todayManual}回`,
+    `・自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
     `・有効な検知履歴: ${stats.total}件`,
-    `・追跡済み: ${stats.tracking.tracked}件`,
-    `・6h追跡完了: ${stats.tracking.completed}件`,
-    `・今日の自動通知: ${stats.todayAuto}/${config.maxDailyAlerts}件`,
+    `・全保存履歴: ${stats.rawTotal}件`,
     ""
   ];
-
-  if (stats.tracking.leaderboard.length > 0) {
-    lines.push("**通知後成績 Top**");
-    stats.tracking.leaderboard.slice(0, 3).forEach((alert, index) => {
-      const tracking = alert.tracking || {};
-      lines.push(
-        `${index + 1}. $${alert.symbol}: ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} → max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)}`
-      );
+  if (stats.best) {
+    lines.push("**最高スコア**", `${radarCallLabel(stats.best)} / $${stats.best.symbol} / bb反応度 ${stats.best.bbScore}/100 / MC ${stats.best.marketCap}`, `CA: \`${stats.best.ca}\``, "");
+  }
+  if (stats.recent?.length) {
+    lines.push("**直近候補**");
+    stats.recent.slice(0, 5).forEach((alert, index) => {
+      lines.push(`${index + 1}. ${radarCallLabel(alert)} / $${alert.symbol} / ${alert.bbScore}/100 / ${alert.marketCap}`);
     });
     lines.push("");
   }
-
+  lines.push("**通知後トラッキング**", `・更新済み: ${stats.tracking.tracked}件`, `・6h完了: ${stats.tracking.completed}件`);
+  if (stats.tracking.bestGain) {
+    lines.push(`・最大上昇: $${stats.tracking.bestGain.symbol} / ${formatGain(stats.tracking.bestGain.tracking?.maxGainPercent)} / max ${formatUsd(stats.tracking.bestGain.tracking?.maxMarketCapUsd)}`);
+  }
+  if (stats.tracking.leaderboard?.length) {
+    lines.push("", "**通知後成績 Top**");
+    stats.tracking.leaderboard.slice(0, 5).forEach((alert, index) => {
+      const tracking = alert.tracking || {};
+      lines.push(`${index + 1}. ${radarCallLabel(alert)} / $${alert.symbol} / ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} -> max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)} / ${formatReactionSummary(alert.reactions)}`);
+    });
+  }
+  lines.push("", "**見送り精度**", `・Scan履歴: ${stats.scans?.total || 0}回 / 今日 ${stats.scans?.today || 0}回`, `・見送り記録: ${stats.scans?.rejectedTotal || 0}件`);
+  if (stats.scans?.topReasons?.length) {
+    lines.push(`・主な見送り理由: ${stats.scans.topReasons.map((item) => `${reasonLabel(item.reason)} ${item.count}件`).join(" / ")}`);
+  }
   lines.push(
-    "**Nansenを使っている箇所**",
-    "・Smart Money netflow",
-    "・Smart Money DEX trades",
-    "・Token Screener",
-    "・Token holders / Flow Intelligence（/flow深掘り）",
     "",
-    "**MVPで重視していること**",
-    "・大量通知ではなく少数候補",
-    "・なぜ拾ったかを短く表示",
-    "・通知後のMC推移を保存",
-    "・DexScreener / gmgn / Nansenへの確認導線",
+    "**見てほしい点**",
+    "・大量通知じゃなく、低cap・若さ・Smart Money・holder集中・Nansen flowで絞っているよ",
+    "・通知後のMC推移を保存して、後から検証できるようにしているよ",
+    "・Nansen credits切れでもBotは落ちないよ。状態は `/health` で見てね",
     "",
-    "※ 投資助言ではありません。最終判断はDexScreener/gmgn/Nansenで確認してください。"
+    "※ 履歴はローカルの data/alerts.json / data/scans.json に保存しているよ。"
   );
-
   return lines.join("\n");
 }
 
-export function formatConfigSummary() {
-  return [
-    "⚙️ **bb Native Alpha Radar Config**",
+export function formatReportProduction(stats) {
+  const lines = [
+    "**bb Native Alpha Radar Report**",
     "",
-    `対象チェーン: Solana`,
+    "**要約**",
+    "CA投稿後に反応する価格Botではなく、Nansen Smart MoneyからCA投稿前のSolana lowcap候補を少数だけ拾うBotだよ。",
+    "大量通知ではなく、bbで会話が始まりそうな候補だけを出して、通知後のMC推移まで保存するよ。",
+    "",
+    "**現在できること**",
+    `・${config.alertIntervalMinutes}分ごとに自動Radar確認`,
+    "・確認しても条件未満なら投稿しないから、チャンネルを荒らさないよ",
+    `・1日最大${config.maxDailyAlerts}件、同じCAは${config.dedupeHours}時間再通知なし`,
+    `・直近${config.bbLookbackMessages}件のbb投稿を見て、既出CAや$SYMBOLを見送ります`,
+    "・/radar で手動チェックできるよ",
+    "・/flow <CA> で深掘りするよ",
+    "・/stats で通知後成績と見送り理由を見られるよ",
+    "・/health でNansen REST API / CLI / Bot状態を確認できるよ",
+    ""
+  ];
+  if (stats.tracking.leaderboard?.length) {
+    lines.push("**通知後成績**");
+    stats.tracking.leaderboard.slice(0, 3).forEach((alert, index) => {
+      const tracking = alert.tracking || {};
+      lines.push(`${index + 1}. ${radarCallLabel(alert)} / $${alert.symbol}: ${formatGain(tracking.maxGainPercent)} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} -> max ${formatUsd(tracking.maxMarketCapUsd)} / 現在 ${formatUsd(tracking.latestMarketCapUsd)} / ${formatReactionSummary(alert.reactions)}`);
+    });
+    lines.push("");
+  }
+  lines.push(
+    "**Nansen活用箇所**",
+    "・Nansen CLI: schema確認と要件の明示",
+    "・Smart Money netflow: 候補抽出の中心",
+    "・Smart Money DEX trades: 追加のSmart Money反応",
+    "・Token Screener: lowcap候補の母集団",
+    "・Token holders / Flow Intelligence: /flow深掘りとスコア補正",
+    "",
+    "**Radar Call system**",
+    "・各通知に Radar Call ID を付けて、/why /flow /leaderboard /stats /report で同じ呼び名で追えるよ",
+    "・通知後はCommunity reactionsとMC推移を保存して、Radar文化を作れるよ",
+    "",
+    "**差別化**",
+    "・候補を多く並べるより、bbで今見る価値がある少数候補に絞るよ",
+    "・holder集中やNansen flowが弱い候補は、見た目のflowが強くても減点するよ",
+    "・/healthでNansen REST APIとCLIの状態を見せるよ。credits切れでもBotは落ちないよ",
+    "・/statsと/reportで、通知後に本当に動いたかを確認できるよ",
+    "",
+    "**安全性と運用性**",
+    "・API key / Discord tokenは.env管理",
+    "・過剰権限なし",
+    "・credits切れでもBotは落とさず、復旧後に再開するよ",
+    "・投資助言ではない注意書きを常に表示するよ",
+    "",
+    "**採用価値**",
+    "bbアルト部屋の日常導線に自然に入るよ。候補通知 -> /flow深掘り -> Nansen確認という流れで、Nansenの継続利用理由をDiscord内に作れるよ。",
+    "",
+    "※ 最終判断はDexScreener / gmgn / Nansenで確認してね。"
+  );
+  return lines.join("\n");
+}
+
+export function formatConfigWinning() {
+  return [
+    "**bb Native Alpha Radar Config**",
+    "今の見張り設定だよ。",
+    "",
+    "対象チェーン: Solana",
     `Market Cap上限: ${formatUsd(config.marketCapMaxUsd)}`,
     `Token age上限: ${config.tokenAgeMaxDays}d`,
     `最小bb反応度: ${config.minBbScore}`,
+    `Radar表示上限: ${config.radarDisplayLimit}件/scan`,
     `Smart Money traders最小: ${config.minSmartMoneyTraders}`,
     `自動通知上限: ${config.maxDailyAlerts}件/日`,
     `重複通知防止: ${config.dedupeHours}h`,
+    `bb未投稿チェック: 直近${config.bbLookbackMessages}件`,
     `Radar確認間隔: ${config.alertIntervalMinutes}分`,
     `MC追跡間隔: ${config.trackingIntervalMinutes}分`,
     `Mock mode: ${config.mockMode ? "ON" : "OFF"}`,
     "",
-    "※ APIキーやDiscord Tokenは表示しません。"
+    "運用思想: 大量通知ではなく、見る価値がある候補だけを少数表示するよ。",
+    "※ APIキーやDiscord Tokenは表示しないよ。"
   ].join("\n");
 }
 
-export function formatFlowAnalysis(candidate) {
-  const metrics = candidate.metrics || {};
-  const tracking = candidate.tracking || {};
-  const deepDive = candidate.nansenDeepDive || {};
-  const holders = deepDive.holders || null;
-  const flow = deepDive.flow || null;
-  const judge = flowJudge(candidate);
-  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
-  const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
-  const netflow = formatUsd(metrics.netflow24hUsd);
-  const sm = candidate.smartMoneyInflows || metrics.traderCount || "n/a";
-  const trackingLines = Number.isFinite(Number(tracking.latestMarketCapUsd))
-    ? [
-        "",
-        "**通知後トラッキング**",
-        `現在MC: ${formatUsd(tracking.latestMarketCapUsd)}`,
-        `最大MC: ${formatUsd(tracking.maxMarketCapUsd)} / 最大上昇: ${formatGain(tracking.maxGainPercent)}`,
-        `1h: ${formatUsd(tracking.after1hMarketCapUsd)} / 3h: ${formatUsd(tracking.after3hMarketCapUsd)} / 6h: ${formatUsd(tracking.after6hMarketCapUsd)}`
-      ]
-    : [];
-  const nansenDeepDiveLines = holders || flow
-    ? [
-        "",
-        "**Nansen深掘り**",
-        holders
-          ? `・上位ホルダー: ${holders.concentration} / top1 ${holders.top1Percent === null ? "n/a" : `${holders.top1Percent.toFixed(1)}%`} / top5 ${holders.top5Percent === null ? "n/a" : `${holders.top5Percent.toFixed(1)}%`}`
-          : "・上位ホルダー: n/a",
-        holders?.labels
-          ? `・ウォレットラベル: ${holders.labels.summary}`
-          : "・ウォレットラベル: n/a",
-        flow
-          ? `・Flow Intelligence: ${flow.bias} / net ${formatUsd(flow.netflowUsd)}`
-          : "・Flow Intelligence: n/a"
-      ]
-    : [];
-
+export function formatCriteriaProduction() {
   return [
-    "🧠 **Flow Judge**",
+    "**bb Native Alpha Radar 抽出条件**",
+    "どういう子を拾うか、条件をまとめるね。",
     "",
-    `対象: **$${candidate.symbol}**`,
-    `CA: \`${candidate.ca}\``,
+    "**対象**",
+    "Solana lowcap meme候補だけを見るよ。",
     "",
-    `・MC: ${mcap}`,
-    `・SM traders: ${sm}`,
-    `・24h flow: ${netflow}`,
-    `・age: ${age}`,
-    `・bb反応度: ${candidate.bbScore}/100`,
+    "**必須フィルタ**",
+    `・時価総額: $${Math.round(config.marketCapMaxUsd / 1000)}K以下`,
+    `・作成から: ${config.tokenAgeMaxDays}日以内`,
+    `・Smart Money人数が${config.minSmartMoneyTraders}人以上、または24h流入がプラス`,
+    `・直近${config.bbLookbackMessages}件の投稿に同じCAまたは$SYMBOLがない`,
+    `・bb反応度${config.minBbScore}以上を通知対象`,
     "",
-    "**判定**",
-    `・状態: ${judge.stage}`,
-    `・主導: ${judge.driver}`,
-    `・買い圧: ${judge.pressure}`,
-    `・リスク: ${judge.risk}`,
+    "**bb反応度に入るもの**",
+    "低cap、作成の若さ、Smart Money人数、24h流入、上位ホルダー集中、Nansen資金、CTO/Korea/CEX/SOL meme文脈、bb未投稿を見ているよ。",
     "",
-    "**見方**",
-    judge.verdict,
-    "",
-    `Nansen根拠: ${candidate.reason}`,
-    ...nansenDeepDiveLines,
-    ...trackingLines,
-    "",
-    "※ 投資助言ではありません。DexScreener/gmgn/Nansenで必ず確認してください。"
+    "※ 大量通知ではなく、見る価値がある候補だけを少数表示するよ。"
   ].join("\n");
 }
 
-export function formatFlowCardIntro(candidate) {
+export function formatHelpWinning() {
   return [
-    "🧠 **Flow Judge**",
-    `$${candidate.symbol} のNansen深掘りと通知後トラッキング`
+    "**bb Native Alpha Radar**",
+    "",
+    "CAが貼られる前のSolana meme初動を、Nansen Smart Moneyから先回りで見るRadar。",
+    "Radar Callを追いながら、bbみんなで初動を検証するBotです。",
+    "",
+    "**Radar**",
+    "`/radar` -> 最新Radar Callを見る",
+    "`/why <CA>` -> なぜ拾ったか3秒で確認",
+    "",
+    "**Verify**",
+    "`/flow <CA>` -> Smart Money / Holder / Flowを深掘り",
+    "",
+    "**Prove**",
+    "`/leaderboard` -> 通知後に伸びたRadarを見る",
+    "`/rejections` -> 見送った候補と理由を見る",
+    "`/stats` -> 運用と追跡成績を見る",
+    "`/report` -> 提出向けサマリーを見る",
+    "",
+    "**Community**",
+    "🔥 強気 / 👀 監視 / ⚠️ 注意 / 💀 怪しい",
+    "",
+    "**System**",
+    "`/health` / `/config` / `/criteria` / `/export`",
+    "",
+    "※ 投資助言ではありません。DexScreener / gmgn / Nansenで確認してください。"
   ].join("\n");
 }
 
-export function formatFlowEmbed(candidate) {
-  const metrics = candidate.metrics || {};
-  const tracking = candidate.tracking || {};
-  const holders = candidate.nansenDeepDive?.holders || null;
-  const flow = candidate.nansenDeepDive?.flow || null;
-  const judge = flowJudge(candidate);
-  const age = metrics.tokenAgeDays ? `${metrics.tokenAgeDays.toFixed(metrics.tokenAgeDays < 10 ? 1 : 0)}d` : "n/a";
-  const netflow = formatUsd(metrics.netflow24hUsd);
-  const mcap = candidate.marketCap || formatUsd(metrics.marketCapUsd);
-  const holderLine = holders
-    ? `${holders.concentration} / top1 ${holders.top1Percent === null ? "n/a" : `${holders.top1Percent.toFixed(1)}%`} / top5 ${holders.top5Percent === null ? "n/a" : `${holders.top5Percent.toFixed(1)}%`}`
-    : "n/a";
-  const labelLine = holders?.labels?.summary || "n/a";
-  const flowLine = flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : "n/a";
-  const trackingLine = Number.isFinite(Number(tracking.latestMarketCapUsd))
-    ? `now ${formatUsd(tracking.latestMarketCapUsd)} / max ${formatUsd(tracking.maxMarketCapUsd)} / ${formatGain(tracking.maxGainPercent)}`
-    : "n/a";
+export function formatHealthProduction(status) {
+  return [
+    "**bb Native Alpha Radar Health**",
+    "いまの体調チェックだよ。",
+    "",
+    `Bot: ${status.botOk ? "OK" : "NG"}`,
+    `Nansen REST API: ${status.nansenOk ? "OK" : "NG"}${status.nansenMessage ? ` (${status.nansenMessage})` : ""}`,
+    `Nansen CLI: ${status.nansenCliOk ? "OK" : "NG"} (${status.nansenCliCommand || "nansen schema --pretty"})`,
+    `CLI detail: ${status.nansenCliMessage || "n/a"}`,
+    `Mock mode: ${config.mockMode ? "ON" : "OFF"}`,
+    `Guild ID: ${config.guildId ? "set" : "not set"}`,
+    `Channel ID: ${config.alertChannelId ? "set" : "not set"}`,
+    `最終Radar: ${status.lastRadarAt || "未実行"}`,
+    `最終Radar結果: scanned ${status.lastScannedCount ?? "n/a"} / passed ${status.lastPassedCount ?? "n/a"} / rejected ${status.lastRejectedCount ?? "n/a"} / posted ${status.lastPostedCount ?? "n/a"}`,
+    "次の見方: posted 0なら、Botは確認済みだけど投稿条件に届かなかったという意味だよ。",
+    status.lastRadarErrors?.length ? `最終Radarエラー: ${shortText(status.lastRadarErrors.join(" / "), 260)}` : "最終Radarエラー: なし",
+    `自動通知: 最大${config.maxDailyAlerts}件/日 / 重複${config.dedupeHours}h / 最小bb反応度${config.minBbScore}`,
+    `bb未投稿チェック: 直近${config.bbLookbackMessages}件`,
+    "",
+    "※ APIキーやDiscord Tokenは表示しないよ。"
+  ].join("\n");
+}
 
+function dailyReasonLabel(reason) {
+  const labels = {
+    holder_concentration: "上位Holder集中",
+    flow_outflow: "Flow流出寄り",
+    bb_already_posted: "bb内で既出",
+    single_sm_trader: "Smart Moneyが少ない",
+    low_score: "bb反応度未満",
+    below_bb_score: "bb反応度未満",
+    market_weak: "DEX状況が弱い"
+  };
+  return labels[reason] || reason || "記録なし";
+}
+
+function dailyReactionLine(reactions = {}) {
+  return `🔥 ${Number(reactions.fire || 0)} / 👀 ${Number(reactions.eyes || 0)} / ⚠️ ${Number(reactions.warning || 0)} / 💀 ${Number(reactions.skull || 0)}`;
+}
+
+function dailyBestRadarLine(alert) {
+  if (!alert) return "今日はまだ記録なし";
+  const gain = formatGain(alert.tracking?.maxGainPercent || 0);
+  return `$${alert.symbol} ${gain} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} -> max ${formatUsd(alert.tracking?.maxMarketCapUsd)}`;
+}
+
+function dailyCommentary(stats) {
+  const today = stats.today || {};
+  const topReason = dailyReasonLabel(today.topRejectReason?.reason);
+  const best = today.bestRadar;
+  if (!today.radarCalls && !today.rejected) {
+    return "今日はまだRadarの記録が少ないよ。まずは /radar で今の候補を確認してね。";
+  }
+  if (today.strongCandidates === 0) {
+    return `今日は強いRadar候補は少なめ。${topReason !== "記録なし" ? `${topReason} が多く、` : ""}無理に流さず精度優先で見送っているよ。`;
+  }
+  if (best?.tracking?.maxGainPercent > 0) {
+    return `今日は $${best.symbol} が通知後に ${formatGain(best.tracking.maxGainPercent)}。伸びた理由は /leaderboard、拾った根拠は /why で確認できるよ。`;
+  }
+  return "今日はRadar Callが出ているけど、追跡結果はまだ途中だよ。/leaderboard で通知後の動きを見てね。";
+}
+
+export function formatDailyStatsContent(stats) {
+  const today = stats.today || {};
+  const topReject = today.topRejectReason
+    ? `${dailyReasonLabel(today.topRejectReason.reason)} ${today.topRejectReason.count}件`
+    : "今日はまだ記録なし";
+  return [
+    "**今日のRadarまとめ**",
+    "Radarの1日を短く振り返る日報だよ。",
+    "",
+    `Radar Calls: ${today.radarCalls || 0}`,
+    `Strong candidates: ${today.strongCandidates || 0}`,
+    `見送り: ${today.rejected || 0}`,
+    `Best Radar: ${dailyBestRadarLine(today.bestRadar)}`,
+    `Top Reject Reason: ${topReject}`,
+    `Community: ${dailyReactionLine(today.reactions)}`,
+    "",
+    `今日の所感: ${dailyCommentary(stats)}`,
+    "",
+    "次に見る場所:",
+    "・/leaderboard -> 伸びたRadar",
+    "・/rejections -> 見送った理由",
+    "・/radar -> 最新候補",
+    "",
+    "NFA / DYOR"
+  ].join("\n");
+}
+
+export function formatDailyStatsEmbed(stats) {
+  const today = stats.today || {};
+  const topRejectLines = today.topRejectReasons?.length
+    ? today.topRejectReasons.slice(0, 3).map((item) => `${dailyReasonLabel(item.reason)}: ${item.count}件`).join("\n")
+    : "今日はまだ記録なし";
+  const best = today.bestRadar;
   return {
-    title: `Flow Judge | $${candidate.symbol}`,
-    description: `\`${candidate.ca}\``,
-    color: scoreColor(candidate.bbScore),
+    title: "今日のRadar日報",
+    description: "数ではなく、見送る判断と伸びたRadarを振り返る画面だよ。",
+    color: 0x38bdf8,
     fields: [
-      { name: "MC", value: mcap, inline: true },
-      { name: "SM traders", value: String(candidate.smartMoneyInflows || metrics.traderCount || "n/a"), inline: true },
-      { name: "24h flow", value: netflow, inline: true },
-      { name: "age", value: age, inline: true },
-      { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
-      { name: "状態", value: judge.stage, inline: true },
-      { name: "主導", value: shortText(judge.driver, 250) },
-      { name: "買い圧", value: shortText(judge.pressure, 250), inline: true },
-      { name: "リスク", value: shortText(judge.risk, 250), inline: true },
-      { name: "見方", value: shortText(judge.verdict, 500) },
-      { name: "Nansen: holders", value: holderLine },
-      { name: "Nansen: labels", value: labelLine, inline: true },
-      { name: "Nansen: flow", value: flowLine, inline: true },
-      { name: "Tracking", value: trackingLine }
+      { name: "Radar Calls", value: String(today.radarCalls || 0), inline: true },
+      { name: "Strong candidates", value: String(today.strongCandidates || 0), inline: true },
+      { name: "見送り", value: String(today.rejected || 0), inline: true },
+      { name: "Best Radar", value: dailyBestRadarLine(best) },
+      { name: "Top Reject Reason", value: topRejectLines, inline: true },
+      { name: "Community", value: dailyReactionLine(today.reactions), inline: true },
+      { name: "今日の所感", value: dailyCommentary(stats) },
+      { name: "次に見る場所", value: "`/leaderboard` 伸びたRadar\n`/rejections` 見送った理由\n`/radar` 最新候補" }
     ],
-    footer: {
-      text: "Not financial advice | Verify with DexScreener / gmgn / Nansen"
-    },
+    footer: { text: "NFA / DYOR | 詳細は /leaderboard / rejections / flow で確認" },
     timestamp: new Date().toISOString()
   };
+}
+
+export function formatHelpDaily() {
+  return [
+    "**bb Native Alpha Radar**",
+    "",
+    "CAが貼られる前のSolana meme初動を、Nansen Smart Moneyから先回りで見るRadar。",
+    "Radar Callを追いながら、bbみんなで初動を検証するBotです。",
+    "",
+    "**Radar**",
+    "`/radar` -> 最新Radar Callを見る",
+    "`/why <CA>` -> なぜ拾ったか3秒で確認",
+    "",
+    "**Verify**",
+    "`/flow <CA>` -> Smart Money / Holder / Flowを深掘り",
+    "",
+    "**Prove**",
+    "`/leaderboard` -> 通知後に伸びたRadarを見る",
+    "`/rejections` -> 見送った候補と理由を見る",
+    "`/stats` -> 今日のRadar日報を見る",
+    "`/report` -> 提出向けサマリーを見る",
+    "",
+    "**Community**",
+    "🔥 強気 / 👀 監視 / ⚠️ 注意 / 💀 怪しい",
+    "",
+    "**System**",
+    "`/health` / `/config` / `/criteria` / `/export`",
+    "",
+    "※ 投資助言ではありません。DexScreener / gmgn / Nansenで確認してください。"
+  ].join("\n");
+}
+
+export function formatReportDaily(stats) {
+  const today = stats.today || {};
+  const topReject = today.topRejectReason
+    ? `${dailyReasonLabel(today.topRejectReason.reason)} ${today.topRejectReason.count}件`
+    : "記録なし";
+  return [
+    "**bb Native Alpha Radar Report**",
+    "",
+    "**要約**",
+    "CA投稿後の価格Botではなく、Nansen Smart MoneyからCA投稿前のSolana lowcap候補を少数だけ拾うRadarです。",
+    "通知後のMC推移、見送り理由、Community reactionsを残し、Radar -> Verify -> Prove -> Community の流れを作ります。",
+    "",
+    "**今日のRadar日報**",
+    `・Radar Calls: ${today.radarCalls || 0}`,
+    `・Strong candidates: ${today.strongCandidates || 0}`,
+    `・見送り: ${today.rejected || 0}`,
+    `・Best Radar: ${dailyBestRadarLine(today.bestRadar)}`,
+    `・Top Reject Reason: ${topReject}`,
+    `・Community: ${dailyReactionLine(today.reactions)}`,
+    "",
+    "**役割分担**",
+    "・/radar: 今見る候補",
+    "・/why: なぜ拾ったか",
+    "・/flow: 深掘り",
+    "・/leaderboard: 通知後に伸びた実績の詳細",
+    "・/rejections: 見送り判断の詳細",
+    "・/stats: 今日のRadar日報",
+    "・/report: 審査提出向けサマリー",
+    "",
+    "**Nansen活用箇所**",
+    "・Nansen CLI: schema確認と審査要件の明示",
+    "・Smart Money netflow: 候補抽出の中心",
+    "・Smart Money DEX trades: 追加のSmart Money反応",
+    "・Token Screener: lowcap候補の母集団",
+    "・Token holders / Flow Intelligence: /flow深掘りとスコア補正",
+    "",
+    "**Daily Summary**",
+    "DAILY_SUMMARY_ENABLED=true の時、1日1回だけ今日のRadarまとめをDiscordに投稿します。",
+    "同じ日の二重投稿は data/daily-summary.json で防ぎます。",
+    "",
+    "※ 最終判断はDexScreener / gmgn / Nansenで確認してください。"
+  ].join("\n");
+}
+
+export function formatConfigDaily() {
+  return [
+    "**bb Native Alpha Radar Config**",
+    "",
+    "対象チェーン: Solana",
+    `Market Cap上限: ${formatUsd(config.marketCapMaxUsd)}`,
+    `Token age上限: ${config.tokenAgeMaxDays}d`,
+    `最小bb反応度: ${config.minBbScore}`,
+    `Radar表示上限: ${config.radarDisplayLimit}件/scan`,
+    `Smart Money traders最小: ${config.minSmartMoneyTraders}`,
+    `自動通知上限: ${config.maxDailyAlerts}件/日`,
+    `重複通知防止: ${config.dedupeHours}h`,
+    `bb未投稿チェック: 直近${config.bbLookbackMessages}件`,
+    `Radar確認間隔: ${config.alertIntervalMinutes}分`,
+    `MC追跡間隔: ${config.trackingIntervalMinutes}分`,
+    `Daily summary: ${config.dailySummaryEnabled ? "ON" : "OFF"}`,
+    `Daily summary時刻: ${String(config.dailySummaryHour).padStart(2, "0")}:${String(config.dailySummaryMinute).padStart(2, "0")} ${config.dailySummaryTimezone}`,
+    `Mock mode: ${config.mockMode ? "ON" : "OFF"}`,
+    "",
+    "※ APIキーやDiscord Tokenは表示しません。"
+  ].join("\n");
 }

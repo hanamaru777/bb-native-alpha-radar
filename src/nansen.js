@@ -76,7 +76,7 @@ function stringFrom(row, keys, fallback = "") {
 
 function usd(value) {
   const number = Number(value);
-  if (!Number.isFinite(number)) return "未取得";
+  if (!Number.isFinite(number)) return "not available";
   if (Math.abs(number) >= 1_000_000) return `$${(number / 1_000_000).toFixed(2)}M`;
   if (Math.abs(number) >= 1_000) return `$${(number / 1_000).toFixed(1)}K`;
   return `$${number.toFixed(0)}`;
@@ -138,6 +138,12 @@ export function toCandidate(row, dexTrades = []) {
   const netflow7dUsd = numberFrom(row, ["net_flow_7d_usd", "netflow_7d_usd"], 0);
   const tokenAgeDays = numberFrom(row, ["token_age_days", "age_days"], 0);
   const traderCount = numberFrom(row, ["trader_count", "traders", "smart_money_count", "sm_wallets", "buyers", "wallet_count"], 0);
+  const newWalletGrowth = stringFrom(row, ["new_wallet_growth", "wallet_growth", "holders_change", "holder_growth", "new_holders"], "not available");
+  const narrativeText = [
+    symbol,
+    stringFrom(row, ["description", "narrative", "category"], ""),
+    stringFrom(row, ["tags", "tag"], "")
+  ].filter(Boolean).join(" ");
 
   const matchingTrades = dexTrades.filter((trade) => {
     const tradeSymbol = stringFrom(trade, ["token_symbol", "symbol", "ticker", "token"], "");
@@ -152,7 +158,14 @@ export function toCandidate(row, dexTrades = []) {
   const flowScore = Math.min(28, Math.round(Math.log10(Math.max(netflow24hUsd, 0) + 1) * 6));
   const smScore = Math.min(26, smartMoneyInflows <= 1 ? 4 : smartMoneyInflows * 4);
   const dexScore = matchingTrades.length > 0 ? 8 : 0;
-  const rawScore = 25 + lowCapBonus + youngTokenBonus + flowScore + smScore + dexScore - oldTokenPenalty;
+  const newWalletNumber = Number(String(newWalletGrowth).match(/[-+]?\d+(?:\.\d+)?/)?.[0]);
+  const newWalletScore = Number.isFinite(newWalletNumber)
+    ? newWalletNumber >= 50 ? 8 : newWalletNumber >= 15 ? 4 : 0
+    : 0;
+  const narrativeScore = /(cto|community takeover|korea|korean|upbit|bithumb|cex|listing|binance|coinbase|okx|bybit|pump|solana|meme)/i.test(narrativeText)
+    ? 4
+    : 0;
+  const rawScore = 25 + lowCapBonus + youngTokenBonus + flowScore + smScore + dexScore + newWalletScore + narrativeScore - oldTokenPenalty;
   const confidenceCap = smartMoneyInflows <= 1
     ? 82
     : smartMoneyInflows < 3
@@ -166,22 +179,24 @@ export function toCandidate(row, dexTrades = []) {
     flowScore,
     smScore,
     dexScore,
+    newWalletScore,
+    narrativeScore,
     oldTokenPenalty,
     confidenceCap
   };
-  const ageLabel = tokenAgeDays ? `${tokenAgeDays.toFixed(tokenAgeDays < 10 ? 1 : 0)}d` : "未取得";
+  const ageLabel = tokenAgeDays ? `${tokenAgeDays.toFixed(tokenAgeDays < 10 ? 1 : 0)}d` : "not available";
 
   return {
     symbol,
     ca: ca || `${symbol}-address-not-returned`,
-    marketCap: marketCapUsd ? usd(marketCapUsd) : "未取得",
+    marketCap: marketCapUsd ? usd(marketCapUsd) : "not available",
     smartMoneyInflows,
-    newWalletGrowth: stringFrom(row, ["new_wallet_growth", "wallet_growth", "holders_change"], "未取得"),
+    newWalletGrowth,
     bbScore,
     reason: `24h SM netflow ${netflow24hUsd >= 0 ? "+" : ""}${usd(netflow24hUsd)} / SM traders ${smartMoneyInflows} / age ${ageLabel}`,
     caution: marketCapUsd > 500_000
-      ? "MCがやや高め。初動というより継続監視候補。"
-      : "低cap初動候補。出来高継続、上位ホルダー売り、SNS拡散の有無を確認。",
+      ? "MC is above the lowcap target. Treat it as a continuation watch, not an early entry."
+      : "Lowcap early candidate. Verify volume continuation, top-holder selling, and SNS spread before touching.",
     metrics: {
       netflow1hUsd,
       netflow24hUsd,
