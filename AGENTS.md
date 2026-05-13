@@ -22,6 +22,22 @@ Core loop:
 - Fit bb room behavior, not generic dashboard behavior
 - Build shared language through **Radar Call IDs**
 
+## Direction Lock
+
+This repo must stay a **pre-CA Discord Radar**, not a generic analytics product.
+
+Future changes must protect these constraints:
+
+- The first screen is always a Radar judgment, not a dashboard.
+- The bot should post a few high-quality signals, not many medium signals.
+- Nansen should be used where it changes the Radar decision, not as a raw data dump.
+- CA is required for verification, but it must not become the visual hero.
+- Radar Call IDs must remain stable across `/radar`, `/why`, `/flow`, `/leaderboard`, `/stats`, and `/report`.
+- `alerts.json` and `scans.json` must remain backward-compatible.
+- Alert caps, dedupe, and bb already-posted filtering must stay intact unless the user explicitly asks to change them.
+
+If a proposed change makes the bot feel more like a dashboard, price bot, or trading assistant, do not implement it.
+
 ## Command Roles
 
 - `/radar`: what to look at now
@@ -49,6 +65,14 @@ Core loop:
 - `/leaderboard` is detailed proof, not daily summary
 - `/rejections` is filtering judgment, not failure log
 
+## Nansen Credit Principles
+
+- Prefer fewer calls with clearer product value.
+- Enrich only candidates that may realistically become Radar Calls.
+- Do not add repeated live Nansen calls to passive/status commands without a strong reason.
+- `/flow <CA>` may use deeper Nansen checks because the user explicitly asked to verify one CA.
+- Credit exhaustion must degrade the output gracefully and must not crash the bot.
+
 ## Codex Workflow
 
 1. Read current code before changing behavior
@@ -58,6 +82,7 @@ Core loop:
 5. Test with local/static checks when possible
 6. Run `npm run check:all` after meaningful changes
 7. Update `README.md`, `REPORT.md`, and command/help text when product behavior changes
+8. For direction/product changes, update `docs/GUARDRAILS.md`, `docs/COMMAND_UX.md`, or `docs/NANSEN_USAGE.md` first
 
 ## Safety Rules
 
@@ -86,3 +111,12 @@ Core loop:
 - Daily alert cap and dedupe behavior
 - Discord-first readability
 - The core identity: **pre-CA Radar, not price bot**
+
+## Must Not Add Without Explicit Approval
+
+- Trading execution, portfolio tracking, entries, exits, targets, or buy/sell advice
+- High-frequency alerts or broad watchlists
+- Dashboard-style tables as the main Radar surface
+- Large CA-first layouts
+- Heavy Nansen enrichment for every scanned row
+- New storage formats that cannot read current local JSON history

@@ -2,6 +2,20 @@
 
 Use this before the final GitHub push and submission form.
 
+Master tracker: `HACKATHON_MANAGEMENT.md`
+
+## 0. Direction Check
+
+Before demo or submission, confirm:
+
+- This still feels like a pre-CA Radar.
+- `/radar` is not a dashboard.
+- Alerts are selective.
+- CA is visible but not the visual hero.
+- Nansen usage is obvious but not wasteful.
+- Radar Call IDs appear consistently.
+- No command gives trading advice.
+
 ## 1. Local Safety Check
 
 ```powershell
@@ -113,16 +127,50 @@ Save screenshots of:
 - `/health`
 - `/radar`
 - `/flow <CA>`
+- `/why <CA>`
+- `/rejections`
 - `/stats`
 - `/report`
 
 Best screenshot set:
 
-1. A clean radar card
-2. The matching flow deep dive
-3. A stats screen showing post-alert tracking
+1. A clean Radar card or a clean "今は見送り" screen
+2. The matching `/why <CA>` explanation
+3. The matching `/flow <CA>` deep dive
+4. `/rejections` showing the noise filter
+5. `/stats` showing the daily Radar summary
 
-## 7. Final GitHub Step
+Screenshot rules:
+
+- Prefer Discord dark mode.
+- Show the top of the card, not only the button area.
+- Avoid screenshots where CA dominates the image.
+- Prefer one strong candidate over many weak candidates.
+- If no candidate passes, use the miss screen as proof of selectivity.
+
+## 7. Demo Command Order
+
+Recommended judging flow:
+
+```text
+/health
+/radar
+/why <CA>
+/flow <CA>
+/rejections
+/stats
+/leaderboard
+/report
+```
+
+What to say first:
+
+- "This is not a price bot."
+- "It is a pre-CA Radar for the bb Discord room."
+- "The bot can say no when signals are weak."
+- "Nansen is used to verify Smart Money, holders, and flow."
+
+## 8. Final GitHub Step
 
 Before pushing:
 
@@ -138,3 +186,33 @@ Then update `REPORT.md` from Discord with:
 ```
 
 Finally push the repo and submit the GitHub URL.
+
+## 9. Submission Form Assets
+
+Prepare:
+
+- GitHub URL or intro tweet/post URL
+- Bot overview
+- Architecture explanation
+- Setup explanation
+- Dependency explanation
+- Nansen CLI usage explanation
+- Demo video link
+- Screenshot set
+- Short "not a price bot" positioning
+- Short "credit-efficient Nansen usage" explanation
+
+Minimum submission:
+
+- GitHub URL or intro tweet/post
+- Working Discord bot using Nansen CLI
+- README with setup instructions
+- No committed secrets
+
+Strong submission:
+
+- Demo video
+- Clean screenshots
+- REPORT.md
+- Architecture/dependency/setup explanation
+- Clear Radar philosophy

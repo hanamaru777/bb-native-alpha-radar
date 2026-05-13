@@ -620,37 +620,59 @@ function flowLine(candidate) {
   return flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : `24h SM netflow ${finalNetflow(candidate)}`;
 }
 
-function radarGrade(candidate) {
+function radarSignalState(candidate) {
   const score = Number(candidate.bbScore || 0);
   const sm = Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0);
   const holderPenalty = Number(candidate.metrics?.holderPenalty || 0);
   const flowAdjustment = Number(candidate.metrics?.flowAdjustment || 0);
-  if (score >= 88 && sm >= 3 && holderPenalty <= 10 && flowAdjustment >= 0) {
-    return { label: "本命候補", color: 0x22c55e, action: "Dex/gmgnで板と出来高を見てね。問題なさそうなら、bbで話題にしてよさそう。" };
+  const confidence = radarConfidence(candidate);
+
+  if (confidence === "HIGH" || (score >= 92 && sm >= 3 && holderPenalty <= 10 && flowAdjustment >= 0)) {
+    return {
+      tag: "SIGNAL",
+      label: "強い初動反応",
+      color: 0x22c55e,
+      summary: "bbで広がる前に、Smart Money側で先に反応が出ています。",
+      action: "まず板・出来高・上位売りを確認。問題なければbbで共有候補。"
+    };
   }
-  if (score >= config.minBbScore && sm >= 3) {
-    return { label: "監視候補", color: 0xfacc15, action: "もう少し見張るよ。追加SM流入、出来高継続、上位売りを確認してね。" };
+
+  if (score >= config.minBbScore && sm >= 3 && flowAdjustment >= 0) {
+    return {
+      tag: "WATCH",
+      label: "監視候補",
+      color: 0xfacc15,
+      summary: "反応はあります。まだ一段確認してから触る候補です。",
+      action: "追加SM流入、出来高継続、上位売りを確認。"
+    };
   }
-  return { label: "監視候補", color: 0x60a5fa, action: "反応はあるけど、まだ決定打は弱め。無理に触らず見張るよ。" };
+
+  return {
+    tag: "WATCH",
+    label: "薄い反応",
+    color: 0x60a5fa,
+    summary: "Radarには引っかかったけど、決定打はまだ弱めです。",
+    action: "無理に触らず、次のNansen反応を待つ候補。"
+  };
 }
 
-function whyLine(candidate) {
+function radarWhyNowLine(candidate) {
   const parts = [];
   const metrics = candidate.metrics || {};
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
   const flow = Number(metrics.netflow24hUsd || 0);
   const age = Number(metrics.tokenAgeDays || 0);
   const mcap = Number(metrics.marketCapUsd || 0);
-  if (mcap > 0 && mcap <= 100_000) parts.push("低cap");
-  if (age > 0 && age <= 2) parts.push("若い");
-  if (sm >= 3) parts.push(`SM複数(${sm})`);
+  if (sm >= 3) parts.push(`Smart Money ${sm}`);
   if (flow > 0) parts.push(`24h flow ${formatUsd(flow)}`);
+  if (mcap > 0 && mcap <= 100_000) parts.push("lowcap");
+  if (age > 0 && age <= 2) parts.push(`${finalAge(candidate)} old`);
   const narratives = metrics.alphaSignals?.narratives || candidate.nansenDeepDive?.alphaSignals?.narratives || [];
   if (narratives.length) parts.push(narratives.join(" / "));
-  return parts.join(" / ") || candidate.reason || "もう少し確認したい候補だよ";
+  return parts.join(" / ") || candidate.reason || "Smart Money側に早い反応があります。";
 }
 
-function riskLine(candidate) {
+function radarRiskLine(candidate) {
   const parts = [];
   const metrics = candidate.metrics || {};
   if (Number(metrics.holderPenalty || 0) > 0) parts.push("上位ホルダー集中");
@@ -660,52 +682,53 @@ function riskLine(candidate) {
     parts.push(marketReasons.slice(0, 2).join(" / ") || "DEX側の警戒あり");
   }
   if (Number(candidate.smartMoneyInflows || metrics.traderCount || 0) <= 1) parts.push("Smart Moneyが少ない");
-  return parts.join(" / ") || "板・出来高・上位売りは見てね";
+  return parts.join(" / ") || "板・出来高・上位売りを確認";
 }
 
-function signalStack(candidate) {
+function riskLine(candidate) {
+  const line = radarRiskLine(candidate);
+  return line === "板・出来高・上位売りを確認" ? "板・出来高・上位売りは見てね" : line;
+}
+
+function radarTraceLine(candidate) {
   const metrics = candidate.metrics || {};
-  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  const quality = sm >= 10 ? "強い" : sm >= 3 ? "中" : "薄い";
-  const market = candidate.nansenDeepDive?.marketQuality;
-  const marketLine = market?.summary && market.summary !== "DEX data: 大きな警戒なし"
-    ? ` / DEX: ${cleanDexSummary(market.summary)}`
-    : "";
-  return `Smart Money人数: ${quality} / 上位ホルダー: ${holderLine(candidate)} / Nansen資金: ${flowLine(candidate)}${marketLine}`;
+  const items = [
+    `MC ${candidate.marketCap || formatUsd(metrics.marketCapUsd)}`,
+    `${finalAge(candidate)} old`,
+    `SM ${finalSm(candidate)}`,
+    flowLine(candidate)
+  ];
+  const holders = holderLine(candidate);
+  if (holders !== "n/a") items.push(`holders ${holders}`);
+  return items.filter(Boolean).join(" / ");
 }
 
 export function formatRadarIntroWinning(candidates) {
+  const count = Math.min(candidates.length, config.radarDisplayLimit);
   return [
     "**bb Native Alpha Radar**",
-    "レーダー反応あり。まず確認してね。",
-    `Nansen Smart Moneyから、今見るべきSolana lowcap候補を${Math.min(candidates.length, config.radarDisplayLimit)}件だけ持ってきたよ。`,
-    `条件: 時価総額 $${Math.round(config.marketCapMaxUsd / 1000)}K以下 / 作成${config.tokenAgeMaxDays}日以内 / bb反応度${config.minBbScore}以上`,
-    "使い方: まずカードを見る -> Dex/gmgnで板確認 -> 気になれば `/flow <CA>` だよ。"
+    `SCAN: ${count} Radar signal${count === 1 ? "" : "s"} detected`,
+    "bbで広がる前のSolana lowcap反応だけ拾っています。",
+    "触る前に DexScreener / gmgn / Nansen で確認。"
   ].join("\n");
 }
 
 export function formatRadarEmbedsWinning(candidates) {
   return candidates.slice(0, config.radarDisplayLimit).map((candidate, index) => {
-    const grade = radarGrade(candidate);
+    const state = radarSignalState(candidate);
     const confidence = radarConfidence(candidate);
     return {
-      title: `${radarCallLabel(candidate)} | $${candidate.symbol}`,
-      description: `\`${candidate.ca}\``,
-      color: grade.color,
+      title: `${radarCallLabel(candidate)} | ${state.tag} | $${candidate.symbol}`,
+      description: `${state.label}\n${state.summary}`,
+      color: state.color,
       fields: [
-        { name: "判定", value: grade.label, inline: true },
-        { name: "Radar confidence", value: `${confidence}\n${confidenceNote(confidence)}`, inline: true },
-        { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
-        { name: "時価総額", value: candidate.marketCap || formatUsd(candidate.metrics?.marketCapUsd), inline: true },
-        { name: "作成から", value: finalAge(candidate), inline: true },
-        { name: "Smart Money人数", value: finalSm(candidate), inline: true },
-        { name: "Nansen根拠", value: shortText(signalStack(candidate), 420) },
-        { name: "なぜ今見るか", value: shortText(whyLine(candidate), 260) },
-        { name: "警戒点", value: shortText(riskLine(candidate), 220), inline: true },
-        { name: "次アクション", value: shortText(grade.action, 260), inline: true },
-        { name: "深掘りコマンド", value: `\`/flow ${candidate.ca}\`` }
+        { name: "WHY NOW", value: shortText(radarWhyNowLine(candidate), 180) },
+        { name: "NANSEN TRACE", value: shortText(radarTraceLine(candidate), 260) },
+        { name: "WATCH RISK", value: shortText(radarRiskLine(candidate), 160), inline: true },
+        { name: "NEXT", value: shortText(`${state.action}\n/flowで深掘り。`, 160), inline: true },
+        { name: "CA / COMMAND", value: `\`/flow ${candidate.ca}\`\nCA: \`${candidate.ca}\`` }
       ],
-      footer: { text: "Not financial advice | 見つけたよ。触る前に確認してね。" },
+      footer: { text: `Radar confidence ${confidence} | NFA / DYOR | CAは検証用` },
       timestamp: new Date().toISOString()
     };
   });
@@ -732,20 +755,21 @@ function rejectedReasonFromScan(item) {
 export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
   const lines = [
     "**bb Native Alpha Radar**",
-    "**今は見送り**",
+    "**NO STRONG SIGNALS**",
     "",
-    `bb反応度${config.minBbScore}以上とNansen条件を同時に満たす強いRadar候補は、今のところありません。`,
-    "Radarは「数」より「精度」を優先します。"
+    "今はbbに流す強いRadar反応はありません。",
+    `条件: bb反応度${config.minBbScore}以上 / Nansen flow / holder / DEX確認`,
+    "弱い候補は通知せず、見送りとして残します。"
   ];
   const topReasons = stats?.scans?.topReasons || [];
   if (topReasons.length) {
-    lines.push("", "**見送り理由サマリー**");
+    lines.push("", "**FILTERED**");
     topReasons.slice(0, 3).forEach((item) => {
       lines.push(`・${reasonLabel(item.reason)}: ${item.count}`);
     });
   }
   if (rejected.length) {
-    lines.push("", "**惜しかった候補**");
+    lines.push("", "**WATCH ONLY**");
     rejected.slice(0, 2).forEach((candidate, index) => {
       lines.push(`${index + 1}. $${candidate.symbol}`);
       lines.push(`・Score: ${candidate.bbScore}/100`);
@@ -757,7 +781,7 @@ export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, st
   } else {
     lines.push("", "一次条件を通過した候補もなかったよ。");
   }
-  lines.push("", "今日は無理に流しません。");
+  lines.push("", "今日は無理に流しません。Radarは静かな時も価値です。");
   lines.push("※ 条件は `/criteria`、履歴は `/stats`、見送り理由は `/rejections` で確認できます。");
   return lines.join("\n");
 }

@@ -1,19 +1,70 @@
 # bb Native Alpha Radar Winning Plan
 
-This file tracks what matters for winning the hackathon.
+This file tracks the hackathon-winning strategy.
 
-## Current Strategy
+For end-to-end submission tracking, see `HACKATHON_MANAGEMENT.md`.
+For non-negotiable product guardrails, see `docs/GUARDRAILS.md`.
 
-The bot should win by being the cleanest "pre-CA alpha radar" for the bb altcoin room.
+## Winning Strategy
 
-Core positioning:
+The bot wins by being the clearest pre-CA Radar for the bb room.
 
-- Not a price bot
-- Not a general risk bot
-- Not a news bot
-- A selective Nansen Smart Money radar that posts before bb starts talking about a CA
+It should feel like:
 
-## Immediate Settings
+- A selective Discord Radar.
+- A Nansen-powered early detection loop.
+- A community object built around Radar Call IDs.
+- A proof system that records hits, misses, rejections, and reactions.
+
+It should not feel like:
+
+- A price bot.
+- A dashboard.
+- A trading assistant.
+- A generic token screener.
+
+## Core Loop
+
+`Radar -> Verify -> Prove -> Community`
+
+Demo translation:
+
+1. `/radar` finds a pre-CA candidate or says no.
+2. `/why <CA>` explains the saved Radar Call in three seconds.
+3. `/flow <CA>` verifies one candidate with Nansen.
+4. `/rejections` shows that the bot filters weak signals.
+5. `/stats` and `/leaderboard` prove what happened after alerts.
+6. Community reactions capture bb sentiment.
+
+## Top Five Priorities
+
+1. Three-second Discord readability.
+2. Screenshot-first dark mode output.
+3. Few high-quality signals.
+4. Visible but credit-efficient Nansen usage.
+5. Radar Call ID continuity across every proof surface.
+
+## What To Show First
+
+If Nansen and the bot are healthy:
+
+1. `/health`
+2. `/radar`
+3. `/why <CA>`
+4. `/flow <CA>`
+5. `/rejections`
+6. `/stats`
+7. `/report`
+
+If no strong candidate exists:
+
+1. Show `/radar` saying "今は見送り".
+2. Show `/rejections`.
+3. Explain that saying no is part of the product.
+
+## Immediate Runtime Settings
+
+Recommended judging defaults:
 
 - `MIN_BB_SCORE=88`
 - `RADAR_DISPLAY_LIMIT=2`
@@ -23,138 +74,34 @@ Core positioning:
 Reason:
 
 - Weak watch candidates should not appear in the main feed.
-- It is better to miss a marginal token than to spam the room with doubtful signals.
+- It is better to miss a marginal token than to spam the room.
 - During judging, selectivity looks more professional than volume.
 
-If the market is quiet:
-
-- Temporarily lower `MIN_BB_SCORE=85`
-- Return to `88` before screenshots or judging
-
-## Rival Bot Observations
-
-### leidream / Flow Scanner
-
-What looks strong:
-
-- Score breakdown is visual.
-- Candidates have clear zones such as strong watch and speculation.
-- It shows cohort and data quality.
-
-What we adapted:
-
-- Added a compact `Signal stack` to the Radar card.
-- Kept our own scoring language: Smart Money, Flow, Holder, Freshness.
-
-What we should not copy:
-
-- Their score block is larger and can become visually heavy.
-- Our bot should stay faster to scan.
-
-### demo / Meme Edge Alert
-
-What looks strong:
-
-- Clear quality gate.
-- Clear source and risk checks.
-- Good "why detected" section.
-
-What we already do:
-
-- Radar has "なぜ今見るか" and "警戒".
-- Flow has action line and summary.
-
-Improvement idea:
-
-- Keep showing why the token matters now, not just raw metrics.
-
-### mitsuri / Signal Review
-
-What looks strong:
-
-- Nice card layout.
-- Token image makes the feed more visually attractive.
-- Confidence is obvious.
-
-What we might add later:
-
-- Token image thumbnail from market data if it is cheap and reliable.
-
-Why not now:
-
-- Extra image fetches can add fragility.
-- The current priority is credit-saving and stable judging.
-
-### mol / roster and webhook tools
-
-What looks strong:
-
-- Operational depth.
-- Shows DB, roster, sync, and automation.
-
-What we already do:
-
-- `/health`
-- `/stats`
-- tracking
-- Nansen CLI check
-
-Improvement idea:
-
-- Emphasize operations in `/report` and README rather than adding complex commands.
-
-### kumi / daily digest
-
-What looks strong:
-
-- Daily digest is useful for ongoing community consumption.
-
-What we can do later:
-
-- Add a daily digest only if time remains.
-
-Why not urgent:
-
-- Our differentiator is pre-CA Radar, not daily summary.
-
-## Priority List
-
-### Must Do
-
-- Keep `MIN_BB_SCORE=88`.
-- Use `/radar` sparingly after credits return.
-- Capture screenshots of `/radar`, `/flow`, `/stats`, `/health`, `/report`.
-- Run `/export` before final GitHub push.
-- Push final GitHub repo only after the output looks clean.
-
-### Should Do
-
-- Watch whether the Radar card is too long on Discord.
-- If too long, remove one low-value field, not the Nansen fields.
-- If too many weak signals appear, set `RADAR_DISPLAY_LIMIT=1`.
-
-### Could Do
-
-- Add token image thumbnails if market data already returns them cheaply.
-- Add daily digest after the main Radar flow is fully stable.
-
-### Do Not Do
+## Do Not Do
 
 - Do not add trading execution.
-- Do not add `/demo`.
+- Do not add buy/sell/entry/target language.
+- Do not add `/demo` as a shortcut around the real product.
 - Do not spam `/radar` while credits are limited.
-- Do not copy other bots' wording or exact design.
+- Do not make CA the visual hero.
+- Do not copy other bots' exact wording or design.
+- Do not add more data fields unless they improve the three-second Radar decision.
+
+## Implementation Phases
+
+1. Direction lock and management docs.
+2. `/radar` screenshot UX polish.
+3. Nansen credit efficiency.
+4. Data compatibility and Radar Call continuity smoke tests.
+5. `/flow`, `/stats`, and `/rejections` polish.
+6. README architecture/setup/dependency polish.
+7. REPORT refresh and demo asset preparation.
+8. Final `npm.cmd run check:all`, GitHub push, and submission form.
 
 ## Judge Pitch
 
 bb Native Alpha Radar gives bb a reason to open Nansen from inside Discord.
 
-The loop is:
+It does not chase price. It catches early Smart Money attention, asks the room to verify, and records whether the Radar Call mattered.
 
-1. Radar finds a pre-CA candidate.
-2. The card explains why it matters.
-3. The user checks DexScreener / gmgn / Nansen.
-4. `/flow` gives a deeper Nansen view.
-5. `/stats` proves whether the signal moved after notification.
-
-This is aligned with the hackathon goal: a Discord-native Nansen bot that can keep being used in the bb community.
+That makes it a Discord-native Nansen workflow, not just another token feed.
