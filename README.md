@@ -279,6 +279,10 @@ During judging:
 
 OpenAI ChatGPT / Codex was used for product design, implementation support, debugging, and documentation drafting.
 
+## Contributor Notes
+
+For Codex/agent workflow, Radar philosophy, and repo guardrails, see `AGENTS.md`.
+
 ## License
 
 Hackathon production submission.
