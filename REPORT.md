@@ -1,181 +1,228 @@
 # bb Native Alpha Radar Report
 
-Generated at: 2026-05-08T12:58:50.179Z
+bb Native Alpha Radar is a Discord-native pre-CA Radar for Japanese bb Discord users.
 
-bb Native Alpha Radar is not a price bot.
+It is not a price bot. It is not a trading assistant. It is a low-noise Radar that uses Nansen to help the bb community notice early Solana meme movement before a CA becomes the room narrative.
 
-It is a pre-CA Radar system powered by Nansen that helps bb detect early Solana meme movements before they become Discord-wide narratives.
+## Problem
 
-The goal is not to spam alpha. The goal is to create a shared Radar culture where bb collectively validates early signals using Nansen.
+Discord alpha rooms move quickly, but most token bots arrive after a CA is already circulating.
 
-This is not a price bot, risk bot, or news summary bot. Existing lowcap bots are useful after someone posts a CA. This bot is designed to look one step earlier and give the community a small number of candidates worth checking.
+That creates two problems:
 
-## Product Loop
+- The room gets noisy because many weak candidates look urgent.
+- Users see links and numbers before they understand whether a signal is worth verifying.
 
-Radar -> Verify -> Prove -> Community
+bb Native Alpha Radar is built for the moment before that: Smart Money starts touching something, but the bb room has not yet turned it into a shared topic.
 
-- Radar: detect pre-CA candidates with Nansen Smart Money data
-- Verify: use `/why <CA>` and `/flow <CA>` plus DexScreener/gmgn/Nansen links
-- Prove: track post-alert market-cap movement, review daily Radar activity with `/stats`, and show detailed winners with `/leaderboard`
-- Community: collect 🔥 👀 ⚠️ 💀 reactions on Radar Calls
+## Solution
 
-## Product Goal
+The bot runs a disciplined Radar loop:
 
-- Detect early Solana lowcap meme candidates before they become a bb room topic
-- Keep alerts selective instead of noisy
-- Explain why each candidate was detected in a few seconds
-- Save post-alert market-cap movement for README/report evidence
-- Make the use of Nansen obvious: Smart Money, holders, wallet labels, and Flow Intelligence
+`Radar -> Verify -> Prove -> Community`
 
-## Summary
+- `Radar`: Nansen Smart Money and lowcap screening surface a small set of early candidates.
+- `Verify`: `/why <CA>` and `/flow <CA>` guide users to DexScreener, gmgn, and Nansen before touching anything.
+- `Prove`: saved Radar Calls are tracked after alert time.
+- `Community`: Radar Call IDs and reactions make each signal discussable inside bb.
 
-- This bot is built for the bb room's actual workflow: Radar Call -> Dex/gmgn check -> `/why <CA>` -> `/flow <CA>` -> Nansen verification.
-- It is deliberately not a mass alert bot. It checks on a schedule, but posts only when candidates pass policy.
-- Weak candidates are rejected or shown as watch-only instead of being dressed up as alpha.
-- It can explain both hits and misses through `/stats`, `/rejections`, `/report`, and saved scan history.
-- It is suitable for a Nansen referral workflow because it repeatedly sends users from Discord into Nansen verification.
+The product value is not "more alerts." The product value is knowing when to stay quiet.
 
-## Daily Summary
+## Early Signal Philosophy
 
-- `/stats` is the daily Radar summary inside Discord.
-- It shows today's Radar Calls, strong candidates, rejects, best Radar, community reactions, and a short commentary.
-- Optional daily summary auto-posting can publish the same recap once per day into the main channel.
-- Duplicate daily posts are prevented with `data/daily-summary.json`.
+The bot tries to answer one question:
 
-## Current Results
+```text
+What is Smart Money touching before bb starts talking about it?
+```
 
-- Current-score valid radar records: 3
-- Tracked records: 3
-- Completed 6h tracking: 2
-- Today's auto alerts: 0/8
+It checks Solana lowcap candidates, recent Smart Money activity, token age, bb room history, holder concentration, and Nansen flow. A candidate can be downgraded or rejected even when raw flow looks interesting.
 
-## Post-Alert Performance
+That restraint is the core product decision.
 
-| # | Radar Call / Token | Max gain | Alert MC | Max MC | Current MC / Community |
-| - | - | -: | -: | -: | -: |
-| 1 | Radar Call #40 / [$ECASH](https://dexscreener.com/solana/cTxqg4vt21u1Q2f9DSEig6S1fxmxLSsUV2v2wWspump) | +97% | $273.2K | $537.0K | $388.0K / none yet |
-| 2 | Radar Call #42 / [$TRACKHANTA](https://dexscreener.com/solana/5MNT24bACund9tFpb8nYJR1G8ArR3ahFo1C24zqypump) | +34% | $11.4K | $15.2K | $13.9K / none yet |
-| 3 | Radar Call #41 / [$PUMP](https://dexscreener.com/solana/DTPpZEzTdB6wMDyKgyexhB6h3r7fVBksSB363DLopump) | +26% | $8.2K | $10.4K | $8.8K / none yet |
+## Low-Noise Philosophy
 
-## Noise Filter / Rejections
+The default `/radar` surface shows only a small number of candidates. If nothing is strong enough, the bot says so.
 
-- Scan records: 17
-- Rejected candidate records: 42
+This matters for judging because it proves the bot is not a spam feed:
 
-Top rejection reasons:
+- weak candidates can be filtered,
+- already-posted bb candidates can be skipped,
+- outflow-biased candidates can be rejected,
+- holder concentration can downgrade a candidate,
+- `/rejections` makes the filter visible.
 
-- Nansen flow outflow bias: 28
-- already posted in bb channel: 12
-- top-holder concentration: 3
+The bot is designed to protect attention, not fill a channel.
 
-## Radar Call System
+## Discord-First Philosophy
 
-- Every saved alert receives a Radar Call ID.
-- The same ID appears in `/radar`, `/why`, `/flow`, `/leaderboard`, `/stats`, and `/report`.
-- This gives the community a shared object to discuss: "Did you see Radar Call #184?"
-- Legacy alert history receives a fallback Radar Call ID for display.
+The visible Discord UI is Japanese-first because the target users are Japanese bb Discord users.
 
-## Community Reactions
+The surfaces are built for screenshots:
 
-- 🔥 = bullish
-- 👀 = watch
-- ⚠️ = caution
-- 💀 = suspicious
+- `/radar` gives the state of the scan first.
+- `/flow` acts as a Radar follow-up screen, not a dashboard.
+- CA is shown as verification detail, not the hero.
+- Buttons send users to DexScreener, gmgn, and Nansen.
+- Long analysis is avoided unless the user asks for deeper verification.
 
-Reaction counts can be pulled from Discord message reactions and shown in leaderboard/reporting surfaces.
+## Why Nansen Matters
 
-## Radar Confidence
+Nansen is not decorative in this project. It decides what deserves attention.
 
-- HIGH: strong score, enough Smart Money, healthy Nansen flow, and no major holder/market penalty
-- MEDIUM: usable watch candidate, but needs confirmation
-- LOW: weak or fallback candidate; avoid overreacting
+Used for Radar discovery:
 
-## Nansen Usage
+- Smart Money netflow.
+- Smart Money DEX trades.
+- Token Screener.
 
-- Nansen CLI health/schema check with `nansen schema --pretty`
-- Smart Money netflow
-- Smart Money DEX trades
-- Token Screener
-- Token holders for holder concentration and label hints
-- Flow Intelligence for inflow/outflow bias
-- Holder concentration and Flow Intelligence in radar scoring
-- Alpha signal heuristics for winning-wallet hints, new-wallet growth, narrative context, seller pressure, and bb room topic status
-- Token holders / Flow Intelligence for `/flow` deep dives
-- Flow Judge classification and action line for fast Discord review
-- Wallet label hints when Nansen holder rows include label/tag/category fields
+Used for focused verification:
 
-## Positioning
+- Token holders.
+- Wallet label hints.
+- Flow Intelligence.
 
-- Unlike CA reaction bots, this bot tries to surface candidates before the CA is posted in the bb room.
-- Unlike broad leaderboards, it intentionally limits output to a small number of candidates per scan.
-- Holder concentration and Nansen Flow Intelligence can penalize candidates even when raw flow looks attractive.
-- The bot shows operational health, Nansen REST status, and Nansen CLI status in Discord.
-- Post-alert tracking turns the bot into a measurable product instead of a one-off signal feed.
+Used for hackathon requirement:
 
-## Discord Commands
+- Nansen CLI health/schema check with `nansen schema --pretty`.
 
-- `/radar`: manual radar scan
-- `/why <CA>`: explain why a Radar Call picked a CA in a few seconds
-- `/flow <CA>`: deep-dive a candidate
-- `/leaderboard`: show top tracked Radar Calls
-- `/rejections`: show why weak candidates were filtered out
-- `/criteria`: show extraction rules
-- `/stats`: show today's Radar daily summary
-- `/report`: show a short submission report in Discord
-- `/config`: show non-secret runtime settings
-- `/health`: check bot/Nansen/runtime health without exposing secrets
-- `/export`: regenerate this `REPORT.md`
+## Credit-Efficiency Philosophy
 
-## Runtime Criteria
+The bot is designed for real Discord operation, not demo spam.
 
-- Chain: Solana
-- Market cap limit: $500.0K
-- Token age limit: 30d
-- Minimum bb reaction score: 88
-- Radar display limit: 2 candidates/scan
-- Minimum Smart Money traders: 3
-- Auto alert cap: 8/day
-- Dedupe window: 6h
-- bb already-posted lookback: 300 messages
-- Radar interval: 30 minutes
-- Tracking interval: 15 minutes
+Current credit strategy:
 
-## Operations
+- Base scan uses the broad Nansen sources.
+- Recent bb history can reject already-posted candidates before deep enrichment.
+- Deep holders/flow enrichment is capped to likely Radar Calls.
+- `/flow <CA>` spends deeper Nansen calls only when a user explicitly asks for one CA.
+- `/health` avoids spending a live Nansen REST call just to poll status.
+- Passive proof commands prefer saved data.
 
-- During judging, the bot runs as a Node.js process on the developer machine.
-- While running, it checks radar candidates every configured interval.
-- A radar check does not always create a Discord post; the bot posts only when candidates pass the alert policy.
-- Each automatic post shows only the configured display limit so the bb room stays readable.
-- Daily alert caps and dedupe windows control noise.
-- The same CA can reappear after the dedupe window only if it still passes the current conditions.
-- The bb already-posted check scans recent Discord messages and skips candidates whose CA or symbol already appeared.
-- It avoids duplicate alerts for the same CA within the dedupe window.
-- It updates post-alert market-cap tracking every configured tracking interval.
-- For long-running production use, the same process can move to Railway, Render, Fly.io, or a VPS.
+This keeps Nansen usage impressive because it is decisive, not because it is excessive.
 
-## Safety
+## Tracking And Proof Loop
 
-- Secrets are read from `.env` and are not committed.
-- API keys and Discord tokens are not printed in Discord output.
+Every saved alert receives a Radar Call ID.
+
+That ID follows the candidate across:
+
+- `/radar`
+- `/why <CA>`
+- `/flow <CA>`
+- `/leaderboard`
+- `/stats`
+- `/report`
+
+The bot records alert-time market cap, later market-cap checks, max gain, latest pair URL, and community reaction fields when available. This turns a Radar Call into a measurable object instead of a disposable chat message.
+
+## Rejection Philosophy
+
+`/rejections` is a product feature.
+
+It shows why the bot did not alert:
+
+- bb already posted it,
+- Nansen flow was outflow-biased,
+- holder concentration looked risky,
+- Smart Money was too thin,
+- score was below policy.
+
+For bb culture, this is important. A Radar that can say no earns more trust than a bot that always finds something to post.
+
+## Operational Safety
+
+The repo includes Windows-friendly start/stop scripts:
+
+- `start-bot.cmd`
+- `start-bot.ps1`
+- `stop-bot.cmd`
+- `stop-bot.ps1`
+
+Development guidance:
+
+- run from the primary repo path,
+- prefer foreground operation while testing,
+- stop the bot after checks,
+- avoid leaving it running unintentionally because scheduled scans can spend Nansen credits.
+
+The bot does not expose secrets, does not execute trades, and does not provide buy/sell advice.
+
+## Architecture
+
+The implementation is intentionally small.
+
+- `src/index.js`: Discord Gateway, slash command routing, scheduled Radar, tracking, daily summary.
+- `src/radar.js`: candidate scoring, filtering, message formatting, report surfaces.
+- `src/nansen.js`: Nansen REST adapter.
+- `src/nansenCli.js`: Nansen CLI health/schema check.
+- `src/store.js`: local JSON persistence and Radar Call IDs.
+- `src/tracking.js`: post-alert DexScreener tracking.
+- `src/reactions.js`: Discord reaction collection.
+- `src/marketData.js`: DexScreener market data helper.
+
+Local JSON memory:
+
+- `data/alerts.json`
+- `data/scans.json`
+- `data/daily-summary.json`
+
+These files are local operational memory and are not committed.
+
+## Judge Demo
+
+Recommended flow:
+
+```text
+/health
+/radar
+/why <CA>
+/flow <CA>
+/rejections
+/stats
+/leaderboard
+/report
+```
+
+What the demo should prove:
+
+- The bot runs with Nansen CLI.
+- The bot is not a price bot.
+- The bot can stay quiet when weak signals appear.
+- Nansen powers both discovery and verification.
+- Radar Call IDs preserve community memory.
+- Tracking and rejections create accountability.
+
+## Current Status
+
+Completed:
+
+- Primary repo unified.
+- Japanese-first `/radar` UI reviewed.
+- `/radar` dark mode screenshot reviewed.
+- CA secondary in `/radar`.
+- Nansen credit-efficiency pass.
+- `/health` credit-safe behavior.
+- Safe start/stop operation docs and scripts.
+- `npm.cmd run check:all` passing after latest pushed changes.
+
+Still needed before final submission:
+
+- final `/health` screenshot,
+- final `/flow` screenshot confirmation,
+- demo screenshot set,
+- demo video,
+- submission form,
+- GitHub URL or intro tweet URL in the form.
+
+## Safety Notes
+
+- This is not financial advice.
+- Final decisions should be checked with DexScreener, gmgn, and Nansen.
 - The bot does not execute trades.
-- Discord permissions are intentionally minimal: view channel, send messages, embed links, read message history, and application commands.
-- Daily alert limits and dedupe windows reduce spam risk.
-- Radar display limits reduce noise during active market periods.
-- Public-channel safety filtering removes suspicious/offensive/NSFW token symbols before display.
+- The bot does not provide entries, exits, targets, or buy/sell calls.
+- Secrets live in `.env` and must never be committed.
 
 ## AI Disclosure
 
 OpenAI ChatGPT / Codex was used for product design, implementation support, debugging, and documentation drafting.
-
-## Production Notes
-
-- Nansen credit exhaustion or API errors can temporarily reduce live data quality.
-- New-wallet growth, winning-wallet classification, CTO/Korea/CEX narrative detection, and top-holder sell pressure are implemented as heuristics and can be improved when richer endpoint fields are available.
-- The bb already-posted check currently scans recent channel messages only.
-- Further production hardening would add hosted deployment, persistent database storage, and richer per-wallet label mapping.
-
-## Notes
-
-- This is not financial advice.
-- Final decisions should be checked with DexScreener, gmgn, and Nansen.
-- Local raw alert history is stored in `data/alerts.json` and is not committed.

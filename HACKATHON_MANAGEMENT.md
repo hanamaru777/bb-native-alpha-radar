@@ -79,8 +79,8 @@ Next 3 tasks:
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
 | P0 | Capture final `/flow` screenshot and confirm completion | NOT STARTED | User | screenshot, manual review | Run `/flow <CA>` on a real candidate and confirm it feels like Radar follow-up, not dashboard. |
-| P0 | Refresh README/REPORT for submission | NOT STARTED | Codex | commit, GitHub URL | Update overview, architecture, setup, dependency, Nansen CLI usage, and latest credit strategy. |
-| P0 | Capture final `/health` screenshot | NOT STARTED | User | screenshot | Run bot from primary repo, run `/health`, capture Discord dark mode screenshot. |
+| P0 | Capture final demo screenshot set | NOT STARTED | User | screenshot | Capture `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report` after `/health`. |
+| P0 | Record demo video | NOT STARTED | User | demo video | Record after screenshot set is stable. |
 
 Must not be done yet:
 
@@ -119,15 +119,15 @@ Must not be done yet:
 
 | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
-| README final polish | NOT STARTED | Codex | commit | Add concise overview, setup, architecture, dependencies, demo flow, and Nansen CLI requirement. |
-| REPORT refresh | NOT STARTED | Codex | commit | Refresh after README and final screenshots are stable. |
+| README final polish | DONE | Codex | commit | README now explains overview, setup, architecture, dependencies, demo flow, Nansen CLI requirement, and credit strategy. |
+| REPORT refresh | DONE | Codex | commit | REPORT now reads as problem -> solution -> workflow -> value submission narrative. |
 | Demo screenshot set | NOT STARTED | User | screenshot | Capture `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report`. |
 | Demo video | NOT STARTED | User | demo video | Record a short flow showing Nansen CLI, Radar, Verify, Prove, Community. |
 | Bot overview for submission form | NOT STARTED | ChatGPT | form submitted | Draft concise judge-facing overview. |
 | Usage explanation for submission form | NOT STARTED | ChatGPT | form submitted | Explain command flow and bb-native use case. |
-| Code/architecture explanation | NOT STARTED | Codex | commit | Keep it simple: Gateway, Radar, Nansen adapter, storage, tracking. |
+| Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain Gateway, Radar, Nansen adapter, storage, and tracking. |
 | Setup steps verified from clean checkout | NOT STARTED | Codex | check pass | Verify README commands match actual repo. |
-| Dependency list finalized | NOT STARTED | Codex | commit | Explain Node 22, Nansen CLI, Discord REST/Gateway, no heavy framework. |
+| Dependency list finalized | DONE | Codex | commit | README now explains Node.js, Nansen CLI, Discord API usage, and no Discord SDK dependency. |
 | Intro tweet/post drafted | NOT STARTED | ChatGPT | GitHub URL | Draft after demo assets exist. |
 
 ## P2 Nice To Have
@@ -213,7 +213,7 @@ DONE when:
 - GitHub URL points to final pushed code.
 - No secrets or local data are committed.
 
-Current status: `NOT STARTED`.
+Current status: `DONE` for documentation polish. Clean-checkout verification is still separate.
 
 ### Demo Screenshots
 
@@ -269,7 +269,7 @@ Evaluation boosters:
 | Bot overview | NOT STARTED | ChatGPT | form submitted | Draft concise non-price-bot positioning. |
 | Usage explanation | NOT STARTED | ChatGPT | form submitted | Explain `/radar`, `/why`, `/flow`, `/rejections`, `/stats`. |
 | Code/architecture explanation | NOT STARTED | Codex | commit | Add to README/REPORT. |
-| Setup steps | NOT STARTED | Codex | commit | Verify commands from README. |
+| Setup steps | DONE | Codex | commit | README documents install, Nansen CLI, `.env`, start/stop, and checks. |
 | Demo video | NOT STARTED | User | demo video | Record after screenshots are stable. |
 | Dependency list | NOT STARTED | Codex | commit | Document Node.js, Nansen CLI, Discord API usage. |
 
@@ -301,7 +301,7 @@ Judge framing:
 | Runtime confusion between foreground/background bot processes | NEXT | Codex | commit | Document operation and process confirmation. |
 | Bot left running during development may spend Nansen credits every scan interval | NEXT | Codex | commit | Document stop-before-dev habit. |
 | `/flow` final UI not explicitly approved after latest polish | NOT STARTED | User | screenshot | Review latest screenshot. |
-| README/REPORT not yet submission-ready | NOT STARTED | Codex | commit | Polish after operational docs. |
+| README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
 | Demo screenshots incomplete | NOT STARTED | User | screenshot | Capture in command order. |
 | Demo video missing | NOT STARTED | User | demo video | Record after screenshot set. |
 | Submission form not submitted | NOT STARTED | User | form submitted | Submit last. |
@@ -314,6 +314,8 @@ Recent evidence:
 - `f793e2d`: Nansen credit-efficiency pass.
 - `837c96a`: `/flow` verification UI polish.
 - `0c9b0e8`: `/flow` tracking wording refinement.
+- `19e4fdd`: safe bot runtime operation docs and stop scripts.
+- This commit: README/REPORT submission polish.
 
 Latest required check:
 
