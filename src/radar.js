@@ -1096,7 +1096,8 @@ export function formatRejectionsEmbed(stats) {
         const reasons = (item.reasons || []).map(reasonLabel).join(" / ") || "条件未満";
         const state = (item.reasons || []).includes("bb_already_posted") ? "通知不要" : "👀 監視のみ";
         const caLine = item.ca ? `\nCA: \`${item.ca}\`` : "";
-        return `${index + 1}. $${item.symbol}\nScore: ${item.bbScore}/100\n理由: ${reasons}\n状態: ${state}${caLine}`;
+        const nextLine = item.ca ? "\n次: 理由確認 `/why <CA>` / 深掘り `/flow <CA>`" : "";
+        return `${index + 1}. $${item.symbol}\nScore: ${item.bbScore}/100\n理由: ${reasons}\n状態: ${state}${caLine}${nextLine}`;
       }).join("\n\n")
     : "最近の見送り候補はないよ。";
 
