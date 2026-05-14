@@ -99,8 +99,6 @@ export async function registerCommands(token, applicationId, guildId = "") {
         }
       ]
     },
-    { name: "criteria", description: "Show radar filters and score rules" },
-    { name: "help", description: "Show bot usage guide" },
     {
       name: "why",
       description: "Explain why a Radar Call picked a CA",
@@ -117,9 +115,7 @@ export async function registerCommands(token, applicationId, guildId = "") {
     { name: "rejections", description: "Show why candidates were skipped" },
     { name: "stats", description: "Show today's radar daily summary" },
     { name: "report", description: "Show short submission report" },
-    { name: "config", description: "Show current radar config" },
-    { name: "health", description: "Check bot and Nansen status" },
-    { name: "export", description: "Update REPORT.md for GitHub" }
+    { name: "health", description: "Check bot and Nansen status" }
   ];
 
   const path = guildId

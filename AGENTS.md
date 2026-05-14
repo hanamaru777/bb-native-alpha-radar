@@ -47,10 +47,12 @@ If a proposed change makes the bot feel more like a dashboard, price bot, or tra
 - `/rejections`: detailed noise filter / skipped candidates
 - `/stats`: today's Radar daily summary
 - `/report`: submission/judging summary
-- `/criteria`: extraction and score rules
-- `/config`: runtime settings without secrets
 - `/health`: bot / Nansen REST / Nansen CLI health
-- `/export`: regenerate `REPORT.md`
+
+Hidden/internal helpers:
+
+- criteria/config formatting may stay in code for internal maintenance, but should not be public slash commands for submission.
+- report export should stay a local/internal maintenance action, not a public Discord command.
 
 ## UI Principles
 

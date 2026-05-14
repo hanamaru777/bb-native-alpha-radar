@@ -80,7 +80,7 @@ Rules:
 - Explain positioning, Nansen usage, proof, and safety.
 - Keep it readable as a Discord message.
 
-### `/criteria`, `/config`, `/health`, `/export`
+### `/health`
 
 Purpose: system support.
 
@@ -88,7 +88,27 @@ Rules:
 
 - Never expose secrets.
 - `/health` should be useful without creating unnecessary Nansen credit drain.
-- `/config` must show non-secret runtime settings only.
+
+### Hidden/Internal Support
+
+`/criteria`, `/config`, `/help`, and `/export` should not be public slash commands for hackathon judging.
+
+Reason:
+
+- They make the mobile slash list feel like a generic utility dashboard.
+- The same information belongs in README, REPORT, and submission docs.
+- Internal formatter/helper functions may remain in code when useful, but public Discord UX should stay focused.
+
+Public slash commands should remain:
+
+- `/health`
+- `/radar`
+- `/why <CA>`
+- `/flow <CA>`
+- `/leaderboard`
+- `/rejections`
+- `/stats`
+- `/report`
 
 ## Screenshot-First Rules
 

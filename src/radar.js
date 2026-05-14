@@ -824,7 +824,7 @@ export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, st
   lines.push("", "**次に見るもの**");
   lines.push("`/rejections` 見送り一覧");
   lines.push("`/stats` Daily Radar");
-  lines.push("`/criteria` Rules");
+  lines.push("README\u306b\u5224\u5b9a\u30eb\u30fc\u30eb");
   lines.push("", "弱い反応は流さず、今日は静かに見ています。");
   return lines.join("\n");
 }
@@ -1288,7 +1288,7 @@ export function formatHelpWinning() {
     "🔥 強気 / 👀 監視 / ⚠️ 注意 / 💀 怪しい",
     "",
     "**System**",
-    "`/health` / `/config` / `/criteria` / `/export`",
+    "`/health`",
     "",
     "※ 投資助言ではありません。DexScreener / gmgn / Nansenで確認してください。"
   ].join("\n");
@@ -1432,7 +1432,7 @@ export function formatHelpDaily() {
     "🔥 強気 / 👀 監視 / ⚠️ 注意 / 💀 怪しい",
     "",
     "**System**",
-    "`/health` / `/config` / `/criteria` / `/export`",
+    "`/health`",
     "",
     "※ 投資助言ではありません。DexScreener / gmgn / Nansenで確認してください。"
   ].join("\n");

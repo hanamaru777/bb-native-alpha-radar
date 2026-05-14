@@ -107,19 +107,15 @@ Confirm:
 Run:
 
 ```text
-/help
-/criteria
-/config
 /stats
 /report
 ```
 
 Confirm:
 
-- The bot explains automatic operation
-- The filter and bb reaction score are understandable
 - `/stats` shows tracking and rejection stats
 - `/report` explains why bb should adopt this bot
+- README and REPORT explain automatic operation, filter rules, and runtime config
 
 ## 6. Screenshots / Demo Evidence
 
@@ -181,12 +177,6 @@ Before pushing:
 ```powershell
 npm.cmd run check:all
 git status --short
-```
-
-Then update `REPORT.md` from Discord with:
-
-```text
-/export
 ```
 
 Finally push the repo and submit the GitHub URL.
