@@ -961,47 +961,53 @@ function shortReasons(candidate) {
 }
 
 export function formatWhyIntro(candidate) {
-  return `**Why Radar picked this**\n${radarCallLabel(candidate)}\n$${candidate.symbol} / Solana`;
+  return `**Radarが見た理由**\n${radarCallLabel(candidate)}\n$${candidate.symbol} / Solana`;
+}
+
+function whyRadarReasonLine(candidate, classification) {
+  const parts = [
+    classification.label,
+    bbUnpostedLine(candidate),
+    "低時価総額帯",
+    "Smart Money先行",
+    candidate.tracking?.maxGainPercent ? "通知後の実績あり" : "Nansen確認向き"
+  ].filter(Boolean);
+  return parts.slice(0, 4).map((item) => `・${item}`).join("\n");
+}
+
+function whyEvidenceLine(candidate) {
+  const parts = [];
+  const sm = finalSm(candidate);
+  const flow = flowLine(candidate);
+  const holder = holderLine(candidate);
+  if (sm !== "n/a") parts.push(`Smart Money ${sm}`);
+  if (flow !== "n/a") parts.push(`Nansen資金 ${flow}`);
+  if (holder !== "n/a") parts.push(`ホルダー ${holder}`);
+  return parts.slice(0, 3).map((item) => `・${item}`).join("\n") || "・取得待ち";
+}
+
+function whyRiskLine(candidate) {
+  const parts = [
+    "出来高継続",
+    ...String(riskLine(candidate) || "").split(" / ")
+  ].map((item) => item.trim()).filter(Boolean);
+  return parts.slice(0, 3).map((item) => `・${item}`).join("\n");
 }
 
 export function formatWhyEmbed(candidate) {
   const classification = flowClassification(candidate);
-  const confidence = radarConfidence(candidate);
-  const flow = flowLine(candidate);
-  const holder = holderLine(candidate);
-  const whyNow = [
-    bbUnpostedLine(candidate),
-    "低cap帯",
-    "Smart Money先行"
-  ].filter(Boolean).map((item) => `・${item}`).join("\n");
-  const bbCares = [
-    "Solana meme文脈",
-    "初動検証に向いている",
-    candidate.tracking?.maxGainPercent ? "Radar Call実績あり" : "Nansen確認に向いている"
-  ].map((item) => `・${item}`).join("\n");
   return {
-    title: `${radarCallLabel(candidate)} | $${candidate.symbol}`,
-    description: `\`${candidate.ca}\``,
+    title: `${radarCallLabel(candidate)} | 理由 | $${candidate.symbol}`,
+    description: "Radarが注意を向けた理由です。",
     color: classification.color,
     fields: [
-      { name: "判定", value: classification.label, inline: true },
-      { name: "Radar confidence", value: confidence, inline: true },
-      { name: "bb反応度", value: `${candidate.bbScore}/100`, inline: true },
-      { name: "Nansen根拠", value: [
-        `・Smart Money ${flowDisplay(finalSm(candidate))}`,
-        `・24h流入 ${flowDisplay(finalNetflow(candidate))}`,
-        `・Flow ${flowDisplay(flow)}`,
-        `・Holder ${flowDisplay(holder)}`
-      ].join("\n") },
-      { name: "Why now", value: whyNow, inline: true },
-      { name: "Why bb cares", value: bbCares, inline: true },
-      { name: "注意", value: [
-        "・SNS拡散と出来高継続を確認",
-        `・${shortText(riskLine(candidate), 180)}`
-      ].join("\n") },
-      { name: "次", value: `\`/flow ${candidate.ca}\` で深掘り\n下のボタンで DexScreener / gmgn / Nansen 確認` }
+      { name: "Radarが反応した理由", value: whyRadarReasonLine(candidate, classification) },
+      { name: "気になった動き", value: whyEvidenceLine(candidate) },
+      { name: "まず確認", value: `\`/flow ${candidate.ca}\`\n下のボタンで DexScreener / gmgn / Nansen 確認` },
+      { name: "注意点", value: shortText(whyRiskLine(candidate), 180) },
+      { name: "CA", value: `\`${candidate.ca}\`` }
     ],
-    footer: { text: "NFA / DYOR | 見つけた理由だけ短く見るよ。" },
+    footer: { text: "投資助言ではありません | 触る前に確認してね" },
     timestamp: new Date().toISOString()
   };
 }
