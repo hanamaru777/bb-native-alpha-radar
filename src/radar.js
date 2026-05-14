@@ -1008,31 +1008,50 @@ export function formatWhyEmbed(candidate) {
 
 export function formatLeaderboardIntro(stats) {
   const count = stats.tracking?.leaderboard?.length || 0;
+  const shown = Math.min(count, 3);
   return [
-    "**Radar Leaderboard**",
-    "Nansenとbb条件で拾ったRadar Callの追跡結果です。",
-    count ? `伸びた順に上位${Math.min(count, 5)}件を表示します。` : "まだ追跡済みのRadar Callがありません。"
+    "**Radar Proof**",
+    "通知後に本当に動いたRadar Callです。",
+    count ? `最大上昇順に上位${shown}件だけ表示します。` : "まだ追跡済みのRadar Callがありません。"
   ].join("\n");
+}
+
+function proofLine(alert) {
+  const tracking = alert.tracking || {};
+  const notified = formatUsd(alert.notification?.marketCapUsd);
+  const max = formatUsd(tracking.maxMarketCapUsd);
+  const latest = Number.isFinite(Number(tracking.latestMarketCapUsd))
+    ? formatUsd(tracking.latestMarketCapUsd)
+    : "取得待ち";
+  return [
+    `最大上昇: ${formatGain(tracking.maxGainPercent)}`,
+    `通知時 -> 最大: ${notified} -> ${max}`,
+    `現在: ${latest}`
+  ].join("\n");
+}
+
+function radarCaughtLine(alert) {
+  const reasons = shortReasons(alert).slice(0, 3);
+  return reasons.length
+    ? reasons.map((reason) => `・${reason}`).join("\n")
+    : "・取得待ち";
 }
 
 export function formatLeaderboardEmbeds(stats) {
   const rows = stats.tracking?.leaderboard || [];
-  return rows.slice(0, 5).map((alert, index) => {
-    const tracking = alert.tracking || {};
+  return rows.slice(0, 3).map((alert, index) => {
     const links = linksFor(alert);
-    const reasons = shortReasons(alert).slice(0, 3).map((reason) => `・${reason}`).join("\n") || "取得待ち";
     return {
       title: `#${index + 1} ${radarCallLabel(alert)} | $${alert.symbol}`,
-      description: "Solana",
+      description: "Radar -> Verify -> Prove",
       color: 0xfacc15,
       fields: [
-        { name: "最大上昇", value: formatGain(tracking.maxGainPercent), inline: true },
-        { name: "MC推移", value: `${formatUsd(alert.notification?.marketCapUsd)} -> ${formatUsd(tracking.maxMarketCapUsd)}`, inline: true },
+        { name: "証明", value: proofLine(alert) },
+        { name: "Radarが拾った理由", value: radarCaughtLine(alert) },
         { name: "通知時刻", value: compactDate(alert.notification?.notifiedAt || alert.savedAt), inline: true },
-        { name: "Why Radar caught this", value: reasons },
-        { name: "Community", value: formatReactionSummary(alert.reactions) },
+        { name: "Community", value: formatReactionSummary(alert.reactions), inline: true },
         { name: "Verify", value: `[DexScreener](${links.dex}) / [gmgn](${links.gmgn}) / [Nansen](${links.nansen})` },
-        { name: "次", value: `理由: \`/why ${alert.ca}\`\n深掘り: \`/flow ${alert.ca}\`` }
+        { name: "次に見る", value: `理由: \`/why ${alert.ca}\`\n深掘り: \`/flow ${alert.ca}\`` }
       ],
       footer: { text: "NFA / DYOR" }
     };
