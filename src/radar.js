@@ -873,54 +873,65 @@ function flowClassification(candidate) {
 }
 
 export function formatFlowIntroProduction(candidate) {
-  return `**Flow Judge**\n気になる子だけ、深掘りするよ。\n${radarCallLabel(candidate)} / $${candidate.symbol}`;
+  return `**Flow確認**\nRadarが拾った動きを、ここで確認するよ。\n${radarCallLabel(candidate)} / $${candidate.symbol}`;
+}
+
+function flowNowLine(candidate, classification) {
+  const parts = [classification.summary];
+  const sm = finalSm(candidate);
+  const flow = flowLine(candidate);
+  if (sm !== "n/a") parts.push(`Smart Money ${sm}`);
+  if (flow !== "n/a") parts.push(flow);
+  return shortText(parts.filter(Boolean).join(" / "), 220);
+}
+
+function flowVerifyNowLine(candidate) {
+  return [
+    "Dex / gmgn / Nansenで確認",
+    "板・出来高・上位売りを見る",
+    `理由を戻る: \`/why ${candidate.ca}\``
+  ].join("\n");
+}
+
+function flowRiskSummary(candidate) {
+  return shortText(radarRiskLine(candidate), 180);
+}
+
+function flowTraceSummary(candidate) {
+  const lines = [];
+  const flow = flowLine(candidate);
+  const holders = holderLine(candidate);
+  const labels = candidate.nansenDeepDive?.holders?.labels?.summary;
+  const marketQuality = candidate.nansenDeepDive?.marketQuality;
+  const alphaSignal = candidate.nansenDeepDive?.alphaSignals?.reason || "";
+
+  if (flow !== "n/a") lines.push(`資金: ${flow}`);
+  if (holders !== "n/a") lines.push(`ホルダー: ${holders}`);
+  if (labels && labels !== "n/a") lines.push(`ラベル: ${labels}`);
+  if (alphaSignal && alphaSignal !== "n/a") lines.push(`文脈: ${alphaSignal}`);
+  if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
+    lines.push(`DEX: ${cleanDexSummary(marketQuality.summary)}`);
+  }
+
+  return shortText(lines.join("\n") || "取得待ち", 320);
 }
 
 export function formatFlowEmbedProduction(candidate) {
   const classification = flowClassification(candidate);
-  const confidence = radarConfidence(candidate);
-  const tracking = candidate.tracking || {};
-  const holders = candidate.nansenDeepDive?.holders;
-  const flow = candidate.nansenDeepDive?.flow;
-  const marketQuality = candidate.nansenDeepDive?.marketQuality;
-  const scoreLabel = candidate.source ? "保存時bb反応度" : "bb反応度";
-  const alphaSignal = candidate.nansenDeepDive?.alphaSignals?.reason || "";
-  const trackingLine = Number.isFinite(Number(tracking.latestMarketCapUsd))
-    ? `now ${formatUsd(tracking.latestMarketCapUsd)} / max ${formatUsd(tracking.maxMarketCapUsd)} / ${formatGain(tracking.maxGainPercent)}`
-    : "取得待ち";
   const fields = [
-    { name: "今やること", value: shortText(classification.action, 350) },
-    { name: "要約", value: shortText(classification.summary, 350) },
-    { name: "Radar confidence", value: `${confidence}\n${confidenceNote(confidence)}`, inline: true },
-    { name: "時価総額", value: flowDisplay(candidate.marketCap || formatUsd(candidate.metrics?.marketCapUsd)), inline: true },
-    { name: "Smart Money人数", value: flowDisplay(finalSm(candidate)), inline: true },
-    { name: "24h流入", value: flowDisplay(finalNetflow(candidate)), inline: true },
-    { name: "作成から", value: flowDisplay(finalAge(candidate)), inline: true },
-    { name: scoreLabel, value: `${candidate.bbScore}/100`, inline: true },
-    { name: "状態", value: classification.label, inline: true },
-    { name: "上位ホルダー", value: holders ? holderLine(candidate) : "取得待ち" },
-    { name: "ウォレットラベル", value: flowDisplay(holders?.labels?.summary), inline: true },
-    { name: "Nansen資金", value: flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : "取得待ち", inline: true }
+    { name: "今起きてること", value: flowNowLine(candidate, classification) },
+    { name: "まず見る", value: shortText(flowVerifyNowLine(candidate), 220) },
+    { name: "注意点", value: flowRiskSummary(candidate) },
+    { name: "Nansen根拠", value: flowTraceSummary(candidate) },
+    { name: "CA", value: `\`${candidate.ca}\`` }
   ];
-  if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
-    const dexLine = [
-      cleanDexSummary(marketQuality.summary),
-      Number.isFinite(Number(marketQuality.priceChange1h)) ? `1h ${marketQuality.priceChange1h}%` : null,
-      Number.isFinite(Number(marketQuality.liquidityUsd)) ? `liq ${formatUsd(marketQuality.liquidityUsd)}` : null
-    ].filter(Boolean).join(" / ");
-    fields.push({ name: "DEX状況", value: dexLine });
-  }
-  if (alphaSignal && alphaSignal !== "n/a") {
-    fields.push({ name: "補足シグナル", value: alphaSignal });
-  }
-  fields.push({ name: "通知後の動き", value: trackingLine });
 
   return {
-    title: `${radarCallLabel(candidate)} | Flow Judge | $${candidate.symbol}`,
-    description: `\`${candidate.ca}\``,
+    title: `${radarCallLabel(candidate)} | 確認中 | $${candidate.symbol}`,
+    description: classification.label,
     color: classification.color,
     fields,
-    footer: { text: "Not financial advice | 見つけたよ。触る前に確認してね。" },
+    footer: { text: "投資助言ではありません | 触る前に確認してね" },
     timestamp: new Date().toISOString()
   };
 }
