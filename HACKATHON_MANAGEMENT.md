@@ -1,160 +1,281 @@
 # Hackathon Management
 
-This is the master tracking file for successful submission and winning demo readiness.
+This is the execution control document for bb Native Alpha Radar.
 
-Use it to keep the repo focused on:
+Update this file whenever:
 
-- Winning the hackathon.
-- Discord-native UX.
-- Screenshot virality.
-- Radar atmosphere.
-- Few high-quality signals.
-- Nansen credibility.
-- Operational stability.
+- a task is completed,
+- a new risk is found,
+- demo/submission evidence changes,
+- runtime operations change,
+- priorities change.
 
-Do not use this project tracker to justify scope creep, feature explosion, dashboard behavior, or spam behavior.
+Do not use this file as a brainstorm. Use it to decide what happens next.
 
-## Current Progress
+## Strategy
 
-Status legend:
+The goal is not only to build a Discord bot.
 
-- `Done`: already present in the repo.
-- `Needs polish`: present, but should be improved before final submission.
-- `Not started`: missing or not yet prepared.
+The real goal is:
 
-| Area | Status | Notes |
-| - | - | - |
-| Core bot runtime | Done | Node bot, Discord Gateway, slash commands, scheduled Radar, tracking, daily summary support. |
-| Nansen CLI requirement | Needs polish | `/health` checks CLI with `nansen schema --pretty`; final demo must prove the CLI is installed and working. |
-| Nansen REST usage | Done | Smart Money, Token Screener, holders, Flow Intelligence. Enrichment is now capped and bb history is checked before deep enrichment when available. |
-| Discord command UX | Done | Commands exist. `/radar` has been reviewed in Discord dark mode and is good enough for three-second comprehension. |
-| Radar Call IDs | Done | Saved alerts receive shared Radar Call IDs. Compatibility must stay protected. |
-| JSON storage | Done | `alerts.json`, `scans.json`, `daily-summary.json`. Compatibility smoke tests are still missing. |
-| README | Needs polish | Setup and concept exist. Needs final demo/submission framing. |
-| REPORT.md | Needs polish | Exists. Should be refreshed near submission with `/export`. |
-| Demo screenshots | Needs polish | `/radar` dark mode screenshot has been reviewed. Remaining screenshots still need to be captured. |
-| Demo video | Not started | Required for stronger evaluation, even if not strictly required by form. |
-| Intro tweet/post | Not started | Required if GitHub URL alone is not enough or to improve reach. |
-| Submission form | Not started | Final form must include GitHub URL or intro tweet and demo assets. |
+- submit correctly,
+- run reliably during judging,
+- show a strong demo in under two minutes,
+- increase winning probability,
+- prove Nansen is used meaningfully and efficiently,
+- make bb users feel this belongs inside their Discord flow.
 
-## Winning Conditions
+The product must remain:
 
-### Minimum Submission Success
+- pre-CA Radar,
+- Discord-native,
+- screenshot-first,
+- Japanese-first in visible Discord UI,
+- few high-quality signals,
+- reaction/community-oriented,
+- not a dashboard,
+- not a price bot,
+- not a trading assistant.
 
-The project is submit-ready if:
+## Status Rules
 
-- The bot runs locally.
-- Discord commands register and respond.
-- Nansen CLI is installed and demonstrably used.
+Allowed statuses:
+
+- `DONE`
+- `NEXT`
+- `IN PROGRESS`
+- `BLOCKED`
+- `NOT STARTED`
+
+Owners:
+
+- `User`
+- `Codex`
+- `ChatGPT`
+
+Evidence types:
+
+- `screenshot`
+- `commit`
+- `GitHub URL`
+- `demo video`
+- `form submitted`
+- `check pass`
+- `runtime proof`
+- `manual review`
+
+Only mark an item `DONE` when the evidence exists.
+
+## Strict Next-Action Queue
+
+Single next task:
+
+| Priority | Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - | - |
+| P0 | Document safe bot start/stop operations and decide whether `stop-bot.cmd` is needed | NEXT | Codex | commit | Add operational notes for foreground/background runtime, primary repo path, and development credit safety. |
+
+Next 3 tasks:
+
+| Priority | Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - | - |
+| P0 | Capture final `/health` screenshot | NOT STARTED | User | screenshot | Run bot from primary repo, run `/health`, capture Discord dark mode screenshot. |
+| P0 | Capture final `/flow` screenshot and confirm completion | NOT STARTED | User | screenshot, manual review | Run `/flow <CA>` on a real candidate and confirm it feels like Radar follow-up, not dashboard. |
+| P0 | Refresh README/REPORT for submission | NOT STARTED | Codex | commit, GitHub URL | Update overview, architecture, setup, dependency, Nansen CLI usage, and latest credit strategy. |
+
+Must not be done yet:
+
+- Do not add new features.
+- Do not redesign `/radar` or `/flow` again unless a bug appears.
+- Do not add new Nansen endpoints.
+- Do not increase alert frequency.
+- Do not change storage format.
+- Do not prepare final submission form until screenshots and README/REPORT are ready.
+
+## P0 Must Finish Before Submission
+
+| Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| Primary repo unified to `C:\Users\hanam\OneDrive\ドキュメント\CODEX 260309\bb-native-alpha-radar` | DONE | Codex | runtime proof, commit | Keep all future work in this path only. |
+| Codex always uses primary repo path | DONE | Codex | manual review | Check path before every command. |
+| Real `.env` verified with `MOCK_MODE=false` | DONE | Codex | runtime proof | Do not expose secrets; verify only non-secret env lines when needed. |
+| `/radar` Japanese-first UI reviewed | DONE | User | manual review | Do not revert visible Discord UI to English. |
+| `/radar` dark mode screenshot reviewed | DONE | User | screenshot | Use as main screenshot candidate unless a better final one is captured. |
+| `/radar` 3-second comprehension good enough | DONE | User | manual review | Treat `/radar` as locked unless bug appears. |
+| CA secondary in `/radar` | DONE | User | manual review | Do not make CA the visual hero. |
+| Nansen credit-efficiency pass | DONE | Codex | commit | Commit `f793e2d` capped enrichment and made `/health` REST-safe. |
+| `/health` credit-safe behavior reviewed | DONE | Codex | commit | `/health` no longer spends a live Nansen REST call just to poll status. |
+| `/flow` current screenshot reviewed | DONE | User | screenshot | Current screenshot reviewed, but final completion is not explicitly confirmed. |
+| `/flow` final completion confirmed | NOT STARTED | User | screenshot, manual review | Confirm latest `/flow` after commit `0c9b0e8` in Discord dark mode. |
+| `npm.cmd run check:all` passed after latest pushed changes | DONE | Codex | check pass | Latest pass after `/flow` final polish. |
+| Safe runtime start/stop documented | NEXT | Codex | commit | Document background/foreground confusion and exact safe operations. |
+| Avoid bot running during development | NEXT | Codex | commit | Document 30-minute scan credit risk and development stop practice. |
+| Required organizer proof: Discord bot works with Nansen CLI | NOT STARTED | User | screenshot | Capture `/health` with Nansen CLI status. |
+| Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
+| Required organizer proof: GitHub URL or intro tweet URL | NOT STARTED | User | GitHub URL | Use GitHub URL at minimum; intro tweet improves reach. |
+| Final GitHub URL ready | NOT STARTED | Codex | GitHub URL | Ensure final push is clean and README is polished. |
+| Secrets and local data not committed | NOT STARTED | Codex | check pass | Confirm before final submission push. |
+
+## P1 Strongly Improves Winning Chance
+
+| Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| README final polish | NOT STARTED | Codex | commit | Add concise overview, setup, architecture, dependencies, demo flow, and Nansen CLI requirement. |
+| REPORT refresh | NOT STARTED | Codex | commit | Refresh after README and final screenshots are stable. |
+| Demo screenshot set | NOT STARTED | User | screenshot | Capture `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report`. |
+| Demo video | NOT STARTED | User | demo video | Record a short flow showing Nansen CLI, Radar, Verify, Prove, Community. |
+| Bot overview for submission form | NOT STARTED | ChatGPT | form submitted | Draft concise judge-facing overview. |
+| Usage explanation for submission form | NOT STARTED | ChatGPT | form submitted | Explain command flow and bb-native use case. |
+| Code/architecture explanation | NOT STARTED | Codex | commit | Keep it simple: Gateway, Radar, Nansen adapter, storage, tracking. |
+| Setup steps verified from clean checkout | NOT STARTED | Codex | check pass | Verify README commands match actual repo. |
+| Dependency list finalized | NOT STARTED | Codex | commit | Explain Node 22, Nansen CLI, Discord REST/Gateway, no heavy framework. |
+| Intro tweet/post drafted | NOT STARTED | ChatGPT | GitHub URL | Draft after demo assets exist. |
+
+## P2 Nice To Have
+
+| Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| JSON compatibility smoke tests | NOT STARTED | Codex | commit, check pass | Add only after P0 operational docs and final screenshots. |
+| Radar Call continuity smoke test | NOT STARTED | Codex | commit, check pass | Verify IDs across `/radar`, `/why`, `/flow`, `/stats`, `/report`. |
+| Credit exhaustion screenshot | NOT STARTED | User | screenshot | Capture only if naturally encountered or safe to simulate. |
+| GitHub Issues/milestones setup | NOT STARTED | User | GitHub URL | Optional project polish after submission assets are ready. |
+| `stop-bot.cmd` helper | NOT STARTED | Codex | commit | Add only if operational docs show manual stop is too error-prone. |
+
+## P3 Do Not Touch Unless Everything Else Is Done
+
+| Task | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| New commands | BLOCKED | Codex | commit | Do not add before submission unless user explicitly overrides. |
+| New Nansen endpoints | BLOCKED | Codex | commit | Avoid credit and scope risk. |
+| More auto alerts | BLOCKED | Codex | commit | Do not increase spam perception. |
+| Dashboard-style views | BLOCKED | Codex | commit | Conflicts with Radar identity. |
+| Trading/portfolio features | BLOCKED | Codex | commit | Forbidden for this project direction. |
+| Storage format changes | BLOCKED | Codex | commit | Do not touch without compatibility plan. |
+
+## Operational Issues
+
+| Issue | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| Foreground vs background bot runtime confusion | NEXT | Codex | commit | Document exact start/stop workflow and how to confirm process path. |
+| Restart/stop operation needs documentation | NEXT | Codex | commit | Add safe commands and warnings. |
+| Avoid leaving bot running during development because of 30-minute scan credit use | NEXT | Codex | commit | Document stop-before-development habit. |
+| Possible `stop-bot.cmd` task | NOT STARTED | Codex | commit | Decide after docs; implement only if needed. |
+| Visible Discord UI must remain Japanese-first | DONE | Codex | commit | Keep this as hard guardrail. |
+| Codex must always use primary repo path | DONE | Codex | manual review | Verify cwd/path before commands. |
+| `HACKATHON_MANAGEMENT.md` must update whenever task/risk changes | IN PROGRESS | Codex | commit | Keep this file current before and after major tasks. |
+
+## Definitions Of Done
+
+### `/radar`
+
+DONE when:
+
+- Japanese-first visible UI is reviewed.
+- Dark mode screenshot is reviewed.
+- Strong signal and no-signal states are understandable in 3 seconds.
+- CA is secondary.
+- Buttons still work.
 - `npm.cmd run check:all` passes.
-- README explains setup and usage.
-- Submission form includes GitHub URL or intro tweet.
-- Secrets and local JSON data are not committed.
 
-### Strong Finalist Quality
+Current status: `DONE`.
 
-The project is finalist-quality if:
+### `/flow`
 
-- `/radar` is understandable in three seconds.
-- The bot clearly says it is not a price bot.
-- Demo shows `Radar -> Verify -> Prove -> Community`.
-- `/flow` demonstrates Nansen holders and flow on one candidate.
-- `/rejections` proves the bot avoids spam.
-- `/stats` or `/leaderboard` proves post-alert tracking.
-- README and REPORT explain architecture and Nansen usage clearly.
-- Demo screenshots look good in Discord dark mode.
+DONE when:
 
-### Likely Winning Quality
+- Latest Discord dark mode screenshot is reviewed after commit `0c9b0e8`.
+- Screen reads as Radar follow-up, not dashboard.
+- Reading order is: what is happening, what to check, risk, Nansen evidence, CA.
+- CA is secondary.
+- Buttons still work.
+- `npm.cmd run check:all` passes.
 
-The project is win-quality if:
+Current status: `NOT STARTED` for final confirmation.
 
-- Judges immediately understand the bb-native pre-CA angle.
-- The first screenshot feels like a Radar, not a dashboard.
-- Nansen usage feels central and credible, not decorative.
-- Credit efficiency is visible in the architecture explanation.
-- The bot can say no without looking broken.
-- Radar Call IDs make the product feel community-native.
-- The demo video shows a tight, repeatable workflow in under two minutes.
+### Nansen Credit
 
-## Readiness Trackers
+DONE when:
 
-### Runtime Readiness
+- `/radar` enrichment is capped to likely Radar Calls.
+- bb already-posted candidates are filtered before deep enrichment when possible.
+- `/health` avoids unnecessary live REST credit use.
+- `/flow <CA>` remains a user-requested deep dive.
+- Credit strategy is documented.
+- `npm.cmd run check:all` passes.
 
-- [x] Bot startup path exists.
-- [x] Slash command registration exists.
-- [x] Gateway reconnect path exists.
-- [x] Scheduled Radar path exists.
-- [x] Tracking loop exists.
-- [x] Daily summary dedupe exists.
-- [x] Final real `.env` verified with `MOCK_MODE=false`.
-- [ ] Final `/health` screenshot captured.
-- [x] Final `npm.cmd run check:all` captured after latest Nansen credit-efficiency changes.
+Current status: `DONE`.
 
-### UI/UX Readiness
+### README / REPORT
 
-- [x] Commands cover Radar, Verify, Prove, Community.
-- [x] `/rejections` exists as a quality filter.
-- [x] `/stats` exists as daily summary.
-- [x] `/radar` screenshot is short enough for three-second comprehension.
-- [x] CA is visible but not the visual hero in `/radar`.
-- [x] `/radar` dark mode screenshot reviewed.
-- [x] Runtime is unified to the primary repo.
-- [ ] Full demo output avoids dashboard feel.
+DONE when:
 
-### Nansen Credit Readiness
+- README explains bot overview, usage, architecture, setup, dependencies, Nansen CLI requirement, and credit efficiency.
+- REPORT reflects final behavior and submission story.
+- GitHub URL points to final pushed code.
+- No secrets or local data are committed.
 
-- [x] Nansen Smart Money is used for Radar.
-- [x] Nansen holders and Flow Intelligence are used for verification.
-- [x] Nansen CLI health check exists.
-- [x] Enrichment is limited to likely Radar Calls.
-- [x] `/health` avoids unnecessary REST credit drain where possible.
-- [ ] Demo avoids repeatedly running `/radar`.
-- [ ] Credit exhaustion path is screenshot-tested.
+Current status: `NOT STARTED`.
 
-### Demo Readiness
+### Demo Screenshots
 
-- [ ] Clean `/health` screenshot.
-- [ ] Clean `/radar` screenshot or clean "今は見送り" screenshot.
-- [ ] Matching `/why <CA>` screenshot.
-- [ ] Matching `/flow <CA>` screenshot.
-- [ ] `/rejections` screenshot.
-- [ ] `/stats` screenshot.
-- [ ] `/report` screenshot.
-- [ ] Demo video recorded.
-- [ ] Demo narrative rehearsed.
+DONE when:
 
-### GitHub / Docs Readiness
+- `/health` screenshot exists.
+- `/radar` screenshot exists.
+- `/why <CA>` screenshot exists.
+- `/flow <CA>` screenshot exists.
+- `/rejections` screenshot exists.
+- `/stats` screenshot exists.
+- `/report` screenshot exists.
+- Screenshots are Discord dark mode and CA is not the visual hero.
 
-- [x] `AGENTS.md` guardrails.
-- [x] `WINNING_PLAN.md`.
-- [x] `SUBMISSION_CHECKLIST.md`.
-- [x] `docs/GUARDRAILS.md`.
-- [x] `docs/COMMAND_UX.md`.
-- [x] `docs/NANSEN_USAGE.md`.
-- [x] `docs/DATA_COMPATIBILITY.md`.
-- [x] `docs/GITHUB_PROJECT.md`.
-- [ ] README final polish.
-- [ ] REPORT refresh.
-- [ ] Architecture explanation section finalized.
-- [ ] Dependency explanation finalized.
-- [ ] Setup explanation verified from clean checkout.
+Current status: `NOT STARTED`, except `/radar` reviewed.
 
-### Submission Readiness
+### Demo Video
 
-- [ ] GitHub URL ready.
-- [ ] Intro tweet/post drafted.
-- [ ] Demo video link ready.
-- [ ] Submission form filled.
-- [ ] Bot overview prepared.
-- [ ] Architecture explanation prepared.
-- [ ] Setup explanation prepared.
-- [ ] Dependency explanation prepared.
-- [ ] Final screenshots attached or linked.
-- [ ] Final push complete.
+DONE when:
+
+- Video shows the bot running with Nansen CLI.
+- Video shows `Radar -> Verify -> Prove -> Community`.
+- Video is short enough for judges to finish.
+- No secrets or private data are visible.
+
+Current status: `NOT STARTED`.
+
+### Submission Form
+
+DONE when:
+
+- Required form is submitted.
+- GitHub URL or intro tweet URL is included.
+- Discord bot with Nansen CLI requirement is clearly explained.
+- Bot overview, usage, architecture, setup, demo video, and dependencies are included where possible.
+
+Current status: `NOT STARTED`.
+
+## Submission Requirements
+
+Required by organizer:
+
+| Requirement | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| Discord bot works with Nansen CLI | NOT STARTED | User | screenshot | Capture `/health` with CLI OK. |
+| Submission form | NOT STARTED | User | form submitted | Fill after final GitHub/docs/demo assets. |
+| GitHub URL or intro tweet URL | NOT STARTED | User | GitHub URL | Use GitHub URL minimum; add intro tweet if ready. |
+
+Evaluation boosters:
+
+| Booster | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| Bot overview | NOT STARTED | ChatGPT | form submitted | Draft concise non-price-bot positioning. |
+| Usage explanation | NOT STARTED | ChatGPT | form submitted | Explain `/radar`, `/why`, `/flow`, `/rejections`, `/stats`. |
+| Code/architecture explanation | NOT STARTED | Codex | commit | Add to README/REPORT. |
+| Setup steps | NOT STARTED | Codex | commit | Verify commands from README. |
+| Demo video | NOT STARTED | User | demo video | Record after screenshots are stable. |
+| Dependency list | NOT STARTED | Codex | commit | Document Node.js, Nansen CLI, Discord API usage. |
 
 ## Demo Scenario
 
-### Ideal Command Order
+Command order:
 
 1. `/health`
 2. `/radar`
@@ -165,119 +286,35 @@ The project is win-quality if:
 7. `/leaderboard`
 8. `/report`
 
-### What Judges Should See First
+Judge framing:
 
-Show that the bot is alive and Nansen-connected, then immediately show the Radar experience.
+- This is not a price bot.
+- It is a pre-CA Radar for the bb Discord room.
+- It can intentionally stay silent when weak signals appear.
+- Nansen is used for Smart Money discovery and focused verification.
+- Credit efficiency matters because the bot is designed for real Discord use, not demo spam.
 
-Opening line:
+## Current Risks
 
-> This is not a price bot. It is a pre-CA Radar for the bb Discord room.
+| Risk | Status | Owner | Evidence required | Next action |
+| - | - | - | - | - |
+| Runtime confusion between foreground/background bot processes | NEXT | Codex | commit | Document operation and process confirmation. |
+| Bot left running during development may spend Nansen credits every scan interval | NEXT | Codex | commit | Document stop-before-dev habit. |
+| `/flow` final UI not explicitly approved after latest polish | NOT STARTED | User | screenshot | Review latest screenshot. |
+| README/REPORT not yet submission-ready | NOT STARTED | Codex | commit | Polish after operational docs. |
+| Demo screenshots incomplete | NOT STARTED | User | screenshot | Capture in command order. |
+| Demo video missing | NOT STARTED | User | demo video | Record after screenshot set. |
+| Submission form not submitted | NOT STARTED | User | form submitted | Submit last. |
 
-If `/radar` finds a candidate:
+## Change Log Evidence
 
-- Show the Radar Call ID.
-- Show the short reason.
-- Show the Nansen verification buttons.
-- Move to `/why` and `/flow`.
+Recent evidence:
 
-If `/radar` finds no candidate:
+- `4e7e397`: Japanese-first `/radar` wording.
+- `f793e2d`: Nansen credit-efficiency pass.
+- `837c96a`: `/flow` verification UI polish.
+- `0c9b0e8`: `/flow` tracking wording refinement.
 
-- Show "今は見送り".
-- Explain that the bot protects bb from weak signals.
-- Move to `/rejections`.
+Latest required check:
 
-### Most Important Screenshots
-
-Priority order:
-
-1. `/radar` candidate or "今は見送り".
-2. `/flow <CA>` showing Nansen holders / flow.
-3. `/why <CA>` showing three-second explanation.
-4. `/rejections` showing quality control.
-5. `/stats` showing daily proof and community reactions.
-6. `/health` showing Bot / Nansen REST / Nansen CLI.
-7. `/report` showing submission framing.
-
-### How To Explain Nansen Usage
-
-Use this framing:
-
-- Smart Money finds early attention.
-- Token Screener helps form the lowcap candidate pool.
-- DEX trades support Smart Money confirmation.
-- Holders and Flow Intelligence verify whether the candidate deserves attention.
-- Nansen is used to decide what bb should verify, not to spam every token.
-
-### How To Explain "Not A Price Bot"
-
-Use this framing:
-
-- The bot does not tell users to buy or sell.
-- It does not chase price alerts.
-- It looks before the CA becomes a Discord narrative.
-- It records what happened after the Radar Call for accountability.
-
-### How To Explain Credit Efficiency
-
-Use this framing:
-
-- Broad scans identify possible candidates.
-- Deeper Nansen calls should be limited to likely Radar Calls.
-- `/flow` deep-dives only when the user requests one CA.
-- Passive proof commands should prefer saved data.
-
-### How To Explain Radar Philosophy
-
-Use this framing:
-
-- Radar: find early signals.
-- Verify: use Nansen, DexScreener, and gmgn.
-- Prove: track post-alert outcomes.
-- Community: collect reactions and shared Radar Call IDs.
-
-## Submission Assets Checklist
-
-- [ ] README polish.
-- [ ] REPORT.md refreshed with `/export`.
-- [ ] Screenshot set.
-- [ ] Intro tweet/post.
-- [ ] Demo video.
-- [ ] Bot overview.
-- [ ] Architecture explanation.
-- [ ] Dependency explanation.
-- [ ] Setup explanation.
-- [ ] Nansen CLI usage explanation.
-- [ ] GitHub URL.
-- [ ] Submission form.
-
-## Current Biggest Risks
-
-1. Dashboard drift: too many fields can make the Radar feel like analytics software.
-2. Weak screenshot UX: judges may not understand the card in three seconds.
-3. Unfinished demo flow: commands may exist but not tell a clean story.
-4. Credit inefficiency: too many Nansen calls can limit judging reliability.
-5. Runtime instability: `.env`, Nansen CLI, or Discord permissions may fail during demo.
-6. Over-complexity: adding features can dilute the pre-CA Radar identity.
-7. CA hero drift: large CA-first layouts can make the bot look post-CA.
-8. Spam perception: too many candidates or repeated scans can hurt trust.
-
-## Final Implementation Priority Order
-
-1. `/radar` screenshot UX polish.
-2. JSON compatibility and Radar Call continuity smoke tests.
-3. `/flow` verification polish without dashboard creep.
-4. README architecture/setup/dependency polish.
-5. REPORT refresh and submission narrative polish.
-6. Demo screenshots and demo video.
-7. Final `npm.cmd run check:all`.
-8. Final GitHub push.
-9. Submission form and intro tweet/post.
-
-## Scope Control Rules
-
-- Do not add new product surfaces until the current demo flow is strong.
-- Do not add trading language.
-- Do not increase alert volume to make the demo look busy.
-- Do not add endpoints unless they improve pre-CA Radar quality.
-- Do not prioritize metrics over screenshot clarity.
-- Do not change storage format without compatibility work.
+- `npm.cmd run check:all` must pass after any code or docs change before push.
