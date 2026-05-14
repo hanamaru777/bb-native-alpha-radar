@@ -72,15 +72,15 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Capture final `/health` screenshot | NEXT | User | screenshot | Run bot from primary repo with `.\start-bot.cmd`, then capture `/health` in Discord dark mode. |
+| P0 | Capture final demo screenshot set | NEXT | User | screenshot | Capture and organize the final judge-facing set: `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report`. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Capture final `/flow` screenshot and confirm completion | NOT STARTED | User | screenshot, manual review | Run `/flow <CA>` on a real candidate and confirm it feels like Radar follow-up, not dashboard. |
-| P0 | Capture final demo screenshot set | NOT STARTED | User | screenshot | Capture `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report` after `/health`. |
-| P0 | Record demo video | NOT STARTED | User | demo video | Record after screenshot set is stable. |
+| P0 | Prepare submission form answers and links | NOT STARTED | User | form submitted, GitHub URL | Assemble GitHub URL, overview, usage summary, setup summary, and any demo links before form entry. |
+| P0 | Decide demo video strategy | NOT STARTED | User | demo video, manual review | Decide whether to submit with a recorded demo video now or proceed with screenshots-first only. |
+| P0 | Run final submission readiness review | NOT STARTED | Codex | manual review, check pass | Review tracker, screenshot set, form assets, and final repo state before submission. |
 
 Must not be done yet:
 
@@ -104,15 +104,16 @@ Must not be done yet:
 | CA secondary in `/radar` | DONE | User | manual review | Do not make CA the visual hero. |
 | Nansen credit-efficiency pass | DONE | Codex | commit | Commit `f793e2d` capped enrichment and made `/health` REST-safe. |
 | `/health` credit-safe behavior reviewed | DONE | Codex | commit | `/health` no longer spends a live Nansen REST call just to poll status. |
-| `/flow` current screenshot reviewed | DONE | User | screenshot | Current screenshot reviewed, but final completion is not explicitly confirmed. |
-| `/flow` final completion confirmed | NOT STARTED | User | screenshot, manual review | Confirm latest `/flow` after commit `0c9b0e8` in Discord dark mode. |
+| `/health` screenshot reviewed | DONE | User | screenshot | Use this as CLI/Nansen proof in the final screenshot set. |
+| `/flow` current screenshot reviewed | DONE | User | screenshot | `/flow` screenshot has been reviewed visually. |
+| `/flow` final completion confirmed | DONE | User | screenshot, manual review | Latest `/flow` screenshot reviewed and accepted. |
 | `npm.cmd run check:all` passed after latest pushed changes | DONE | Codex | check pass | Latest pass after `/flow` final polish. |
 | Safe runtime start/stop documented | DONE | Codex | commit | README now defines foreground start, safe stop, primary repo path, and background caution. |
 | Avoid bot running during development | DONE | Codex | commit | README now warns that scheduled scans can keep consuming Nansen credits during development. |
-| Required organizer proof: Discord bot works with Nansen CLI | NOT STARTED | User | screenshot | Capture `/health` with Nansen CLI status. |
+| Required organizer proof: Discord bot works with Nansen CLI | DONE | User | screenshot | `/health` screenshot reviewed with Nansen CLI proof. |
 | Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
-| Required organizer proof: GitHub URL or intro tweet URL | NOT STARTED | User | GitHub URL | Use GitHub URL at minimum; intro tweet improves reach. |
-| Final GitHub URL ready | NOT STARTED | Codex | GitHub URL | Ensure final push is clean and README is polished. |
+| Required organizer proof: GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL at minimum; intro tweet is optional boost. |
+| Final GitHub URL ready | DONE | Codex | GitHub URL | GitHub main is current and README is submission-polished. |
 | Secrets and local data not committed | NOT STARTED | Codex | check pass | Confirm before final submission push. |
 
 ## P1 Strongly Improves Winning Chance
@@ -121,7 +122,7 @@ Must not be done yet:
 | - | - | - | - | - |
 | README final polish | DONE | Codex | commit | README now explains overview, setup, architecture, dependencies, demo flow, Nansen CLI requirement, and credit strategy. |
 | REPORT refresh | DONE | Codex | commit | REPORT now reads as problem -> solution -> workflow -> value submission narrative. |
-| Demo screenshot set | NOT STARTED | User | screenshot | Capture `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report`. |
+| Demo screenshot set | NEXT | User | screenshot | `/health`, `/radar`, and `/flow` are reviewed; finish the final organized set with `/why`, `/rejections`, `/stats`, `/report`. |
 | Demo video | NOT STARTED | User | demo video | Record a short flow showing Nansen CLI, Radar, Verify, Prove, Community. |
 | Bot overview for submission form | NOT STARTED | ChatGPT | form submitted | Draft concise judge-facing overview. |
 | Usage explanation for submission form | NOT STARTED | ChatGPT | form submitted | Explain command flow and bb-native use case. |
@@ -228,7 +229,7 @@ DONE when:
 - `/report` screenshot exists.
 - Screenshots are Discord dark mode and CA is not the visual hero.
 
-Current status: `NOT STARTED`, except `/radar` reviewed.
+Current status: `IN PROGRESS`. `/health`, `/radar`, and `/flow` are reviewed; the full organized set is still incomplete.
 
 ### Demo Video
 
@@ -258,9 +259,9 @@ Required by organizer:
 
 | Requirement | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
-| Discord bot works with Nansen CLI | NOT STARTED | User | screenshot | Capture `/health` with CLI OK. |
+| Discord bot works with Nansen CLI | DONE | User | screenshot | `/health` screenshot reviewed with CLI OK. |
 | Submission form | NOT STARTED | User | form submitted | Fill after final GitHub/docs/demo assets. |
-| GitHub URL or intro tweet URL | NOT STARTED | User | GitHub URL | Use GitHub URL minimum; add intro tweet if ready. |
+| GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL minimum; add intro tweet if ready. |
 
 Evaluation boosters:
 
@@ -298,13 +299,13 @@ Judge framing:
 
 | Risk | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
-| Runtime confusion between foreground/background bot processes | NEXT | Codex | commit | Document operation and process confirmation. |
-| Bot left running during development may spend Nansen credits every scan interval | NEXT | Codex | commit | Document stop-before-dev habit. |
-| `/flow` final UI not explicitly approved after latest polish | NOT STARTED | User | screenshot | Review latest screenshot. |
+| Runtime confusion between foreground/background bot processes | DONE | Codex | commit | Start/stop flow and repo-scoped stop scripts are documented. |
+| Bot left running during development may spend Nansen credits every scan interval | DONE | Codex | commit | README warns about scheduled-scan credit use during development. |
+| `/flow` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/flow` screenshot reviewed and accepted. |
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
-| Demo screenshots incomplete | NOT STARTED | User | screenshot | Capture in command order. |
-| Demo video missing | NOT STARTED | User | demo video | Record after screenshot set. |
-| Submission form not submitted | NOT STARTED | User | form submitted | Submit last. |
+| Demo screenshots incomplete | NEXT | User | screenshot | Finish the final organized set in command order and store the chosen final images. |
+| Demo video missing | NOT STARTED | User | demo video | Decide whether to record now after screenshot set is organized. |
+| Submission form not submitted | NEXT | User | form submitted | Prepare answers and links after the screenshot set is finalized. |
 
 ## Change Log Evidence
 
