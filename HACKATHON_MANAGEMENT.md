@@ -78,7 +78,6 @@ Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Optional: replace `/why` screenshot | NEXT | User | screenshot | Replace `docs/submission-assets/03-why.png` only if a fresh Japanese-first `/why` screenshot is easy to capture. |
 | P1 | Optional: record demo video | NEXT | User | demo video | Recommended for judge clarity, but skip if time is tight. |
 | P1 | Optional: draft intro X post | NEXT | ChatGPT | GitHub URL | Optional boost only after the form is ready. |
 
@@ -235,7 +234,7 @@ DONE when:
 - `/report` screenshot exists.
 - Screenshots are Discord dark mode and CA is not the visual hero.
 
-Current status: `DONE`. Required screenshots are committed in `docs/submission-assets/`. `03-why.png` is the weakest and should be replaced only if time allows.
+Current status: `DONE`. Required screenshots are committed in `docs/submission-assets/`.
 
 ### Demo Video
 
@@ -287,7 +286,6 @@ Strongest differentiators:
 
 Weakest points before submission:
 
-- `03-why.png` appears to show an older English-heavy `/why` surface
 - demo video is not created yet
 - intro post is still optional and not drafted
 
@@ -295,7 +293,6 @@ Final recommendation:
 
 - do not change runtime code or Discord UI unless a real bug appears
 - submit with GitHub URL as the required link
-- optionally replace `03-why.png` before form submission if a fresh screenshot is easy
 - treat demo video as recommended, not blocking
 - treat X / intro post as optional, not blocking
 
@@ -317,7 +314,6 @@ Verified assets ready now:
 
 Assets still to finalize before submission:
 
-- optional fresh Japanese-first `/why` screenshot replacement
 - optional X / intro post URL
 - optional demo video URL
 
@@ -424,6 +420,7 @@ Recent evidence:
 - `3cbabc1`: final submission asset bundle doc.
 - This commit: final submission readiness review.
 - This commit: committed submission screenshots and hardened asset bundle.
+- This commit: replaced `03-why.png` with the latest Japanese-first screenshot.
 
 Latest required check:
 

@@ -18,7 +18,7 @@ Use it together with `SUBMISSION_FORM_DRAFT.md` and `HACKATHON_MANAGEMENT.md`.
 | - | - | - | - | - |
 | `/health` | `docs/submission-assets/01-health.png` | Mandatory | COMMITTED | Nansen CLI proof. |
 | `/radar` | `docs/submission-assets/02-radar.png` | Mandatory | COMMITTED | Best screenshot; main Radar state screen. |
-| `/why <CA>` | `docs/submission-assets/03-why.png` | Mandatory | COMMITTED | Weakest screenshot; replace if time allows because it appears English-heavy. |
+| `/why <CA>` | `docs/submission-assets/03-why.png` | Mandatory | COMMITTED | Latest Japanese-first `/why` screenshot. |
 | `/flow <CA>` | `docs/submission-assets/04-flow.png` | Mandatory | COMMITTED | Focused verification screen. |
 | `/leaderboard` | `docs/submission-assets/05-leaderboard.png` | Mandatory | COMMITTED | Strong proof screenshot. |
 | `/leaderboard` continuation | `docs/submission-assets/05b-leaderboard-continuation.png` | Optional | COMMITTED | Use only if judges need to see more leaderboard entries. |
@@ -101,11 +101,10 @@ Ready now:
 Still needed before submission:
 
 - actual form submission
-- optional fresh Japanese-first `/why` screenshot replacement
 - optional demo video URL
 - optional X / intro post URL
 
-## Screenshot Replacement Review
+## Screenshot Review
 
 Best screenshot:
 
@@ -113,12 +112,12 @@ Best screenshot:
 
 Weakest screenshot:
 
-- `03-why.png`
+- `08-report.png`
 
-Replacement recommendation:
+Current judgment:
 
-- Replace `03-why.png` before final submission if time allows. It appears to show an older English-heavy `/why` layout, while the current product direction is Japanese-first.
-- Do not redesign `/why`; only retake the screenshot from the latest running bot if replacing it.
+- `03-why.png` has been replaced with the latest Japanese-first screenshot.
+- `08-report.png` is the weakest only in the sense that it is more text-heavy than the Radar/Verify surfaces, but it still works as the final narrative screen.
 
 ## Actual Submission Checklist
 
@@ -139,9 +138,8 @@ Recommended final flow:
 
 1. Confirm `npm.cmd run check:all` passes.
 2. Confirm `.env` and `data/` are not committed.
-3. Replace `03-why.png` only if a fresh screenshot is easy to capture.
-4. Submit GitHub URL and form answers.
-5. Add demo video or X link only if already clean.
+3. Submit GitHub URL and form answers.
+4. Add demo video or X link only if already clean.
 
 ## Strongest Positioning
 

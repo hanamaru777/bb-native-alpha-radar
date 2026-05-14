@@ -21,6 +21,6 @@ These are the committed Discord dark mode screenshots for hackathon submission.
 
 - Best screenshot: `02-radar.png`
 - Strong proof screenshot: `05-leaderboard.png`
-- Weakest screenshot: `03-why.png`
+- Weakest screenshot: `08-report.png`
 
-`03-why.png` is included so the package is self-contained, but it appears to show an older English-heavy `/why` surface. Replace it with a fresh Japanese-first `/why` screenshot before final submission if time allows.
+`03-why.png` has been replaced with the latest Japanese-first `/why` screenshot. `08-report.png` is now the weakest only because it is the most text-heavy card in the bundle.

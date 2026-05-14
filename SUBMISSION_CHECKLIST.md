@@ -149,7 +149,7 @@ Screenshot rules:
 - Prefer one strong candidate over many weak candidates.
 - If no candidate passes, use the miss screen as proof of selectivity.
 - For the committed bundle, prioritize `02-radar.png`, `04-flow.png`, `05-leaderboard.png`, `06-rejections.png`, and `07-stats.png`.
-- Replace `03-why.png` only if a fresh Japanese-first `/why` screenshot is easy to capture.
+- `03-why.png` has been replaced with the latest Japanese-first `/why` screenshot.
 
 ## 7. Demo Command Order
 
@@ -261,6 +261,6 @@ Optional assets:
 Final recommendation:
 
 - Do not change runtime code or UI before submission unless a bug appears.
-- Screenshot bundle is committed; replace `03-why.png` only if a fresh Japanese-first screenshot is easy.
+- Screenshot bundle is committed in `docs/submission-assets/`.
 - Submit with GitHub URL even if intro post and demo video are not ready.
 - Record a short demo video only if the screenshot bundle is clean and time remains.
