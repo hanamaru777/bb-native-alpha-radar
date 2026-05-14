@@ -119,6 +119,13 @@ Current judgment:
 - `03-why.png` has been replaced with the latest Japanese-first screenshot.
 - `08-report.png` is the weakest only in the sense that it is more text-heavy than the Radar/Verify surfaces, but it still works as the final narrative screen.
 
+## Runtime Verification
+
+- `MOCK_MODE=false` is verified for the real local runtime.
+- Daily Summary auto-post is verified in Discord.
+- Current intended local setting is `DAILY_SUMMARY_ENABLED=true`, `DAILY_SUMMARY_HOUR=23`, `DAILY_SUMMARY_MINUTE=50`, `DAILY_SUMMARY_TIMEZONE=Asia/Tokyo`.
+- `.env` is local-only and must not be committed. Restart the bot after any `.env` change.
+
 ## Actual Submission Checklist
 
 Required:

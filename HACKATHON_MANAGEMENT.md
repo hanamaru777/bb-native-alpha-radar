@@ -115,7 +115,7 @@ Must not be done yet:
 | Safe runtime start/stop documented | DONE | Codex | commit | README now defines foreground start, safe stop, primary repo path, and background caution. |
 | Avoid bot running during development | DONE | Codex | commit | README now warns that scheduled scans can keep consuming Nansen credits during development. |
 | Automatic 30-minute radar check verified | DONE | Codex | runtime proof, manual review | `data/scans.json` contains repeated `source: "auto"` entries and `data/alerts.json` contains `source: "auto"` alerts with Discord `messageId`. |
-| Daily Summary auto-post verified | DONE | Codex | runtime proof | Discord post verified successfully. After temporary testing, return `.env` to `DAILY_SUMMARY_ENABLED=false`. |
+| Daily Summary auto-post verified | DONE | Codex | runtime proof | Discord post verified successfully. Current intended local setting is `DAILY_SUMMARY_ENABLED=true` at `23:50` JST; set false only when intentionally pausing scheduled summaries. |
 | Required organizer proof: Discord bot works with Nansen CLI | DONE | User | screenshot | `/health` screenshot reviewed with Nansen CLI proof. |
 | Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
 | Required organizer proof: GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL at minimum; intro tweet is optional boost. |
@@ -167,7 +167,7 @@ Must not be done yet:
 | Restart/stop operation needs documentation | DONE | Codex | commit | README includes recommended start/stop method for development and demo use. |
 | Avoid leaving bot running during development because of 30-minute scan credit use | DONE | Codex | commit | README explicitly warns about scheduled-scan credit use. |
 | Automatic radar posting verification state unclear | DONE | Codex | manual review | Confirmed by `source: "auto"` scan history and saved auto alerts with Discord `messageId`. |
-| Daily Summary verification state unclear | DONE | Codex | manual review | Verified by successful Discord post during temporary scheduled `.env` test. Return `.env` to `DAILY_SUMMARY_ENABLED=false` after testing. |
+| Daily Summary verification state unclear | DONE | Codex | manual review | Verified by successful Discord post. Current intended local setting is ON at `23:50` JST. |
 | Possible `stop-bot.cmd` task | DONE | Codex | commit | Added because it clearly reduces stray-process confusion on Windows. |
 | Visible Discord UI must remain Japanese-first | DONE | Codex | commit | Keep this as hard guardrail. |
 | Codex must always use primary repo path | DONE | Codex | manual review | Verify cwd/path before commands. |
@@ -290,7 +290,6 @@ Strongest differentiators:
 
 Weakest points before submission:
 
-- Daily Summary auto-post is not operationally verified yet
 - demo video is not created yet
 - intro post is still optional and not drafted
 
@@ -339,6 +338,7 @@ Operational proof points:
 - Nansen CLI is installed and visible in `/health`
 - safe start/stop scripts exist
 - `MOCK_MODE=false` is already verified for the real runtime
+- Daily Summary is verified and intentionally enabled in local `.env` at `23:50` JST
 
 Nansen proof points:
 

@@ -55,6 +55,7 @@ System check:
 - `/flow <CA>` can spend more because the user explicitly requested one CA.
 - `/stats`, `/leaderboard`, and `/rejections` should prefer saved data.
 - `/health` should not become a credit-heavy polling command.
+- Daily Summary uses saved Radar history and should not add extra live Nansen calls by itself.
 
 ## Acceptable Credit Spend
 

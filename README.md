@@ -212,7 +212,7 @@ MAX_DAILY_ALERTS=8
 DEDUPE_HOURS=6
 MIN_SMART_MONEY_TRADERS=3
 BB_LOOKBACK_MESSAGES=300
-DAILY_SUMMARY_ENABLED=false
+DAILY_SUMMARY_ENABLED=true
 DAILY_SUMMARY_HOUR=23
 DAILY_SUMMARY_MINUTE=50
 DAILY_SUMMARY_TIMEZONE=Asia/Tokyo
@@ -220,6 +220,8 @@ MOCK_MODE=false
 ```
 
 Never commit or share `DISCORD_TOKEN` or `NANSEN_API_KEY`.
+
+Current submission runtime uses `MOCK_MODE=false` and keeps Daily Summary enabled at `23:50` JST. If you change `.env`, restart the bot so the new values are loaded.
 
 ## Run And Stop
 
@@ -253,7 +255,7 @@ Recommended development operation:
 2. Keep the bot in the foreground while actively testing Discord behavior.
 3. Stop it as soon as the check is finished with `Ctrl+C`, closing the terminal window, or `.\stop-bot.cmd`.
 
-Background start is not recommended during development because scheduled scans can continue spending Nansen credits every `ALERT_INTERVAL_MINUTES`.
+Background start is not recommended during development because scheduled scans can continue spending Nansen credits every `ALERT_INTERVAL_MINUTES`. Daily Summary itself uses saved stats, but keep the bot stopped when you are not intentionally testing scheduled behavior.
 
 ## Checks
 

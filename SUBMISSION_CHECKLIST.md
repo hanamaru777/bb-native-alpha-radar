@@ -43,6 +43,7 @@ Confirm:
 - `.env` is not committed
 - `data/alerts.json` and `data/scans.json` are not committed
 - `MOCK_MODE=false` for the real judging run
+- `DAILY_SUMMARY_ENABLED=true` at `23:50` JST for the current production-like local runtime
 
 ## 2. Discord Health Check
 
