@@ -329,12 +329,11 @@ function dailyRadarStats(validAlerts, scans, today) {
 function scanStats(scans) {
   const today = localDateKey();
   const todayScans = scans.filter((scan) => isLocalDateKey(scan.scannedAt, today));
+  const recentRejected = uniqueRejectedCandidates(scans.flatMap((scan) => scan.rejected || []));
   const reasonCounts = {};
-  for (const scan of scans.slice(0, 50)) {
-    for (const rejected of scan.rejected || []) {
-      for (const reason of rejected.reasons || []) {
-        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
-      }
+  for (const rejected of recentRejected.slice(0, 50)) {
+    for (const reason of rejected.reasons || []) {
+      reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
     }
   }
   const topReasons = Object.entries(reasonCounts)
@@ -346,9 +345,23 @@ function scanStats(scans) {
     total: scans.length,
     today: todayScans.length,
     rejectedTotal: scans.reduce((sum, scan) => sum + Number(scan.rejectedCount || 0), 0),
-    recentRejected: scans.flatMap((scan) => scan.rejected || []).slice(0, 5),
+    recentRejected: recentRejected.slice(0, 5),
     topReasons
   };
+}
+
+function uniqueRejectedCandidates(rejected = []) {
+  const seen = new Set();
+  const result = [];
+  for (const candidate of rejected) {
+    const ca = String(candidate.ca || "").toLowerCase();
+    const symbol = String(candidate.symbol || "").toLowerCase();
+    const key = ca || (symbol ? `symbol:${symbol}` : "");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(candidate);
+  }
+  return result;
 }
 
 export function getAlertsDueForTracking(now = new Date()) {
