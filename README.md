@@ -246,13 +246,39 @@ Windows:
 .\start-bot.cmd
 ```
 
-If Node.js is available in PATH:
+PowerShell:
+
+```powershell
+.\start-bot.ps1
+```
+
+Stop a stray/background bot process for this repo:
+
+```powershell
+.\stop-bot.cmd
+```
+
+If Node.js is available in PATH and you intentionally want a direct foreground run:
 
 ```powershell
 node src/index.js
 ```
 
 ## Operations
+
+Recommended development flow:
+
+1. Start from the primary repo path with `.\start-bot.cmd`.
+2. Keep the bot in the foreground while actively testing Discord behavior.
+3. Stop it as soon as the check is finished with `Ctrl+C`, closing the terminal window, or `.\stop-bot.cmd` if a background process was left behind.
+
+Recommended demo flow:
+
+1. Start from the primary repo path with `.\start-bot.cmd`.
+2. Keep that window open during judging.
+3. Use `.\stop-bot.cmd` only if a previous process is still running or the bot was launched in the background by mistake.
+
+Background start is not the default recommendation for development. It is easier to leave the bot running accidentally, which can keep spending Nansen credits on the scheduled Radar interval.
 
 During judging:
 
@@ -269,6 +295,9 @@ During judging:
 - Secrets are loaded from `.env`.
 - `.env` and local data JSON files are ignored by git.
 - API keys and Discord tokens are never printed in Discord output.
+- Use the primary repo path for all bot operations: `C:\Users\hanam\OneDrive\ドキュメント\CODEX 260309\bb-native-alpha-radar`.
+- During development, do not leave the bot running while editing docs or code. The scheduled scan can still consume Nansen credits every `ALERT_INTERVAL_MINUTES`.
+- `stop-bot.cmd` only stops `node.exe` processes running this repo's `src\index.js`.
 - The bot does not execute trades.
 - The bot includes NFA / DYOR disclaimers.
 - Daily alert limits and dedupe windows reduce spam risk.

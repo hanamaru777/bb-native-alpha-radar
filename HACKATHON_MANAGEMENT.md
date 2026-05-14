@@ -72,15 +72,15 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Document safe bot start/stop operations and decide whether `stop-bot.cmd` is needed | NEXT | Codex | commit | Add operational notes for foreground/background runtime, primary repo path, and development credit safety. |
+| P0 | Capture final `/health` screenshot | NEXT | User | screenshot | Run bot from primary repo with `.\start-bot.cmd`, then capture `/health` in Discord dark mode. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Capture final `/health` screenshot | NOT STARTED | User | screenshot | Run bot from primary repo, run `/health`, capture Discord dark mode screenshot. |
 | P0 | Capture final `/flow` screenshot and confirm completion | NOT STARTED | User | screenshot, manual review | Run `/flow <CA>` on a real candidate and confirm it feels like Radar follow-up, not dashboard. |
 | P0 | Refresh README/REPORT for submission | NOT STARTED | Codex | commit, GitHub URL | Update overview, architecture, setup, dependency, Nansen CLI usage, and latest credit strategy. |
+| P0 | Capture final `/health` screenshot | NOT STARTED | User | screenshot | Run bot from primary repo, run `/health`, capture Discord dark mode screenshot. |
 
 Must not be done yet:
 
@@ -107,8 +107,8 @@ Must not be done yet:
 | `/flow` current screenshot reviewed | DONE | User | screenshot | Current screenshot reviewed, but final completion is not explicitly confirmed. |
 | `/flow` final completion confirmed | NOT STARTED | User | screenshot, manual review | Confirm latest `/flow` after commit `0c9b0e8` in Discord dark mode. |
 | `npm.cmd run check:all` passed after latest pushed changes | DONE | Codex | check pass | Latest pass after `/flow` final polish. |
-| Safe runtime start/stop documented | NEXT | Codex | commit | Document background/foreground confusion and exact safe operations. |
-| Avoid bot running during development | NEXT | Codex | commit | Document 30-minute scan credit risk and development stop practice. |
+| Safe runtime start/stop documented | DONE | Codex | commit | README now defines foreground start, safe stop, primary repo path, and background caution. |
+| Avoid bot running during development | DONE | Codex | commit | README now warns that scheduled scans can keep consuming Nansen credits during development. |
 | Required organizer proof: Discord bot works with Nansen CLI | NOT STARTED | User | screenshot | Capture `/health` with Nansen CLI status. |
 | Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
 | Required organizer proof: GitHub URL or intro tweet URL | NOT STARTED | User | GitHub URL | Use GitHub URL at minimum; intro tweet improves reach. |
@@ -138,7 +138,7 @@ Must not be done yet:
 | Radar Call continuity smoke test | NOT STARTED | Codex | commit, check pass | Verify IDs across `/radar`, `/why`, `/flow`, `/stats`, `/report`. |
 | Credit exhaustion screenshot | NOT STARTED | User | screenshot | Capture only if naturally encountered or safe to simulate. |
 | GitHub Issues/milestones setup | NOT STARTED | User | GitHub URL | Optional project polish after submission assets are ready. |
-| `stop-bot.cmd` helper | NOT STARTED | Codex | commit | Add only if operational docs show manual stop is too error-prone. |
+| `stop-bot.cmd` helper | DONE | Codex | commit | Added repo-scoped Windows stop helper for stray/background bot processes. |
 
 ## P3 Do Not Touch Unless Everything Else Is Done
 
@@ -155,10 +155,10 @@ Must not be done yet:
 
 | Issue | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
-| Foreground vs background bot runtime confusion | NEXT | Codex | commit | Document exact start/stop workflow and how to confirm process path. |
-| Restart/stop operation needs documentation | NEXT | Codex | commit | Add safe commands and warnings. |
-| Avoid leaving bot running during development because of 30-minute scan credit use | NEXT | Codex | commit | Document stop-before-development habit. |
-| Possible `stop-bot.cmd` task | NOT STARTED | Codex | commit | Decide after docs; implement only if needed. |
+| Foreground vs background bot runtime confusion | DONE | Codex | commit | Start/stop flow is documented and the start scripts now use the repo's absolute `src\index.js` path. |
+| Restart/stop operation needs documentation | DONE | Codex | commit | README includes recommended start/stop method for development and demo use. |
+| Avoid leaving bot running during development because of 30-minute scan credit use | DONE | Codex | commit | README explicitly warns about scheduled-scan credit use. |
+| Possible `stop-bot.cmd` task | DONE | Codex | commit | Added because it clearly reduces stray-process confusion on Windows. |
 | Visible Discord UI must remain Japanese-first | DONE | Codex | commit | Keep this as hard guardrail. |
 | Codex must always use primary repo path | DONE | Codex | manual review | Verify cwd/path before commands. |
 | `HACKATHON_MANAGEMENT.md` must update whenever task/risk changes | IN PROGRESS | Codex | commit | Keep this file current before and after major tasks. |
