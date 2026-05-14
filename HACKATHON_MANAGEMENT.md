@@ -72,14 +72,14 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Capture final demo screenshot set | NEXT | User | screenshot | Capture and organize the final judge-facing set: `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/report`. |
+| P0 | Prepare submission form answers and links | NEXT | User | form submitted, GitHub URL | Assemble the final judge-facing form text, GitHub URL, verified screenshots, and required Nansen CLI proof before actual submission. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Prepare submission form answers and links | NOT STARTED | User | form submitted, GitHub URL | Assemble GitHub URL, overview, usage summary, setup summary, and any demo links before form entry. |
-| P0 | Decide demo video strategy | NOT STARTED | User | demo video, manual review | Decide whether to submit with a recorded demo video now or proceed with screenshots-first only. |
+| P0 | Finalize verified submission asset bundle | NEXT | User | screenshot, GitHub URL | Organize the final verified set: `/health`, `/radar`, `/why`, `/flow`, plus the remaining proof screens and submission links. |
+| P0 | Decide demo video strategy | NEXT | User | manual review | Treat demo video as recommended but optional, then explicitly choose whether to record one before submission. |
 | P0 | Run final submission readiness review | NOT STARTED | Codex | manual review, check pass | Review tracker, screenshot set, form assets, and final repo state before submission. |
 
 Must not be done yet:
@@ -89,7 +89,7 @@ Must not be done yet:
 - Do not add new Nansen endpoints.
 - Do not increase alert frequency.
 - Do not change storage format.
-- Do not prepare final submission form until screenshots and README/REPORT are ready.
+- Do not reopen UI polish unless a bug appears in a real screenshot.
 
 ## P0 Must Finish Before Submission
 
@@ -102,6 +102,11 @@ Must not be done yet:
 | `/radar` dark mode screenshot reviewed | DONE | User | screenshot | Use as main screenshot candidate unless a better final one is captured. |
 | `/radar` 3-second comprehension good enough | DONE | User | manual review | Treat `/radar` as locked unless bug appears. |
 | CA secondary in `/radar` | DONE | User | manual review | Do not make CA the visual hero. |
+| `/why` screenshot reviewed | DONE | User | screenshot | `/why` now matches the Radar reasoning surface and is ready for screenshot use. |
+| UI philosophy alignment completed | DONE | User | manual review | `/radar`, `/why`, `/flow`, and `/leaderboard` now share one Radar-first product direction. |
+| `Radar -> Verify -> Prove` flow finalized | DONE | User | manual review | Treat the command sequence and message hierarchy as locked for submission. |
+| Japanese-first Discord UX finalized | DONE | User | manual review | Visible Discord UI should stay Japanese-first through submission. |
+| Screenshot-first Discord presentation finalized | DONE | User | manual review | Treat screenshot readability as a fixed product rule, not a future polish item. |
 | Nansen credit-efficiency pass | DONE | Codex | commit | Commit `f793e2d` capped enrichment and made `/health` REST-safe. |
 | `/health` credit-safe behavior reviewed | DONE | Codex | commit | `/health` no longer spends a live Nansen REST call just to poll status. |
 | `/health` screenshot reviewed | DONE | User | screenshot | Use this as CLI/Nansen proof in the final screenshot set. |
@@ -114,7 +119,7 @@ Must not be done yet:
 | Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
 | Required organizer proof: GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL at minimum; intro tweet is optional boost. |
 | Final GitHub URL ready | DONE | Codex | GitHub URL | GitHub main is current and README is submission-polished. |
-| Secrets and local data not committed | NOT STARTED | Codex | check pass | Confirm before final submission push. |
+| Secrets and local data not committed | NEXT | Codex | check pass | Reconfirm with final pre-submission repo check before actual submission. |
 
 ## P1 Strongly Improves Winning Chance
 
@@ -122,8 +127,8 @@ Must not be done yet:
 | - | - | - | - | - |
 | README final polish | DONE | Codex | commit | README now explains overview, setup, architecture, dependencies, demo flow, Nansen CLI requirement, and credit strategy. |
 | REPORT refresh | DONE | Codex | commit | REPORT now reads as problem -> solution -> workflow -> value submission narrative. |
-| Demo screenshot set | NEXT | User | screenshot | `/health`, `/radar`, and `/flow` are reviewed; finish the final organized set with `/why`, `/rejections`, `/stats`, `/report`. |
-| Demo video | NOT STARTED | User | demo video | Record a short flow showing Nansen CLI, Radar, Verify, Prove, Community. |
+| Demo screenshot set | NEXT | User | screenshot | Organize the final verified judge-facing set: `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/leaderboard`, `/report`. |
+| Demo video | NEXT | User | manual review, demo video | Recommended because it raises judging clarity, but optional because the current repo and screenshot story are already strong. |
 | Bot overview for submission form | NOT STARTED | ChatGPT | form submitted | Draft concise judge-facing overview. |
 | Usage explanation for submission form | NOT STARTED | ChatGPT | form submitted | Explain command flow and bb-native use case. |
 | Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain Gateway, Radar, Nansen adapter, storage, and tracking. |
@@ -190,7 +195,7 @@ DONE when:
 - Buttons still work.
 - `npm.cmd run check:all` passes.
 
-Current status: `NOT STARTED` for final confirmation.
+Current status: `DONE`.
 
 ### Nansen Credit
 
@@ -229,7 +234,7 @@ DONE when:
 - `/report` screenshot exists.
 - Screenshots are Discord dark mode and CA is not the visual hero.
 
-Current status: `IN PROGRESS`. `/health`, `/radar`, and `/flow` are reviewed; the full organized set is still incomplete.
+Current status: `IN PROGRESS`. `/health`, `/radar`, `/why`, and `/flow` are reviewed; the final organized package still needs `/rejections`, `/stats`, `/leaderboard`, and `/report` captured or selected.
 
 ### Demo Video
 
@@ -240,7 +245,7 @@ DONE when:
 - Video is short enough for judges to finish.
 - No secrets or private data are visible.
 
-Current status: `NOT STARTED`.
+Current status: `NOT STARTED`. It is recommended, not required.
 
 ### Submission Form
 
@@ -263,16 +268,63 @@ Required by organizer:
 | Submission form | NOT STARTED | User | form submitted | Fill after final GitHub/docs/demo assets. |
 | GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL minimum; add intro tweet if ready. |
 
+## Submission Assets
+
+Verified assets ready now:
+
+- `/health` screenshot proving bot + Nansen CLI state
+- `/radar` screenshot proving Japanese-first Radar surface
+- `/why <CA>` screenshot proving why Radar reacted
+- `/flow <CA>` screenshot proving Verify follow-up flow
+- `README.md`
+- `REPORT.md`
+- GitHub repository URL
+- `npm.cmd run check:all` pass
+
+Assets still to finalize before submission:
+
+- `/rejections` screenshot
+- `/stats` screenshot
+- `/leaderboard` screenshot
+- `/report` screenshot
+- final organized screenshot bundle for judges
+- submission form text
+
+Required commands to keep ready during judging:
+
+- `/health`
+- `/radar`
+- `/why <CA>`
+- `/flow <CA>`
+- `/leaderboard`
+- `/rejections`
+- `/stats`
+- `/report`
+
+Operational proof points:
+
+- bot runs from the unified primary repo
+- Nansen CLI is installed and visible in `/health`
+- safe start/stop scripts exist
+- `MOCK_MODE=false` is already verified for the real runtime
+
+Nansen proof points:
+
+- discovery uses Smart Money + Token Screener
+- `/flow <CA>` is the explicit deep-verify step
+- `/health` is credit-safe and does not burn live REST credits just to poll status
+- credit-efficient filtering is part of product design, not a demo-only trick
+
 Evaluation boosters:
 
 | Booster | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
 | Bot overview | NOT STARTED | ChatGPT | form submitted | Draft concise non-price-bot positioning. |
 | Usage explanation | NOT STARTED | ChatGPT | form submitted | Explain `/radar`, `/why`, `/flow`, `/rejections`, `/stats`. |
-| Code/architecture explanation | NOT STARTED | Codex | commit | Add to README/REPORT. |
+| Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain the runtime shape, Nansen use, local storage, and tracking loop. |
 | Setup steps | DONE | Codex | commit | README documents install, Nansen CLI, `.env`, start/stop, and checks. |
-| Demo video | NOT STARTED | User | demo video | Record after screenshots are stable. |
-| Dependency list | NOT STARTED | Codex | commit | Document Node.js, Nansen CLI, Discord API usage. |
+| Demo video | NEXT | User | manual review, demo video | Recommended but optional; record after the screenshot bundle is organized if time permits. |
+| Dependency list | DONE | Codex | commit | README documents Node.js, Nansen CLI, Discord API usage, and runtime assumptions. |
 
 ## Demo Scenario
 
@@ -282,10 +334,21 @@ Command order:
 2. `/radar`
 3. `/why <CA>`
 4. `/flow <CA>`
-5. `/rejections`
-6. `/stats`
-7. `/leaderboard`
+5. `/leaderboard`
+6. `/rejections`
+7. `/stats`
 8. `/report`
+
+Recommended judge demo flow:
+
+- `/health`: prove runtime + Nansen CLI first
+- `/radar`: show the current Radar state screen
+- `/why <CA>`: explain why Radar cared
+- `/flow <CA>`: show how to verify, with CA still secondary
+- `/leaderboard`: prove Radar Calls can matter after alert time
+- `/rejections`: prove the bot stays selective
+- `/stats`: show daily memory and operating discipline
+- `/report`: close with the submission narrative
 
 Judge framing:
 
@@ -295,6 +358,12 @@ Judge framing:
 - Nansen is used for Smart Money discovery and focused verification.
 - Credit efficiency matters because the bot is designed for real Discord use, not demo spam.
 
+Demo video decision:
+
+- Status: `RECOMMENDED`
+- Reason: not required by the organizer, but it materially improves judging clarity because this product is a command flow, not a static artifact.
+- Current judgment: the repo is already credible with screenshots, README, REPORT, and GitHub URL, so submission is possible without a video; a short video still improves winning probability.
+
 ## Current Risks
 
 | Risk | Status | Owner | Evidence required | Next action |
@@ -302,10 +371,11 @@ Judge framing:
 | Runtime confusion between foreground/background bot processes | DONE | Codex | commit | Start/stop flow and repo-scoped stop scripts are documented. |
 | Bot left running during development may spend Nansen credits every scan interval | DONE | Codex | commit | README warns about scheduled-scan credit use during development. |
 | `/flow` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/flow` screenshot reviewed and accepted. |
+| `/why` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/why` screenshot reviewed and accepted. |
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
-| Demo screenshots incomplete | NEXT | User | screenshot | Finish the final organized set in command order and store the chosen final images. |
-| Demo video missing | NOT STARTED | User | demo video | Decide whether to record now after screenshot set is organized. |
-| Submission form not submitted | NEXT | User | form submitted | Prepare answers and links after the screenshot set is finalized. |
+| Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | Organize the verified and remaining proof screens into one final bundle. |
+| Demo video not yet decided | NEXT | User | manual review | Choose whether to record a short walkthrough after the screenshot bundle is organized. |
+| Submission form not submitted | NEXT | User | form submitted | Prepare answers and links after the final asset bundle is ready. |
 
 ## Change Log Evidence
 
@@ -316,7 +386,8 @@ Recent evidence:
 - `837c96a`: `/flow` verification UI polish.
 - `0c9b0e8`: `/flow` tracking wording refinement.
 - `19e4fdd`: safe bot runtime operation docs and stop scripts.
-- This commit: README/REPORT submission polish.
+- `233da86`: `/why` final polish.
+- This commit: submission-readiness tracker sync.
 
 Latest required check:
 
