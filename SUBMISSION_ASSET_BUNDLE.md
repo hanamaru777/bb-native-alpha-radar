@@ -10,30 +10,32 @@ Use it together with `SUBMISSION_FORM_DRAFT.md` and `HACKATHON_MANAGEMENT.md`.
 - README: `README.md`
 - REPORT: `REPORT.md`
 - Submission form draft: `SUBMISSION_FORM_DRAFT.md`
+- Screenshot directory: `docs/submission-assets/`
 
 ## Verified Screenshot Status
 
-| Asset | Status | Notes |
-| - | - | - |
-| `/health` | CAPTURED | Verified as Nansen CLI proof. |
-| `/radar` | CAPTURED | Verified as main Radar state screen. |
-| `/why <CA>` | CAPTURED | Verified as Radar reasoning screen. |
-| `/flow <CA>` | CAPTURED | Verified as focused verification screen. |
-| `/rejections` | MISSING | Still needed for final bundle. |
-| `/stats` | MISSING | Still needed for final bundle. |
-| `/leaderboard` | MISSING | Still needed for final bundle. |
-| `/report` | MISSING | Still needed for final bundle. |
+| Asset | Filename | Required | Status | Notes |
+| - | - | - | - | - |
+| `/health` | `docs/submission-assets/01-health.png` | Mandatory | COMMITTED | Nansen CLI proof. |
+| `/radar` | `docs/submission-assets/02-radar.png` | Mandatory | COMMITTED | Best screenshot; main Radar state screen. |
+| `/why <CA>` | `docs/submission-assets/03-why.png` | Mandatory | COMMITTED | Weakest screenshot; replace if time allows because it appears English-heavy. |
+| `/flow <CA>` | `docs/submission-assets/04-flow.png` | Mandatory | COMMITTED | Focused verification screen. |
+| `/leaderboard` | `docs/submission-assets/05-leaderboard.png` | Mandatory | COMMITTED | Strong proof screenshot. |
+| `/leaderboard` continuation | `docs/submission-assets/05b-leaderboard-continuation.png` | Optional | COMMITTED | Use only if judges need to see more leaderboard entries. |
+| `/rejections` | `docs/submission-assets/06-rejections.png` | Mandatory | COMMITTED | Low-noise filter proof. |
+| `/stats` | `docs/submission-assets/07-stats.png` | Mandatory | COMMITTED | Daily Radar memory. |
+| `/report` | `docs/submission-assets/08-report.png` | Mandatory | COMMITTED | Submission narrative inside Discord. |
 
 ## Recommended Screenshot Order
 
-1. `/health`
-2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
-5. `/leaderboard`
-6. `/rejections`
-7. `/stats`
-8. `/report`
+1. `01-health.png`
+2. `02-radar.png`
+3. `03-why.png`
+4. `04-flow.png`
+5. `05-leaderboard.png`
+6. `06-rejections.png`
+7. `07-stats.png`
+8. `08-report.png`
 
 This order shows runtime proof first, then Radar, then Verify, then Prove, then filtering discipline, then the final narrative.
 
@@ -61,7 +63,7 @@ Status: `RECOMMENDED`
 Practical recommendation:
 
 - Submit without blocking on video if time is tight.
-- Record a short video if the missing screenshots are captured cleanly.
+- Record a short video if the screenshot bundle is clean and time remains.
 - Keep it under two minutes and follow the judge demo order above.
 
 Reason:
@@ -87,19 +89,59 @@ Ready now:
 - `README.md`
 - `REPORT.md`
 - `SUBMISSION_FORM_DRAFT.md`
-- `/health` screenshot
-- `/radar` screenshot
-- `/why <CA>` screenshot
-- `/flow <CA>` screenshot
+- `docs/submission-assets/01-health.png`
+- `docs/submission-assets/02-radar.png`
+- `docs/submission-assets/03-why.png`
+- `docs/submission-assets/04-flow.png`
+- `docs/submission-assets/05-leaderboard.png`
+- `docs/submission-assets/06-rejections.png`
+- `docs/submission-assets/07-stats.png`
+- `docs/submission-assets/08-report.png`
 
 Still needed before submission:
 
-- `/rejections` screenshot
-- `/stats` screenshot
-- `/leaderboard` screenshot
-- `/report` screenshot
-- final screenshot selection in recommended order
 - actual form submission
+- optional fresh Japanese-first `/why` screenshot replacement
+- optional demo video URL
+- optional X / intro post URL
+
+## Screenshot Replacement Review
+
+Best screenshot:
+
+- `02-radar.png`
+
+Weakest screenshot:
+
+- `03-why.png`
+
+Replacement recommendation:
+
+- Replace `03-why.png` before final submission if time allows. It appears to show an older English-heavy `/why` layout, while the current product direction is Japanese-first.
+- Do not redesign `/why`; only retake the screenshot from the latest running bot if replacing it.
+
+## Actual Submission Checklist
+
+Required:
+
+- GitHub URL: `https://github.com/hanamaru777/bb-native-alpha-radar`
+- form answers from `SUBMISSION_FORM_DRAFT.md`
+- mandatory screenshots from `docs/submission-assets/`
+- README and REPORT available in the repo
+
+Optional:
+
+- demo video URL
+- X / intro post URL
+- `05b-leaderboard-continuation.png`
+
+Recommended final flow:
+
+1. Confirm `npm.cmd run check:all` passes.
+2. Confirm `.env` and `data/` are not committed.
+3. Replace `03-why.png` only if a fresh screenshot is easy to capture.
+4. Submit GitHub URL and form answers.
+5. Add demo video or X link only if already clean.
 
 ## Strongest Positioning
 

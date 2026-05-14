@@ -72,15 +72,15 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Capture remaining proof screenshots for the final bundle | NEXT | User | screenshot | Capture `/rejections`, `/stats`, `/leaderboard`, and `/report`, then place them into the order defined in `SUBMISSION_ASSET_BUNDLE.md`. |
+| P0 | Submit hackathon form | NEXT | User | form submitted | Use GitHub URL, `SUBMISSION_FORM_DRAFT.md`, and the committed screenshot bundle in `docs/submission-assets/`. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Decide demo video strategy | NEXT | User | manual review | Demo video is recommended but optional; decide after the screenshot bundle is complete. |
-| P0 | Run final submission readiness review | DONE | Codex | manual review, check pass | Final review completed; remaining blockers are screenshot bundle completion, optional video decision, and actual submission. |
-| P0 | Submit hackathon form | NOT STARTED | User | form submitted | Submit after final asset bundle and readiness review are complete. |
+| P0 | Optional: replace `/why` screenshot | NEXT | User | screenshot | Replace `docs/submission-assets/03-why.png` only if a fresh Japanese-first `/why` screenshot is easy to capture. |
+| P1 | Optional: record demo video | NEXT | User | demo video | Recommended for judge clarity, but skip if time is tight. |
+| P1 | Optional: draft intro X post | NEXT | ChatGPT | GitHub URL | Optional boost only after the form is ready. |
 
 Must not be done yet:
 
@@ -128,7 +128,7 @@ Must not be done yet:
 | - | - | - | - | - |
 | README final polish | DONE | Codex | commit | README now explains overview, setup, architecture, dependencies, demo flow, Nansen CLI requirement, and credit strategy. |
 | REPORT refresh | DONE | Codex | commit | REPORT now reads as problem -> solution -> workflow -> value submission narrative. |
-| Demo screenshot set | NEXT | User | screenshot | Organize the final verified judge-facing set: `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/leaderboard`, `/report`. |
+| Demo screenshot set | DONE | Codex | screenshot, commit | Required screenshots are committed in `docs/submission-assets/`; `/why` is included but replaceable for stronger impact. |
 | Demo video | NEXT | User | manual review, demo video | Recommended because it raises judging clarity, but optional because the current repo and screenshot story are already strong. |
 | Bot overview for submission form | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now includes concise judge-facing overview and positioning. |
 | Usage explanation for submission form | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now explains the command flow and bb-native use case. |
@@ -235,7 +235,7 @@ DONE when:
 - `/report` screenshot exists.
 - Screenshots are Discord dark mode and CA is not the visual hero.
 
-Current status: `IN PROGRESS`. `/health`, `/radar`, `/why`, and `/flow` are reviewed; the final organized package still needs `/rejections`, `/stats`, `/leaderboard`, and `/report` captured or selected.
+Current status: `DONE`. Required screenshots are committed in `docs/submission-assets/`. `03-why.png` is the weakest and should be replaced only if time allows.
 
 ### Demo Video
 
@@ -271,15 +271,10 @@ Required by organizer:
 
 ## Final Submission Readiness Review
 
-Current readiness: `NOT YET SUBMITTED`
+Current readiness: `READY EXCEPT FORM SUBMISSION`
 
-Submission-ready once these are complete:
+Submission-ready once this is complete:
 
-- `/rejections` screenshot
-- `/stats` screenshot
-- `/leaderboard` screenshot
-- `/report` screenshot
-- final screenshot bundle ordered as `SUBMISSION_ASSET_BUNDLE.md`
 - actual form submission
 
 Strongest differentiators:
@@ -292,8 +287,7 @@ Strongest differentiators:
 
 Weakest points before submission:
 
-- screenshots are not stored in this repo, so the final visual bundle must be managed outside GitHub
-- four proof screenshots are still marked missing
+- `03-why.png` appears to show an older English-heavy `/why` surface
 - demo video is not created yet
 - intro post is still optional and not drafted
 
@@ -301,7 +295,7 @@ Final recommendation:
 
 - do not change runtime code or Discord UI unless a real bug appears
 - submit with GitHub URL as the required link
-- capture the remaining proof screenshots before form submission
+- optionally replace `03-why.png` before form submission if a fresh screenshot is easy
 - treat demo video as recommended, not blocking
 - treat X / intro post as optional, not blocking
 
@@ -313,6 +307,7 @@ Verified assets ready now:
 - `/radar` screenshot proving Japanese-first Radar surface
 - `/why <CA>` screenshot proving why Radar reacted
 - `/flow <CA>` screenshot proving Verify follow-up flow
+- committed screenshot directory: `docs/submission-assets/`
 - `README.md`
 - `REPORT.md`
 - `SUBMISSION_FORM_DRAFT.md`
@@ -322,11 +317,7 @@ Verified assets ready now:
 
 Assets still to finalize before submission:
 
-- `/rejections` screenshot
-- `/stats` screenshot
-- `/leaderboard` screenshot
-- `/report` screenshot
-- final organized screenshot bundle for judges
+- optional fresh Japanese-first `/why` screenshot replacement
 - optional X / intro post URL
 - optional demo video URL
 
@@ -413,7 +404,7 @@ Demo video decision:
 | `/flow` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/flow` screenshot reviewed and accepted. |
 | `/why` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/why` screenshot reviewed and accepted. |
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
-| Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | `SUBMISSION_ASSET_BUNDLE.md` now defines the final order; capture the remaining four proof screens and bundle them. |
+| Demo screenshots not yet bundled as one final judge set | DONE | Codex | screenshot, commit | `docs/submission-assets/` now contains the required screenshots and final order. |
 | Demo video not yet decided | NEXT | User | manual review | Recommended but not required; record only after screenshots are clean and time remains. |
 | Submission form answers not ready | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now stores the prepared form answers. |
 | Submission form not submitted | NEXT | User | form submitted | Submit after final asset bundle and readiness review are complete. |
@@ -432,6 +423,7 @@ Recent evidence:
 - `8bce29f`: submission form draft and tracker update.
 - `3cbabc1`: final submission asset bundle doc.
 - This commit: final submission readiness review.
+- This commit: committed submission screenshots and hardened asset bundle.
 
 Latest required check:
 

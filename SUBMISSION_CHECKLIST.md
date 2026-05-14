@@ -124,13 +124,14 @@ Confirm:
 
 Save screenshots of:
 
-- `/health`
-- `/radar`
-- `/flow <CA>`
-- `/why <CA>`
-- `/rejections`
-- `/stats`
-- `/report`
+- `/health`: `docs/submission-assets/01-health.png`
+- `/radar`: `docs/submission-assets/02-radar.png`
+- `/why <CA>`: `docs/submission-assets/03-why.png`
+- `/flow <CA>`: `docs/submission-assets/04-flow.png`
+- `/leaderboard`: `docs/submission-assets/05-leaderboard.png`
+- `/rejections`: `docs/submission-assets/06-rejections.png`
+- `/stats`: `docs/submission-assets/07-stats.png`
+- `/report`: `docs/submission-assets/08-report.png`
 
 Best screenshot set:
 
@@ -147,6 +148,8 @@ Screenshot rules:
 - Avoid screenshots where CA dominates the image.
 - Prefer one strong candidate over many weak candidates.
 - If no candidate passes, use the miss screen as proof of selectivity.
+- For the committed bundle, prioritize `02-radar.png`, `04-flow.png`, `05-leaderboard.png`, `06-rejections.png`, and `07-stats.png`.
+- Replace `03-why.png` only if a fresh Japanese-first `/why` screenshot is easy to capture.
 
 ## 7. Demo Command Order
 
@@ -226,18 +229,18 @@ Submit these exact assets:
 - `REPORT.md`
 - `SUBMISSION_FORM_DRAFT.md`
 - `SUBMISSION_ASSET_BUNDLE.md`
-- Discord dark mode screenshot bundle
+- Discord dark mode screenshot bundle: `docs/submission-assets/`
 
 Final screenshot order:
 
-1. `/health`
-2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
-5. `/leaderboard`
-6. `/rejections`
-7. `/stats`
-8. `/report`
+1. `docs/submission-assets/01-health.png`
+2. `docs/submission-assets/02-radar.png`
+3. `docs/submission-assets/03-why.png`
+4. `docs/submission-assets/04-flow.png`
+5. `docs/submission-assets/05-leaderboard.png`
+6. `docs/submission-assets/06-rejections.png`
+7. `docs/submission-assets/07-stats.png`
+8. `docs/submission-assets/08-report.png`
 
 Judge demo order:
 
@@ -258,6 +261,6 @@ Optional assets:
 Final recommendation:
 
 - Do not change runtime code or UI before submission unless a bug appears.
-- Capture the missing proof screenshots first.
+- Screenshot bundle is committed; replace `03-why.png` only if a fresh Japanese-first screenshot is easy.
 - Submit with GitHub URL even if intro post and demo video are not ready.
 - Record a short demo video only if the screenshot bundle is clean and time remains.
