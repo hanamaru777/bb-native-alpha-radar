@@ -877,24 +877,28 @@ export function formatFlowIntroProduction(candidate) {
 }
 
 function flowNowLine(candidate, classification) {
-  const parts = [classification.summary];
+  const parts = [classification.label];
   const sm = finalSm(candidate);
   const flow = flowLine(candidate);
   if (sm !== "n/a") parts.push(`Smart Money ${sm}`);
   if (flow !== "n/a") parts.push(flow);
-  return shortText(parts.filter(Boolean).join(" / "), 220);
+  return shortText(parts.filter(Boolean).map((item) => `・${item}`).join("\n"), 220);
 }
 
 function flowVerifyNowLine(candidate) {
   return [
-    "Dex / gmgn / Nansenで確認",
-    "板・出来高・上位売りを見る",
-    `理由を戻る: \`/why ${candidate.ca}\``
+    "・Dex / gmgn / Nansenで確認",
+    "・板・出来高・上位売り",
+    `・\`/why ${candidate.ca}\` に戻る`
   ].join("\n");
 }
 
 function flowRiskSummary(candidate) {
-  return shortText(radarRiskLine(candidate), 180);
+  const parts = String(radarRiskLine(candidate) || "")
+    .split(" / ")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return shortText((parts.length ? parts : ["取得待ち"]).map((item) => `・${item}`).join("\n"), 180);
 }
 
 function flowTraceSummary(candidate) {
@@ -905,15 +909,15 @@ function flowTraceSummary(candidate) {
   const marketQuality = candidate.nansenDeepDive?.marketQuality;
   const alphaSignal = candidate.nansenDeepDive?.alphaSignals?.reason || "";
 
-  if (flow !== "n/a") lines.push(`資金: ${flow}`);
-  if (holders !== "n/a") lines.push(`ホルダー: ${holders}`);
-  if (labels && labels !== "n/a") lines.push(`ラベル: ${labels}`);
-  if (alphaSignal && alphaSignal !== "n/a") lines.push(`文脈: ${alphaSignal}`);
+  if (flow !== "n/a") lines.push(`・資金 ${flow}`);
+  if (holders !== "n/a") lines.push(`・ホルダー ${holders}`);
+  if (labels && labels !== "n/a") lines.push(`・ラベル ${labels}`);
+  if (alphaSignal && alphaSignal !== "n/a") lines.push(`・文脈 ${alphaSignal}`);
   if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
-    lines.push(`DEX: ${cleanDexSummary(marketQuality.summary)}`);
+    lines.push(`・DEX ${cleanDexSummary(marketQuality.summary)}`);
   }
 
-  return shortText(lines.join("\n") || "取得待ち", 320);
+  return shortText(lines.join("\n") || "・取得待ち", 320);
 }
 
 export function formatFlowEmbedProduction(candidate) {
