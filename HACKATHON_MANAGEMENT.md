@@ -121,7 +121,7 @@ Must not be done yet:
 | Required organizer proof: GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL at minimum; intro tweet is optional boost. |
 | Final GitHub URL ready | DONE | Codex | GitHub URL | GitHub main is current and README is submission-polished. |
 | Submission form answer draft ready | DONE | Codex | commit | Use `SUBMISSION_FORM_DRAFT.md` as the source for final form entry. |
-| Secrets and local data not committed | NEXT | Codex | check pass | Reconfirm with final pre-submission repo check before actual submission. |
+| Secrets and local data not committed | DONE | Codex | check pass | Final pre-submission repo check confirmed `.env` is ignored and runtime JSON files under `data/` are not tracked. |
 
 ## P1 Strongly Improves Winning Chance
 
