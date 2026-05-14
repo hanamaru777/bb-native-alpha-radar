@@ -72,13 +72,13 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Finalize verified submission asset bundle | NEXT | User | screenshot, GitHub URL | Organize the final verified screenshots, GitHub URL, `SUBMISSION_FORM_DRAFT.md`, README, REPORT, and any demo links into one ready-to-submit package. |
+| P0 | Capture remaining proof screenshots for the final bundle | NEXT | User | screenshot | Capture `/rejections`, `/stats`, `/leaderboard`, and `/report`, then place them into the order defined in `SUBMISSION_ASSET_BUNDLE.md`. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Decide demo video strategy | NEXT | User | manual review | Treat demo video as recommended but optional, then explicitly choose whether to record one before submission. |
+| P0 | Decide demo video strategy | NEXT | User | manual review | Demo video is recommended but optional; decide after the screenshot bundle is complete. |
 | P0 | Run final submission readiness review | NOT STARTED | Codex | manual review, check pass | Review tracker, screenshot set, form assets, and final repo state before submission. |
 | P0 | Submit hackathon form | NOT STARTED | User | form submitted | Submit after final asset bundle and readiness review are complete. |
 
@@ -280,6 +280,7 @@ Verified assets ready now:
 - `README.md`
 - `REPORT.md`
 - `SUBMISSION_FORM_DRAFT.md`
+- `SUBMISSION_ASSET_BUNDLE.md`
 - GitHub repository URL
 - `npm.cmd run check:all` pass
 
@@ -376,7 +377,7 @@ Demo video decision:
 | `/flow` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/flow` screenshot reviewed and accepted. |
 | `/why` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/why` screenshot reviewed and accepted. |
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
-| Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | Organize the verified and remaining proof screens into one final bundle. |
+| Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | `SUBMISSION_ASSET_BUNDLE.md` now defines the final order; capture the remaining four proof screens and bundle them. |
 | Demo video not yet decided | NEXT | User | manual review | Choose whether to record a short walkthrough after the screenshot bundle is organized. |
 | Submission form answers not ready | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now stores the prepared form answers. |
 | Submission form not submitted | NEXT | User | form submitted | Submit after final asset bundle and readiness review are complete. |
@@ -393,6 +394,7 @@ Recent evidence:
 - `233da86`: `/why` final polish.
 - `fc9cf39`: submission-readiness tracker sync.
 - This commit: submission form draft and tracker update.
+- This commit: final submission asset bundle doc.
 
 Latest required check:
 
