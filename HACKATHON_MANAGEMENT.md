@@ -72,15 +72,15 @@ Single next task:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Prepare submission form answers and links | NEXT | User | form submitted, GitHub URL | Assemble the final judge-facing form text, GitHub URL, verified screenshots, and required Nansen CLI proof before actual submission. |
+| P0 | Finalize verified submission asset bundle | NEXT | User | screenshot, GitHub URL | Organize the final verified screenshots, GitHub URL, `SUBMISSION_FORM_DRAFT.md`, README, REPORT, and any demo links into one ready-to-submit package. |
 
 Next 3 tasks:
 
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
-| P0 | Finalize verified submission asset bundle | NEXT | User | screenshot, GitHub URL | Organize the final verified set: `/health`, `/radar`, `/why`, `/flow`, plus the remaining proof screens and submission links. |
 | P0 | Decide demo video strategy | NEXT | User | manual review | Treat demo video as recommended but optional, then explicitly choose whether to record one before submission. |
 | P0 | Run final submission readiness review | NOT STARTED | Codex | manual review, check pass | Review tracker, screenshot set, form assets, and final repo state before submission. |
+| P0 | Submit hackathon form | NOT STARTED | User | form submitted | Submit after final asset bundle and readiness review are complete. |
 
 Must not be done yet:
 
@@ -119,6 +119,7 @@ Must not be done yet:
 | Required organizer proof: submission form submitted | NOT STARTED | User | form submitted | Submit only after README/REPORT/screenshots/video assets are ready. |
 | Required organizer proof: GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL at minimum; intro tweet is optional boost. |
 | Final GitHub URL ready | DONE | Codex | GitHub URL | GitHub main is current and README is submission-polished. |
+| Submission form answer draft ready | DONE | Codex | commit | Use `SUBMISSION_FORM_DRAFT.md` as the source for final form entry. |
 | Secrets and local data not committed | NEXT | Codex | check pass | Reconfirm with final pre-submission repo check before actual submission. |
 
 ## P1 Strongly Improves Winning Chance
@@ -129,8 +130,8 @@ Must not be done yet:
 | REPORT refresh | DONE | Codex | commit | REPORT now reads as problem -> solution -> workflow -> value submission narrative. |
 | Demo screenshot set | NEXT | User | screenshot | Organize the final verified judge-facing set: `/health`, `/radar`, `/why`, `/flow`, `/rejections`, `/stats`, `/leaderboard`, `/report`. |
 | Demo video | NEXT | User | manual review, demo video | Recommended because it raises judging clarity, but optional because the current repo and screenshot story are already strong. |
-| Bot overview for submission form | NOT STARTED | ChatGPT | form submitted | Draft concise judge-facing overview. |
-| Usage explanation for submission form | NOT STARTED | ChatGPT | form submitted | Explain command flow and bb-native use case. |
+| Bot overview for submission form | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now includes concise judge-facing overview and positioning. |
+| Usage explanation for submission form | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now explains the command flow and bb-native use case. |
 | Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain Gateway, Radar, Nansen adapter, storage, and tracking. |
 | Setup steps verified from clean checkout | NOT STARTED | Codex | check pass | Verify README commands match actual repo. |
 | Dependency list finalized | DONE | Codex | commit | README now explains Node.js, Nansen CLI, Discord API usage, and no Discord SDK dependency. |
@@ -278,6 +279,7 @@ Verified assets ready now:
 - `/flow <CA>` screenshot proving Verify follow-up flow
 - `README.md`
 - `REPORT.md`
+- `SUBMISSION_FORM_DRAFT.md`
 - GitHub repository URL
 - `npm.cmd run check:all` pass
 
@@ -288,7 +290,8 @@ Assets still to finalize before submission:
 - `/leaderboard` screenshot
 - `/report` screenshot
 - final organized screenshot bundle for judges
-- submission form text
+- optional X / intro post URL
+- optional demo video URL
 
 Required commands to keep ready during judging:
 
@@ -319,8 +322,8 @@ Evaluation boosters:
 
 | Booster | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
-| Bot overview | NOT STARTED | ChatGPT | form submitted | Draft concise non-price-bot positioning. |
-| Usage explanation | NOT STARTED | ChatGPT | form submitted | Explain `/radar`, `/why`, `/flow`, `/rejections`, `/stats`. |
+| Bot overview | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` includes the non-price-bot positioning. |
+| Usage explanation | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` explains `/health`, `/radar`, `/why`, `/flow`, `/leaderboard`, `/rejections`, `/stats`, and `/report`. |
 | Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain the runtime shape, Nansen use, local storage, and tracking loop. |
 | Setup steps | DONE | Codex | commit | README documents install, Nansen CLI, `.env`, start/stop, and checks. |
 | Demo video | NEXT | User | manual review, demo video | Recommended but optional; record after the screenshot bundle is organized if time permits. |
@@ -375,7 +378,8 @@ Demo video decision:
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
 | Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | Organize the verified and remaining proof screens into one final bundle. |
 | Demo video not yet decided | NEXT | User | manual review | Choose whether to record a short walkthrough after the screenshot bundle is organized. |
-| Submission form not submitted | NEXT | User | form submitted | Prepare answers and links after the final asset bundle is ready. |
+| Submission form answers not ready | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now stores the prepared form answers. |
+| Submission form not submitted | NEXT | User | form submitted | Submit after final asset bundle and readiness review are complete. |
 
 ## Change Log Evidence
 
@@ -387,7 +391,8 @@ Recent evidence:
 - `0c9b0e8`: `/flow` tracking wording refinement.
 - `19e4fdd`: safe bot runtime operation docs and stop scripts.
 - `233da86`: `/why` final polish.
-- This commit: submission-readiness tracker sync.
+- `fc9cf39`: submission-readiness tracker sync.
+- This commit: submission form draft and tracker update.
 
 Latest required check:
 
