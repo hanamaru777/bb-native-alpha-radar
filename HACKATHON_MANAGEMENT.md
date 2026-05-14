@@ -79,7 +79,7 @@ Next 3 tasks:
 | Priority | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - | - |
 | P0 | Decide demo video strategy | NEXT | User | manual review | Demo video is recommended but optional; decide after the screenshot bundle is complete. |
-| P0 | Run final submission readiness review | NOT STARTED | Codex | manual review, check pass | Review tracker, screenshot set, form assets, and final repo state before submission. |
+| P0 | Run final submission readiness review | DONE | Codex | manual review, check pass | Final review completed; remaining blockers are screenshot bundle completion, optional video decision, and actual submission. |
 | P0 | Submit hackathon form | NOT STARTED | User | form submitted | Submit after final asset bundle and readiness review are complete. |
 
 Must not be done yet:
@@ -269,6 +269,42 @@ Required by organizer:
 | Submission form | NOT STARTED | User | form submitted | Fill after final GitHub/docs/demo assets. |
 | GitHub URL or intro tweet URL | NEXT | User | GitHub URL | Use GitHub URL minimum; add intro tweet if ready. |
 
+## Final Submission Readiness Review
+
+Current readiness: `NOT YET SUBMITTED`
+
+Submission-ready once these are complete:
+
+- `/rejections` screenshot
+- `/stats` screenshot
+- `/leaderboard` screenshot
+- `/report` screenshot
+- final screenshot bundle ordered as `SUBMISSION_ASSET_BUNDLE.md`
+- actual form submission
+
+Strongest differentiators:
+
+- pre-CA Radar identity instead of price-bot behavior
+- Nansen Smart Money used for decision quality, not decoration
+- low-noise filtering and visible rejection reasons
+- Japanese-first Discord UX built for screenshots
+- `Radar -> Verify -> Prove -> Community` loop with Radar Call continuity
+
+Weakest points before submission:
+
+- screenshots are not stored in this repo, so the final visual bundle must be managed outside GitHub
+- four proof screenshots are still marked missing
+- demo video is not created yet
+- intro post is still optional and not drafted
+
+Final recommendation:
+
+- do not change runtime code or Discord UI unless a real bug appears
+- submit with GitHub URL as the required link
+- capture the remaining proof screenshots before form submission
+- treat demo video as recommended, not blocking
+- treat X / intro post as optional, not blocking
+
 ## Submission Assets
 
 Verified assets ready now:
@@ -378,7 +414,7 @@ Demo video decision:
 | `/why` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/why` screenshot reviewed and accepted. |
 | README/REPORT not yet submission-ready | DONE | Codex | commit | README and REPORT have been polished for judge-facing submission narrative. |
 | Demo screenshots not yet bundled as one final judge set | NEXT | User | screenshot | `SUBMISSION_ASSET_BUNDLE.md` now defines the final order; capture the remaining four proof screens and bundle them. |
-| Demo video not yet decided | NEXT | User | manual review | Choose whether to record a short walkthrough after the screenshot bundle is organized. |
+| Demo video not yet decided | NEXT | User | manual review | Recommended but not required; record only after screenshots are clean and time remains. |
 | Submission form answers not ready | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` now stores the prepared form answers. |
 | Submission form not submitted | NEXT | User | form submitted | Submit after final asset bundle and readiness review are complete. |
 
@@ -393,8 +429,9 @@ Recent evidence:
 - `19e4fdd`: safe bot runtime operation docs and stop scripts.
 - `233da86`: `/why` final polish.
 - `fc9cf39`: submission-readiness tracker sync.
-- This commit: submission form draft and tracker update.
-- This commit: final submission asset bundle doc.
+- `8bce29f`: submission form draft and tracker update.
+- `3cbabc1`: final submission asset bundle doc.
+- This commit: final submission readiness review.
 
 Latest required check:
 

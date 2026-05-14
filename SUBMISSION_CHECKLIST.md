@@ -157,9 +157,9 @@ Recommended judging flow:
 /radar
 /why <CA>
 /flow <CA>
+/leaderboard
 /rejections
 /stats
-/leaderboard
 /report
 ```
 
@@ -216,3 +216,48 @@ Strong submission:
 - REPORT.md
 - Architecture/dependency/setup explanation
 - Clear Radar philosophy
+
+## 10. Recommended Final Submission Package
+
+Submit these exact assets:
+
+- GitHub URL: `https://github.com/hanamaru777/bb-native-alpha-radar`
+- `README.md`
+- `REPORT.md`
+- `SUBMISSION_FORM_DRAFT.md`
+- `SUBMISSION_ASSET_BUNDLE.md`
+- Discord dark mode screenshot bundle
+
+Final screenshot order:
+
+1. `/health`
+2. `/radar`
+3. `/why <CA>`
+4. `/flow <CA>`
+5. `/leaderboard`
+6. `/rejections`
+7. `/stats`
+8. `/report`
+
+Judge demo order:
+
+1. `/health`
+2. `/radar`
+3. `/why <CA>`
+4. `/flow <CA>`
+5. `/leaderboard`
+6. `/rejections`
+7. `/stats`
+8. `/report`
+
+Optional assets:
+
+- short demo video, under two minutes
+- X / intro post URL
+
+Final recommendation:
+
+- Do not change runtime code or UI before submission unless a bug appears.
+- Capture the missing proof screenshots first.
+- Submit with GitHub URL even if intro post and demo video are not ready.
+- Record a short demo video only if the screenshot bundle is clean and time remains.
