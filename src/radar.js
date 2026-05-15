@@ -658,6 +658,67 @@ function flowLine(candidate) {
   return `${label} / net ${formatUsd(flow.netflowUsd)}`;
 }
 
+function spreadStatusLine(candidate) {
+  if (candidate.metrics?.bbAlreadyPosted === true) return "bb\u5185\u3067\u65e2\u51fa";
+  if (candidate.metrics?.bbAlreadyPosted === false) return "bb\u3067\u5927\u304d\u304f\u5e83\u304c\u308b\u524d\u306e\u53ef\u80fd\u6027";
+  return "\u5e83\u304c\u308a\u306f\u672a\u78ba\u8a8d";
+}
+
+function phaseStatusLine(candidate) {
+  const score = Number(candidate.bbScore || 0);
+  const age = Number(candidate.metrics?.tokenAgeDays || 0);
+  if (candidate.metrics?.bbAlreadyPosted === true) return "\u65e2\u51fa\u306e\u76e3\u8996\u5019\u88dc";
+  if (score < config.minBbScore) return "\u76e3\u8996\u306e\u307f";
+  if (age > 0 && age <= 2) return "\u521d\u52d5\u76e3\u8996\u6bb5\u968e";
+  return "\u307e\u3060\u78ba\u8a8d\u6bb5\u968e";
+}
+
+function holderRiskMeaning(candidate) {
+  const holders = candidate.nansenDeepDive?.holders;
+  if (!holders) return "\u30db\u30eb\u30c0\u30fc\u96c6\u4e2d\u306f\u672a\u78ba\u8a8d";
+  const text = String(holders.concentration || "");
+  if (text.includes("\u9ad8") || text.includes("\u96c6\u4e2d\u9ad8")) return "\u4e0a\u4f4d\u4fdd\u6709\u306f\u6ce8\u610f";
+  if (text.includes("\u3084\u3084")) return "\u4e0a\u4f4d\u4fdd\u6709\u306f\u3084\u3084\u6ce8\u610f";
+  return "\u30db\u30eb\u30c0\u30fc\u96c6\u4e2d\u306f\u8efd\u3081";
+}
+
+function marketBoardMeaning(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const liquidity = Number(market.liquidityUsd ?? candidate.metrics?.liquidityUsd);
+  const volume = Number(market.volume24hUsd ?? candidate.metrics?.volume24hUsd);
+  if (Number.isFinite(liquidity) && liquidity > 0 && liquidity < 15000) return "\u677f\u306f\u8584\u3044\u53ef\u80fd\u6027";
+  if (Number.isFinite(liquidity) && liquidity > 0 && liquidity < 50000) return "\u677f\u306e\u8584\u3055\u306f\u8981\u78ba\u8a8d";
+  if (Number.isFinite(volume) && volume > 0) return "\u51fa\u6765\u9ad8\u3042\u308a\u3001\u7d99\u7d9a\u3092\u78ba\u8a8d";
+  return "\u677f\u3068\u51fa\u6765\u9ad8\u306fDex/gmgn\u3067\u78ba\u8a8d";
+}
+
+function newAttentionMeaning(candidate) {
+  const alpha = candidate.metrics?.alphaSignals || candidate.nansenDeepDive?.alphaSignals || {};
+  const value = String(alpha.newWalletProxy || "").toLowerCase();
+  if (value && value !== "n/a" && value !== "unknown") return "\u65b0\u898f\u53cd\u5fdc\u3042\u308a";
+  return "\u65b0\u898f\u8cb7\u3044\u306fDex/gmgn\u3067\u78ba\u8a8d";
+}
+
+function buySellPressureMeaning(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const buys = Number(market.buys1h);
+  const sells = Number(market.sells1h);
+  if (Number.isFinite(buys) && Number.isFinite(sells) && buys + sells > 0) {
+    if (buys > sells * 1.2) return "1h\u8cb7\u3044\u53cd\u5fdc\u3042\u308a";
+    if (sells > buys * 1.2) return "1h\u58f2\u308a\u5727\u306f\u3084\u3084\u6ce8\u610f";
+    return "1h\u58f2\u8cb7\u306f\u307e\u3060\u5747\u8861";
+  }
+  return "\u58f2\u308a\u5727\u306fDex/gmgn\u3067\u78ba\u8a8d";
+}
+
+function watchOnlyContextLine(candidate) {
+  const reasons = Array.isArray(candidate.reasons) ? candidate.reasons : [];
+  if (candidate.metrics?.bbAlreadyPosted === true || reasons.includes("bb_already_posted")) return "\u3059\u3067\u306b\u4e00\u90e8\u3067\u51fa\u3066\u3044\u308b\u305f\u3081\u3001\u4f38\u3073\u308b\u304b\u306f\u51fa\u6765\u9ad8\u7d99\u7d9a\u3092\u78ba\u8a8d";
+  if (Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0) <= 1) return "Smart Money\u53cd\u5fdc\u304c\u8584\u3044\u305f\u3081\u3001\u8ffd\u52a0\u53cd\u5fdc\u5f85\u3061";
+  if (Number(candidate.metrics?.holderPenalty || 0) > 0 || reasons.includes("holder_concentration")) return "\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u4e0a\u4f4d\u4fdd\u6709\u3068\u58f2\u308a\u5727\u3092\u78ba\u8a8d";
+  return "\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u6295\u7a3f\u57fa\u6e96\u306b\u306f\u307e\u3060\u5c4a\u304b\u306a\u3044";
+}
+
 function radarSignalState(candidate) {
   const score = Number(candidate.bbScore || 0);
   const sm = Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0);
@@ -695,19 +756,17 @@ function radarSignalState(candidate) {
 }
 
 function radarWhyNowLine(candidate) {
-  const parts = [];
   const metrics = candidate.metrics || {};
   const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
   const flow = Number(metrics.netflow24hUsd || 0);
-  const age = Number(metrics.tokenAgeDays || 0);
-  const mcap = Number(metrics.marketCapUsd || 0);
-  if (sm >= 3) parts.push(`Smart Money\u53cd\u5fdc ${sm}`);
-  if (flow > 0) parts.push(`24h\u6d41\u5165 ${formatUsd(flow)}`);
-  if (mcap > 0 && mcap <= 100_000) parts.push("lowcap\u521d\u52d5\u5e2f");
-  if (age > 0 && age <= 2) parts.push("\u4f5c\u6210\u76f4\u5f8c");
-  const narratives = metrics.alphaSignals?.narratives || candidate.nansenDeepDive?.alphaSignals?.narratives || [];
-  if (narratives.length) parts.push(narratives.join(" / "));
-  return parts.join(" / ") || candidate.reason || "Smart Money\u5074\u306b\u65e9\u3044\u53cd\u5fdc\u304c\u3042\u308a\u307e\u3059\u3002";
+  const lines = [
+    `\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    `\u898b\u65b9: ${spreadStatusLine(candidate)}`
+  ];
+  if (sm >= 3) lines.push(`\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc ${sm}`);
+  if (flow > 0) lines.push(`\u52e2\u3044: 24h\u6d41\u5165 ${formatUsd(flow)}`);
+  else lines.push(`\u52e2\u3044: ${interpretedFlowDirection(candidate).line.replace(/^\u30fb/, "")}`);
+  return lines.slice(0, 4).join("\n");
 }
 
 function radarVerifyLine(candidate) {
@@ -739,7 +798,7 @@ function riskLine(candidate) {
 function radarTraceLine(candidate) {
   const metrics = candidate.metrics || {};
   const flow = candidate.nansenDeepDive?.flow;
-  if (flow) return `${flow.bias} / net ${formatUsd(flow.netflowUsd)}`;
+  if (flow) return flowLine(candidate);
   const items = [];
   if (Number(metrics.netflow24hUsd || 0) > 0) items.push(`24h flow ${formatUsd(metrics.netflow24hUsd)}`);
   items.push(`SM ${finalSm(candidate)}`);
@@ -771,7 +830,7 @@ export function formatRadarEmbedsWinning(candidates) {
         { name: "Nansen根拠", value: shortText(radarTraceLine(candidate), 220), inline: true },
         { name: "CA", value: `\`${candidate.ca}\`` }
       ],
-      footer: { text: "NFA / DYOR | VERIFY before touching" },
+      footer: { text: "\u6295\u8cc7\u52a9\u8a00\u3067\u306f\u3042\u308a\u307e\u305b\u3093 | \u89e6\u308b\u524d\u306b\u78ba\u8a8d\u3057\u3066\u306d" },
       timestamp: new Date().toISOString()
     };
   });
@@ -801,6 +860,7 @@ function compactRejectedLine(candidate) {
   const label = symbol.startsWith("$") ? symbol : "$" + symbol;
   return [
     `${label}: ${rejectedReasonFromScan(candidate)}`,
+    `\u898b\u65b9: ${watchOnlyContextLine(candidate)}`,
     `CA: \`${ca}\``,
     `\u6b21: \u7406\u7531 \`/why <CA>\` / \u6df1\u6398\u308a \`/flow <CA>\``
   ].join("\n");
@@ -905,13 +965,7 @@ function interpretedSmartMoneyLine(candidate) {
 }
 
 function interpretedStageLine(candidate) {
-  const score = Number(candidate.bbScore || 0);
-  const metrics = candidate.metrics || {};
-  const age = Number(metrics.tokenAgeDays || 0);
-  const mcap = Number(metrics.marketCapUsd || 0);
-  if (score >= config.minBbScore && age > 0 && age <= 2) return "\u30fb\u307e\u3060\u78ba\u8a8d\u6bb5\u968e";
-  if (mcap > 0 && mcap <= 100_000) return "\u30fblowcap\u521d\u52d5\u5e2f";
-  return "\u30fb\u307e\u3060\u78ba\u8a8d\u6bb5\u968e";
+  return `\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`;
 }
 
 export function formatFlowIntroProduction(candidate) {
@@ -920,9 +974,9 @@ export function formatFlowIntroProduction(candidate) {
 
 function flowNowLine(candidate, classification) {
   const lines = [
+    interpretedStageLine(candidate),
     interpretedSmartMoneyLine(candidate),
-    interpretedFlowDirection(candidate).line,
-    interpretedStageLine(candidate)
+    interpretedFlowDirection(candidate).line
   ];
   return shortText(lines.filter(Boolean).join("\n"), 220);
 }
@@ -931,16 +985,30 @@ function flowVerifyNowLine(candidate) {
   return [
     "\u30fb\u51fa\u6765\u9ad8\u304c\u7d9a\u304f\u304b",
     "\u30fb\u4e0a\u4f4d\u58f2\u308a\u304c\u51fa\u3066\u3044\u306a\u3044\u304b",
+    "\u30fb\u65b0\u898f\u8cb7\u3044\u304c\u5897\u3048\u3066\u3044\u308b\u304b",
     "\u30fb\u677f\u304c\u8584\u3059\u304e\u306a\u3044\u304b"
   ].join("\n");
 }
 
 function flowRiskSummary(candidate) {
-  const parts = String(radarRiskLine(candidate) || "")
-    .split(" / ")
-    .map((item) => item.trim())
-    .filter(Boolean);
-  return shortText((parts.length ? parts : ["\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d"]).map((item) => `\u30fb${item}`).join("\n"), 180);
+  const pressure = buySellPressureMeaning(candidate);
+  const parts = [
+    interpretedFlowDirection(candidate).state === "plus" ? null : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044",
+    holderRiskMeaning(candidate),
+    marketBoardMeaning(candidate),
+    pressure.includes("\u58f2\u308a") || pressure.includes("\u5747\u8861") ? pressure : null
+  ].filter(Boolean);
+  return shortText(parts.map((item) => `\u30fb${item}`).join("\n"), 220);
+}
+
+function flowPositiveLine(candidate) {
+  const lines = [];
+  const pressure = buySellPressureMeaning(candidate);
+  if (candidate.metrics?.bbAlreadyPosted === false) lines.push("\u30fbbb\u3067\u5927\u304d\u304f\u5e83\u304c\u308b\u524d\u306e\u53ef\u80fd\u6027");
+  if (Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0) >= 3) lines.push("\u30fbSmart Money\u53cd\u5fdc\u3042\u308a");
+  if (pressure.includes("\u8cb7\u3044\u53cd\u5fdc")) lines.push(`\u30fb${pressure}`);
+  lines.push(`\u30fb${marketBoardMeaning(candidate)}`);
+  return shortText(lines.slice(0, 3).join("\n"), 220);
 }
 
 function flowTraceSummary(candidate) {
@@ -963,21 +1031,20 @@ function flowTraceSummary(candidate) {
 }
 
 function flowJudgmentMemo(candidate) {
-  const sm = Number(finalSm(candidate));
   const direction = interpretedFlowDirection(candidate).state;
-  if (direction === "out") return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a\u3002\u7121\u7406\u306b\u89e6\u3089\u305a\u3001\u6b21\u306e\u53cd\u5fdc\u3092\u76e3\u8996\u3002";
-  if (direction === "plus" && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u3068\u8cc7\u91d1\u6d41\u5165\u304c\u540c\u3058\u65b9\u5411\u3002\u305f\u3060\u3057\u89e6\u308b\u524d\u306b\u677f\u3001\u51fa\u6765\u9ad8\u3001\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d\u3002";
-  if ((direction === "neutral" || direction === "unknown") && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u6d41\u5165\u306f\u307e\u3060\u5f37\u304f\u306a\u3044\u3002Smart Money\u53cd\u5fdc\u3060\u3051\u3067\u5224\u65ad\u305b\u305a\u3001\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u58f2\u308a\u5727\u3092\u78ba\u8a8d\u3002";
-  return "\u53cd\u5fdc\u306f\u898b\u3048\u308b\u304c\u6c7a\u5b9a\u6253\u306f\u307e\u3060\u5f31\u3081\u3002\u8ffd\u52a0\u306eSmart Money\u6d41\u5165\u3068bb\u5074\u306e\u5e83\u304c\u308a\u3092\u76e3\u8996\u3002";
+  if (direction === "out") return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a\u3002\u7121\u7406\u306b\u89e6\u3089\u305a\u3001\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u58f2\u308a\u5727\u3092\u78ba\u8a8d\u3002";
+  if (direction === "plus") return "Smart Money\u53cd\u5fdc\u3068\u8cc7\u91d1\u6d41\u5165\u304c\u540c\u3058\u65b9\u5411\u3002\u305f\u3060\u3057\u3001\u65b0\u898f\u8cb7\u3044\u3001\u4e0a\u4f4d\u58f2\u308a\u3001\u677f\u306e\u539a\u3055\u3092\u78ba\u8a8d\u3057\u3066\u304b\u3089\u898b\u308b\u5019\u88dc\u3002";
+  return "Smart Money\u53cd\u5fdc\u3060\u3051\u3067\u306f\u5224\u65ad\u3057\u306a\u3044\u3002\u51fa\u6765\u9ad8\u7d99\u7d9a\u3001\u65b0\u898f\u8cb7\u3044\u3001\u4e0a\u4f4d\u58f2\u308a\u3001\u677f\u306e\u539a\u3055\u3092\u78ba\u8a8d\u3057\u3066\u304b\u3089\u898b\u308b\u5019\u88dc\u3002";
 }
 
 export function formatFlowEmbedProduction(candidate) {
   const classification = flowClassification(candidate);
   const fields = [
-    { name: "今起きてること", value: flowNowLine(candidate, classification) },
-    { name: "\u5224\u65ad\u30e1\u30e2", value: shortText(flowJudgmentMemo(candidate), 220) },
-    { name: "まず見る", value: shortText(flowVerifyNowLine(candidate), 220) },
-    { name: "注意点", value: flowRiskSummary(candidate) },
+    { name: "\u4eca\u306e\u30d5\u30a7\u30fc\u30ba", value: flowNowLine(candidate, classification) },
+    { name: "\u826f\u3044\u70b9", value: flowPositiveLine(candidate) },
+    { name: "\u6ce8\u610f\u70b9", value: flowRiskSummary(candidate) },
+    { name: "\u307e\u305a\u898b\u308b", value: shortText(flowVerifyNowLine(candidate), 240) },
+    { name: "\u5224\u65ad\u30e1\u30e2", value: shortText(flowJudgmentMemo(candidate), 260) },
     { name: "Nansen根拠", value: flowTraceSummary(candidate) },
     { name: "CA", value: `\`${candidate.ca}\`` }
   ];
@@ -1018,13 +1085,10 @@ export function formatWhyIntro(candidate) {
 
 function whyRadarReasonLine(candidate, classification) {
   const parts = [];
-  parts.push("\u30fb\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc");
-  if (candidate.metrics?.bbAlreadyPosted === false) parts.push("\u30fb\u65e9\u3044\u6bb5\u968e: bb\u3067\u5927\u304d\u304f\u5e83\u304c\u308b\u524d");
-  const direction = interpretedFlowDirection(candidate).state;
-  if (direction === "plus") parts.push("\u30fb\u8ffd\u3044\u98a8: Nansen flow\u304c\u30d7\u30e9\u30b9");
-  else if (direction === "out") parts.push("\u30fb\u6ce8\u610f: Nansen flow\u306f\u6d41\u51fa\u5bc4\u308a");
-  else parts.push("\u30fb\u672a\u78ba\u8a8d: \u8cc7\u91d1\u306e\u52e2\u3044\u306f\u307e\u3060\u5f37\u304f\u306a\u3044");
-  parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a");
+  parts.push(`\u30fb\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc ${finalSm(candidate)}`);
+  parts.push(`\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`);
+  parts.push(`\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`);
+  parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a / \u677f\u306e\u539a\u3055");
   return parts.slice(0, 4).join("\n");
 }
 
@@ -1032,18 +1096,19 @@ function whyEvidenceLine(candidate) {
   const parts = [];
   const sm = finalSm(candidate);
   const flow = flowLine(candidate);
-  const holder = holderLine(candidate);
-  if (sm !== "n/a") parts.push(`\u30fbSmart Money ${sm}`);
-  if (flow !== "n/a") parts.push(`\u30fbNansen flow ${flow}`);
-  if (holder !== "n/a") parts.push(`\u30fb\u30db\u30eb\u30c0\u30fc ${holder}`);
-  return parts.slice(0, 3).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
+  if (sm !== "n/a") parts.push(`\u30fbSmart Money\u4eba\u6570 ${sm}`);
+  if (flow !== "n/a") parts.push(`\u30fb\u8cc7\u91d1\u306e\u52e2\u3044 ${flow}`);
+  parts.push(`\u30fb${holderRiskMeaning(candidate)}`);
+  parts.push(`\u30fb${newAttentionMeaning(candidate)}`);
+  return parts.slice(0, 4).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
 }
 
 function whyRiskLine(candidate) {
   const parts = [
     "\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a",
-    ...String(riskLine(candidate) || "").split(" / ").map((item) => `\u30fb${item.trim()}`)
-  ].map((item) => item.trim()).filter(Boolean);
+    `\u30fb${holderRiskMeaning(candidate)}`,
+    `\u30fb${marketBoardMeaning(candidate)}`
+  ];
   return parts.slice(0, 3).join("\n");
 }
 
