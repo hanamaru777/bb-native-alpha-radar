@@ -125,7 +125,7 @@ Save screenshots of:
 - `/radar`: `docs/submission-assets/02-radar.png`
 - `/why <CA>`: `docs/submission-assets/03-why.png`
 - `/flow <CA>`: `docs/submission-assets/04-flow.png`
-- `/leaderboard`: `docs/submission-assets/05-leaderboard.png`
+- `/leaderboard`: `docs/submission-assets/05a-leaderboard.png`
 - `/rejections`: `docs/submission-assets/06-rejections.png`
 - `/stats`: `docs/submission-assets/07-stats.png`
 
@@ -144,7 +144,7 @@ Screenshot rules:
 - Avoid screenshots where CA dominates the image.
 - Prefer one strong candidate over many weak candidates.
 - If no candidate passes, use the miss screen as proof of selectivity.
-- For the committed bundle, prioritize `02-radar.png`, `04-flow.png`, `05-leaderboard.png`, `06-rejections.png`, and `07-stats.png`.
+- For the committed bundle, prioritize `02-radar.png`, `04-flow.png`, `05a-leaderboard.png`, `06-rejections.png`, and `07-stats.png`.
 - `03-why.png` has been replaced with the latest Japanese-first `/why` screenshot.
 
 ## 7. Demo Command Order
@@ -225,7 +225,7 @@ Final screenshot order:
 1. `docs/submission-assets/02-radar.png`
 2. `docs/submission-assets/04-flow.png`
 3. `docs/submission-assets/03-why.png`
-4. `docs/submission-assets/05-leaderboard.png`
+4. `docs/submission-assets/05a-leaderboard.png`
 5. `docs/submission-assets/06-rejections.png`
 6. `docs/submission-assets/07-stats.png`
 7. `docs/submission-assets/01-health.png`

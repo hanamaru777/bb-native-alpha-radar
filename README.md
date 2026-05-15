@@ -16,6 +16,8 @@ The bot uses Nansen Smart Money signals to notice early Solana lowcap meme movem
 
 ![Leaderboard](docs/submission-assets/05a-leaderboard.png)
 
+![Leaderboard continuation](docs/submission-assets/05b-leaderboard.png)
+
 ![Rejections](docs/submission-assets/06-rejections.png)
 
 ![Stats](docs/submission-assets/07-stats.png)

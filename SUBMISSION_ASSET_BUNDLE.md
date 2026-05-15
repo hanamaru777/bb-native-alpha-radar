@@ -20,8 +20,8 @@ Use it together with `SUBMISSION_FORM_DRAFT.md` and `HACKATHON_MANAGEMENT.md`.
 | `/radar` | `docs/submission-assets/02-radar.png` | Mandatory | COMMITTED | Best screenshot; main Radar state screen. |
 | `/why <CA>` | `docs/submission-assets/03-why.png` | Mandatory | COMMITTED | Latest Japanese-first `/why` screenshot. |
 | `/flow <CA>` | `docs/submission-assets/04-flow.png` | Mandatory | COMMITTED | Focused verification screen. |
-| `/leaderboard` | `docs/submission-assets/05-leaderboard.png` | Mandatory | COMMITTED | Strong proof screenshot. |
-| `/leaderboard` continuation | `docs/submission-assets/05b-leaderboard-continuation.png` | Optional | COMMITTED | Use only if judges need to see more leaderboard entries. |
+| `/leaderboard` | `docs/submission-assets/05a-leaderboard.png` | Mandatory | COMMITTED | Strong proof screenshot. |
+| `/leaderboard` continuation | `docs/submission-assets/05b-leaderboard.png` | Optional | COMMITTED | Use only if judges need to see more leaderboard entries. |
 | `/rejections` | `docs/submission-assets/06-rejections.png` | Mandatory | COMMITTED | Low-noise filter proof. |
 | `/stats` | `docs/submission-assets/07-stats.png` | Mandatory | COMMITTED | Daily Radar memory. |
 
@@ -30,7 +30,7 @@ Use it together with `SUBMISSION_FORM_DRAFT.md` and `HACKATHON_MANAGEMENT.md`.
 1. `02-radar.png`
 2. `04-flow.png`
 3. `03-why.png`
-4. `05-leaderboard.png`
+4. `05a-leaderboard.png`
 5. `06-rejections.png`
 6. `07-stats.png`
 7. `01-health.png`
@@ -90,7 +90,8 @@ Ready now:
 - `docs/submission-assets/02-radar.png`
 - `docs/submission-assets/03-why.png`
 - `docs/submission-assets/04-flow.png`
-- `docs/submission-assets/05-leaderboard.png`
+- `docs/submission-assets/05a-leaderboard.png`
+- `docs/submission-assets/05b-leaderboard.png`
 - `docs/submission-assets/06-rejections.png`
 - `docs/submission-assets/07-stats.png`
 
@@ -135,7 +136,7 @@ Optional:
 
 - demo video URL
 - X / intro post URL
-- `05b-leaderboard-continuation.png`
+- `05b-leaderboard.png`
 
 Recommended final flow:
 
