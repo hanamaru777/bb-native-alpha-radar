@@ -268,7 +268,7 @@ function summarizeFlowIntelligence(flow) {
   let bias = "未判定";
   if (Number(inferredNetflowUsd) > 0) bias = "流入優勢";
   if (Number(inferredNetflowUsd) < 0) bias = "流出優勢";
-  if (Number(inferredNetflowUsd) === 0) bias = "中立";
+  if (Number(inferredNetflowUsd) === 0) bias = "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
   return {
     inflowUsd,
     outflowUsd,
@@ -648,7 +648,14 @@ function holderLine(candidate) {
 
 function flowLine(candidate) {
   const flow = candidate.nansenDeepDive?.flow;
-  return flow ? `${flow.bias} / net ${formatUsd(flow.netflowUsd)}` : `24h SM netflow ${finalNetflow(candidate)}`;
+  if (!flow) return `24h SM netflow ${finalNetflow(candidate)}`;
+  const net = Number(flow.netflowUsd);
+  const label = Number.isFinite(net) && net > 0
+    ? "\u8cc7\u91d1\u6d41\u5165\u3042\u308a"
+    : Number.isFinite(net) && net < 0
+      ? "\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a"
+      : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
+  return `${label} / net ${formatUsd(flow.netflowUsd)}`;
 }
 
 function radarSignalState(candidate) {
@@ -789,7 +796,14 @@ function rejectedReasonFromScan(item) {
 }
 
 function compactRejectedLine(candidate) {
-  return `$${candidate.symbol}: ${rejectedReasonFromScan(candidate)}`;
+  const ca = candidate.ca || "n/a";
+  const symbol = String(candidate.symbol || "n/a");
+  const label = symbol.startsWith("$") ? symbol : "$" + symbol;
+  return [
+    `${label}: ${rejectedReasonFromScan(candidate)}`,
+    `CA: \`${ca}\``,
+    `\u6b21: \u7406\u7531 \`/why <CA>\` / \u6df1\u6398\u308a \`/flow <CA>\``
+  ].join("\n");
 }
 
 export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
@@ -877,17 +891,17 @@ function interpretedFlowDirection(candidate) {
   const deepFlow = Number(candidate.nansenDeepDive?.flow?.netflowUsd);
   const metricsFlow = Number(candidate.metrics?.netflow24hUsd);
   const value = Number.isFinite(deepFlow) ? deepFlow : Number.isFinite(metricsFlow) ? metricsFlow : null;
-  if (value === null) return { state: "unknown", line: "・資金流入はまだ中立" };
-  if (value > 0) return { state: "plus", line: "・資金流入はプラス" };
-  if (value < 0) return { state: "out", line: "・資金は流出寄り" };
-  return { state: "neutral", line: "・資金流入はまだ中立" };
+  if (value === null) return { state: "unknown", line: "\u30fb\u8cc7\u91d1\u306e\u52e2\u3044\u306f\u672a\u78ba\u8a8d" };
+  if (value > 0) return { state: "plus", line: "\u30fb\u8cc7\u91d1\u6d41\u5165\u306f\u30d7\u30e9\u30b9" };
+  if (value < 0) return { state: "out", line: "\u30fb\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a" };
+  return { state: "neutral", line: "\u30fb\u8cc7\u91d1\u6d41\u5165\u306f\u307e\u3060\u5f37\u304f\u306a\u3044" };
 }
 
 function interpretedSmartMoneyLine(candidate) {
   const sm = Number(finalSm(candidate));
-  if (Number.isFinite(sm) && sm >= 20) return "・Smart Money反応は強め";
-  if (Number.isFinite(sm) && sm >= 3) return "・Smart Money反応あり";
-  return "・Smart Money反応はまだ薄い";
+  if (Number.isFinite(sm) && sm >= 20) return "\u30fbSmart Money\u53cd\u5fdc\u306f\u5f37\u3081";
+  if (Number.isFinite(sm) && sm >= 3) return "\u30fbSmart Money\u53cd\u5fdc\u3042\u308a";
+  return "\u30fbSmart Money\u53cd\u5fdc\u306f\u307e\u3060\u8584\u3044";
 }
 
 function interpretedStageLine(candidate) {
@@ -895,9 +909,9 @@ function interpretedStageLine(candidate) {
   const metrics = candidate.metrics || {};
   const age = Number(metrics.tokenAgeDays || 0);
   const mcap = Number(metrics.marketCapUsd || 0);
-  if (score >= config.minBbScore && age > 0 && age <= 2) return "・初動監視段階";
-  if (mcap > 0 && mcap <= 100_000) return "・lowcap初動帯";
-  return "・初動監視段階";
+  if (score >= config.minBbScore && age > 0 && age <= 2) return "\u30fb\u307e\u3060\u78ba\u8a8d\u6bb5\u968e";
+  if (mcap > 0 && mcap <= 100_000) return "\u30fblowcap\u521d\u52d5\u5e2f";
+  return "\u30fb\u307e\u3060\u78ba\u8a8d\u6bb5\u968e";
 }
 
 export function formatFlowIntroProduction(candidate) {
@@ -915,9 +929,9 @@ function flowNowLine(candidate, classification) {
 
 function flowVerifyNowLine(candidate) {
   return [
-    "\u30fbDex / gmgn / Nansen\u3067\u78ba\u8a8d",
-    "\u30fb\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u898b\u308b",
-    `\u30fb\`/why ${candidate.ca}\` \u306b\u623b\u308b`
+    "\u30fb\u51fa\u6765\u9ad8\u304c\u7d9a\u304f\u304b",
+    "\u30fb\u4e0a\u4f4d\u58f2\u308a\u304c\u51fa\u3066\u3044\u306a\u3044\u304b",
+    "\u30fb\u677f\u304c\u8584\u3059\u304e\u306a\u3044\u304b"
   ].join("\n");
 }
 
@@ -952,8 +966,8 @@ function flowJudgmentMemo(candidate) {
   const sm = Number(finalSm(candidate));
   const direction = interpretedFlowDirection(candidate).state;
   if (direction === "out") return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a\u3002\u7121\u7406\u306b\u89e6\u3089\u305a\u3001\u6b21\u306e\u53cd\u5fdc\u3092\u76e3\u8996\u3002";
-  if (direction === "plus" && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u3068\u8cc7\u91d1\u6d41\u5165\u304c\u540c\u3058\u65b9\u5411\u3002\u305f\u3060\u3057\u89e6\u308b\u524d\u306b\u677f\u3001\u51fa\u6765\u9ad8\u3001\u30db\u30eb\u30c0\u30fc\u96c6\u4e2d\u3092\u78ba\u8a8d\u3002";
-  if ((direction === "neutral" || direction === "unknown") && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u306f\u5f37\u3044\u4e00\u65b9\u3001\u8cc7\u91d1\u6d41\u5165\u306f\u307e\u3060\u4e2d\u7acb\u3002\u307e\u305a\u306f\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d\u3002";
+  if (direction === "plus" && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u3068\u8cc7\u91d1\u6d41\u5165\u304c\u540c\u3058\u65b9\u5411\u3002\u305f\u3060\u3057\u89e6\u308b\u524d\u306b\u677f\u3001\u51fa\u6765\u9ad8\u3001\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d\u3002";
+  if ((direction === "neutral" || direction === "unknown") && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u6d41\u5165\u306f\u307e\u3060\u5f37\u304f\u306a\u3044\u3002Smart Money\u53cd\u5fdc\u3060\u3051\u3067\u5224\u65ad\u305b\u305a\u3001\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u58f2\u308a\u5727\u3092\u78ba\u8a8d\u3002";
   return "\u53cd\u5fdc\u306f\u898b\u3048\u308b\u304c\u6c7a\u5b9a\u6253\u306f\u307e\u3060\u5f31\u3081\u3002\u8ffd\u52a0\u306eSmart Money\u6d41\u5165\u3068bb\u5074\u306e\u5e83\u304c\u308a\u3092\u76e3\u8996\u3002";
 }
 
@@ -1005,11 +1019,11 @@ export function formatWhyIntro(candidate) {
 function whyRadarReasonLine(candidate, classification) {
   const parts = [];
   parts.push("\u30fb\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc");
-  if (candidate.metrics?.bbAlreadyPosted === false) parts.push("\u30fbbb\u672a\u6295\u7a3f\u3067\u521d\u52d5\u611f\u3042\u308a");
+  if (candidate.metrics?.bbAlreadyPosted === false) parts.push("\u30fb\u65e9\u3044\u6bb5\u968e: bb\u3067\u5927\u304d\u304f\u5e83\u304c\u308b\u524d");
   const direction = interpretedFlowDirection(candidate).state;
   if (direction === "plus") parts.push("\u30fb\u8ffd\u3044\u98a8: Nansen flow\u304c\u30d7\u30e9\u30b9");
   else if (direction === "out") parts.push("\u30fb\u6ce8\u610f: Nansen flow\u306f\u6d41\u51fa\u5bc4\u308a");
-  else parts.push("\u30fb\u78ba\u8a8d\u5f85\u3061: Nansen flow\u306f\u4e2d\u7acb");
+  else parts.push("\u30fb\u672a\u78ba\u8a8d: \u8cc7\u91d1\u306e\u52e2\u3044\u306f\u307e\u3060\u5f37\u304f\u306a\u3044");
   parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a");
   return parts.slice(0, 4).join("\n");
 }
