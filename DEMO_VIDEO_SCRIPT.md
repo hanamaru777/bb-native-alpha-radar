@@ -23,11 +23,11 @@ Recommended screen order:
 1. Discord channel with bot commands
 2. `/health`
 3. `/radar`
-4. `/why <CA>`
-5. `/flow <CA>`
+4. `/flow <CA>`
+5. `/why <CA>`
 6. `/leaderboard`
 7. `/rejections`
-8. `/stats` or `/report`
+8. `/stats`
 9. GitHub README or submission asset bundle, only if time remains
 
 Do not show `.env`, API keys, Discord tokens, terminal secrets, or Nansen API keys.
@@ -39,12 +39,11 @@ Use this exact order:
 ```text
 /health
 /radar
-/why <CA>
 /flow <CA>
+/why <CA>
 /leaderboard
 /rejections
 /stats
-/report
 ```
 
 Use the same CA from `/radar` for `/why` and `/flow`.
@@ -113,23 +112,7 @@ Do not spend time on:
 - Reading every field aloud
 - Explaining every number
 
-### 45-62s: Why Radar Reacted
-
-Screen: `/why <CA>`.
-
-Narration bullets:
-
-- `/why` answers why Radar thought this mattered.
-- It keeps reasoning short: Smart Money, bb context, low-noise filter, and caution.
-- This is evidence-first, not hype.
-
-Zoom/highlight:
-
-- Japanese reason section
-- Japanese movement section
-- Japanese verify-next section
-
-### 62-78s: Verify Flow
+### 45-65s: Verify Flow
 
 Screen: `/flow <CA>`.
 
@@ -144,6 +127,22 @@ Zoom/highlight:
 - Japanese current-state tags
 - Japanese verify section
 - Buttons for DexScreener, gmgn, Nansen
+
+### 65-78s: Why Radar Reacted
+
+Screen: `/why <CA>`.
+
+Narration bullets:
+
+- `/why` answers why Radar thought this mattered.
+- It keeps reasoning short: Smart Money, bb context, low-noise filter, and caution.
+- This is evidence-first, not hype.
+
+Zoom/highlight:
+
+- Japanese reason section
+- Japanese movement section
+- Japanese verify-next section
 
 ### 78-95s: Proof Loop
 
@@ -178,7 +177,7 @@ Zoom/highlight:
 
 ### 110-120s: Close
 
-Screen: `/stats` or `/report`.
+Screen: `/stats`.
 
 Narration bullets:
 

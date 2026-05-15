@@ -50,11 +50,11 @@ If Nansen and the bot are healthy:
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
+3. `/flow <CA>`
+4. `/why <CA>`
 5. `/rejections`
 6. `/stats`
-7. `/report`
+7. `/leaderboard`
 
 If no strong candidate exists:
 

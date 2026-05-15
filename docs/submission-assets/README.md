@@ -4,23 +4,23 @@ These are the committed Discord dark mode screenshots for hackathon submission.
 
 ## Mandatory Screenshots
 
-1. `01-health.png`
-2. `02-radar.png`
+1. `02-radar.png`
+2. `04-flow.png`
 3. `03-why.png`
-4. `04-flow.png`
-5. `05-leaderboard.png`
-6. `06-rejections.png`
-7. `07-stats.png`
-8. `08-report.png`
+4. `05-leaderboard.png`
+5. `06-rejections.png`
+6. `07-stats.png`
+7. `01-health.png`
 
 ## Optional Supporting Screenshot
 
 - `05b-leaderboard-continuation.png`
+- `08-report.png` is archived reference only and is not part of the recommended submission flow.
 
 ## Review Notes
 
 - Best screenshot: `02-radar.png`
 - Strong proof screenshot: `05-leaderboard.png`
-- Weakest screenshot: `08-report.png`
+- Operational proof screenshot: `01-health.png`
 
-`03-why.png` has been replaced with the latest Japanese-first `/why` screenshot. `08-report.png` is now the weakest only because it is the most text-heavy card in the bundle.
+`/report` is intentionally excluded from the public-facing submission flow. The core bundle now focuses on Radar -> Verify -> Prove -> Community.

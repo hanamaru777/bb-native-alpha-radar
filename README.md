@@ -12,7 +12,7 @@ The bot uses Nansen Smart Money signals to notice early Solana lowcap meme movem
 
 - `Radar`: detect a small number of pre-CA Solana candidates using Nansen Smart Money, Token Screener, and DEX trade context.
 - `Verify`: use `/why <CA>` and `/flow <CA>` plus DexScreener, gmgn, and Nansen links before touching anything.
-- `Prove`: save Radar Calls, track post-alert market-cap movement, and review outcomes through `/stats`, `/leaderboard`, and `/report`.
+- `Prove`: save Radar Calls, track post-alert market-cap movement, and review outcomes through `/leaderboard` and `/stats`.
 - `Community`: keep Radar Call IDs and Discord reactions as shared bb discussion objects.
 
 ## Why This Exists
@@ -34,7 +34,7 @@ That difference matters because bb Discord culture is fast, screenshot-driven, a
 - It keeps CA secondary so the first impression is Radar judgment, not link posting.
 - It shows rejected/noisy candidates through `/rejections`, proving the filter instead of hiding it.
 - It uses Nansen where Nansen changes the decision: Smart Money discovery, holders, wallet labels, and Flow Intelligence.
-- It stores Radar Call IDs so the same candidate can be discussed across `/radar`, `/why`, `/flow`, `/leaderboard`, `/stats`, and `/report`.
+- It stores Radar Call IDs so the same candidate can be discussed across `/radar`, `/why`, `/flow`, `/leaderboard`, and `/stats`.
 
 ## Nansen Usage
 
@@ -103,11 +103,10 @@ The product surfaces are designed for three-second reading:
 
 - `/radar`: what Radar noticed now.
 - `/why <CA>`: why this Radar Call was picked.
-- `/flow <CA>`: how to verify one CA with Nansen and market context.
+- `/flow <CA>`: how to verify one CA with Nansen, trader-readable numbers, and market context.
 - `/rejections`: why weak signals were skipped.
 - `/stats`: daily Radar summary.
 - `/leaderboard`: tracked Radar Call outcomes.
-- `/report`: submission/judging summary inside Discord.
 - `/health`: bot, Nansen CLI, and recent Radar status without exposing secrets.
 
 CA appears where verification needs it, but it is intentionally not the visual hero.
@@ -119,12 +118,11 @@ Recommended judge flow:
 ```text
 /health
 /radar
-/why <CA>
 /flow <CA>
+/why <CA>
+/leaderboard
 /rejections
 /stats
-/leaderboard
-/report
 ```
 
 What judges should understand first:
@@ -140,7 +138,7 @@ What judges should understand first:
 The runtime is intentionally small and Discord-native.
 
 - `src/index.js`: Discord Gateway, slash command routing, scheduled Radar, tracking loop, daily summary.
-- `src/radar.js`: candidate scoring, filtering, Discord message formatting, `/why`, `/flow`, `/report`, `/stats` surfaces.
+- `src/radar.js`: candidate scoring, filtering, Discord message formatting, `/why`, `/flow`, `/leaderboard`, `/rejections`, and `/stats` surfaces.
 - `src/nansen.js`: Nansen REST adapter.
 - `src/nansenCli.js`: Nansen CLI health/schema check.
 - `src/store.js`: local JSON persistence for alerts, scans, daily summary state, Radar Call IDs.

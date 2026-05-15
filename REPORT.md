@@ -112,7 +112,6 @@ That ID follows the candidate across:
 - `/flow <CA>`
 - `/leaderboard`
 - `/stats`
-- `/report`
 
 The bot records alert-time market cap, later market-cap checks, max gain, latest pair URL, and community reaction fields when available. This turns a Radar Call into a measurable object instead of a disposable chat message.
 
@@ -153,7 +152,7 @@ The bot does not expose secrets, does not execute trades, and does not provide b
 The implementation is intentionally small.
 
 - `src/index.js`: Discord Gateway, slash command routing, scheduled Radar, tracking, daily summary.
-- `src/radar.js`: candidate scoring, filtering, message formatting, report surfaces.
+- `src/radar.js`: candidate scoring, filtering, and Discord message formatting.
 - `src/nansen.js`: Nansen REST adapter.
 - `src/nansenCli.js`: Nansen CLI health/schema check.
 - `src/store.js`: local JSON persistence and Radar Call IDs.
@@ -176,12 +175,11 @@ Recommended flow:
 ```text
 /health
 /radar
-/why <CA>
 /flow <CA>
+/why <CA>
+/leaderboard
 /rejections
 /stats
-/leaderboard
-/report
 ```
 
 What the demo should prove:

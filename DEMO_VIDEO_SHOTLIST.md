@@ -12,12 +12,12 @@ Use this as the export checklist.
 | 1 | 0-8s | Discord channel | Show bot context | This is a Discord-native bot, not a dashboard. | Pass if bot name and Discord UI are clear. |
 | 2 | 8-18s | `/health` | Type or show `/health` | Nansen CLI and runtime are working. | Pass if Nansen CLI proof is visible. |
 | 3 | 18-35s | `/radar` | Type or show `/radar` | Radar makes a concise state judgment. | Pass if top Radar state is readable in 3 seconds. |
-| 4 | 35-50s | `/why <CA>` | Use CA from Radar Call | Radar explains why it reacted. | Pass if reasoning is short and Japanese-first. |
-| 5 | 50-68s | `/flow <CA>` | Use same CA | Verification comes before action. | Pass if DexScreener / gmgn / Nansen buttons are visible. |
+| 4 | 35-55s | `/flow <CA>` | Use CA from Radar Call | Verification comes before action. | Pass if trader-readable numbers and DexScreener / gmgn / Nansen buttons are visible. |
+| 5 | 55-68s | `/why <CA>` | Use same CA | Radar explains why it reacted. | Pass if reasoning is short and Japanese-first. |
 | 6 | 68-82s | `/leaderboard` | Show proof results | Radar Calls are tracked after alert time. | Pass if post-alert proof is visible. |
 | 7 | 82-97s | `/rejections` | Show filter reasons | The bot avoids weak/noisy candidates. | Pass if rejection reasons are visible. |
 | 8 | 97-110s | `/stats` | Show daily summary | The bot builds daily Radar memory. | Pass if daily stats are readable. |
-| 9 | 110-120s | `/report` or GitHub | Close with repo/story | Submission narrative and repo are ready. | Pass if it ends cleanly before 120s. |
+| 9 | 110-120s | GitHub README or asset bundle | Close with repo/story | Submission narrative and repo are ready. | Pass if it ends cleanly before 120s. |
 
 ## Mandatory Messages To Land
 

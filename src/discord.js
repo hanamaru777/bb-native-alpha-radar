@@ -114,7 +114,6 @@ export async function registerCommands(token, applicationId, guildId = "") {
     { name: "leaderboard", description: "Show best tracked Radar Calls" },
     { name: "rejections", description: "Show why candidates were skipped" },
     { name: "stats", description: "Show today's radar daily summary" },
-    { name: "report", description: "Show short submission report" },
     { name: "health", description: "Check bot and Nansen status" }
   ];
 

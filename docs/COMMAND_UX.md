@@ -71,15 +71,6 @@ Rules:
 - Show Radar Calls, strong candidates, rejects, best Radar, community reactions, and commentary.
 - Keep it suitable for end-of-day screenshots.
 
-### `/report`
-
-Purpose: judging and submission summary inside Discord.
-
-Rules:
-
-- Explain positioning, Nansen usage, proof, and safety.
-- Keep it readable as a Discord message.
-
 ### `/health`
 
 Purpose: system support.
@@ -108,7 +99,6 @@ Public slash commands should remain:
 - `/leaderboard`
 - `/rejections`
 - `/stats`
-- `/report`
 
 ## Screenshot-First Rules
 
@@ -125,12 +115,11 @@ Recommended demo order:
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
-5. `/rejections`
-6. `/stats`
-7. `/leaderboard`
-8. `/report`
+3. `/flow <CA>`
+4. `/why <CA>`
+5. `/leaderboard`
+6. `/rejections`
+7. `/stats`
 
 What to show first:
 

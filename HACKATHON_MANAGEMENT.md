@@ -144,7 +144,7 @@ Must not be done yet:
 | Task | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
 | JSON compatibility smoke tests | NOT STARTED | Codex | commit, check pass | Add only after P0 operational docs and final screenshots. |
-| Radar Call continuity smoke test | NOT STARTED | Codex | commit, check pass | Verify IDs across `/radar`, `/why`, `/flow`, `/stats`, `/report`. |
+| Radar Call continuity smoke test | NOT STARTED | Codex | commit, check pass | Verify IDs across `/radar`, `/why`, `/flow`, `/leaderboard`, and `/stats`. |
 | Credit exhaustion screenshot | NOT STARTED | User | screenshot | Capture only if naturally encountered or safe to simulate. |
 | GitHub Issues/milestones setup | NOT STARTED | User | GitHub URL | Optional project polish after submission assets are ready. |
 | `stop-bot.cmd` helper | DONE | Codex | commit | Added repo-scoped Windows stop helper for stray/background bot processes. |
@@ -237,7 +237,7 @@ DONE when:
 - `/flow <CA>` screenshot exists.
 - `/rejections` screenshot exists.
 - `/stats` screenshot exists.
-- `/report` screenshot exists.
+- `/report` is excluded from the public-facing submission flow.
 - Screenshots are Discord dark mode and CA is not the visual hero.
 
 Current status: `DONE`. Required screenshots are committed in `docs/submission-assets/`.
@@ -332,7 +332,6 @@ Required commands to keep ready during judging:
 - `/leaderboard`
 - `/rejections`
 - `/stats`
-- `/report`
 
 Operational proof points:
 
@@ -354,7 +353,7 @@ Evaluation boosters:
 | Booster | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
 | Bot overview | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` includes the non-price-bot positioning. |
-| Usage explanation | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` explains `/health`, `/radar`, `/why`, `/flow`, `/leaderboard`, `/rejections`, `/stats`, and `/report`. |
+| Usage explanation | DONE | Codex | commit | `SUBMISSION_FORM_DRAFT.md` explains `/health`, `/radar`, `/why`, `/flow`, `/leaderboard`, `/rejections`, and `/stats`. |
 | Code/architecture explanation | DONE | Codex | commit | README and REPORT now explain the runtime shape, Nansen use, local storage, and tracking loop. |
 | Setup steps | DONE | Codex | commit | README documents install, Nansen CLI, `.env`, start/stop, and checks. |
 | Demo video | NEXT | User | manual review, demo video | Recommended but optional; record after the screenshot bundle is organized if time permits. |
@@ -366,23 +365,21 @@ Command order:
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
+3. `/flow <CA>`
+4. `/why <CA>`
 5. `/leaderboard`
 6. `/rejections`
 7. `/stats`
-8. `/report`
 
 Recommended judge demo flow:
 
 - `/health`: prove runtime + Nansen CLI first
 - `/radar`: show the current Radar state screen
-- `/why <CA>`: explain why Radar cared
 - `/flow <CA>`: show how to verify, with CA still secondary
+- `/why <CA>`: explain why Radar cared
 - `/leaderboard`: prove Radar Calls can matter after alert time
 - `/rejections`: prove the bot stays selective
 - `/stats`: show daily memory and operating discipline
-- `/report`: close with the submission narrative
 
 Judge framing:
 

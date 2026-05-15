@@ -108,13 +108,13 @@ Run:
 
 ```text
 /stats
-/report
+/leaderboard
 ```
 
 Confirm:
 
 - `/stats` shows tracking and rejection stats
-- `/report` explains why bb should adopt this bot
+- `/leaderboard` proves tracked Radar Calls after alert time
 - README and REPORT explain automatic operation, filter rules, and runtime config
 
 ## 6. Screenshots / Demo Evidence
@@ -128,7 +128,6 @@ Save screenshots of:
 - `/leaderboard`: `docs/submission-assets/05-leaderboard.png`
 - `/rejections`: `docs/submission-assets/06-rejections.png`
 - `/stats`: `docs/submission-assets/07-stats.png`
-- `/report`: `docs/submission-assets/08-report.png`
 
 Best screenshot set:
 
@@ -155,12 +154,11 @@ Recommended judging flow:
 ```text
 /health
 /radar
-/why <CA>
 /flow <CA>
+/why <CA>
 /leaderboard
 /rejections
 /stats
-/report
 ```
 
 What to say first:
@@ -224,25 +222,23 @@ Submit these exact assets:
 
 Final screenshot order:
 
-1. `docs/submission-assets/01-health.png`
-2. `docs/submission-assets/02-radar.png`
+1. `docs/submission-assets/02-radar.png`
+2. `docs/submission-assets/04-flow.png`
 3. `docs/submission-assets/03-why.png`
-4. `docs/submission-assets/04-flow.png`
-5. `docs/submission-assets/05-leaderboard.png`
-6. `docs/submission-assets/06-rejections.png`
-7. `docs/submission-assets/07-stats.png`
-8. `docs/submission-assets/08-report.png`
+4. `docs/submission-assets/05-leaderboard.png`
+5. `docs/submission-assets/06-rejections.png`
+6. `docs/submission-assets/07-stats.png`
+7. `docs/submission-assets/01-health.png`
 
 Judge demo order:
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
+3. `/flow <CA>`
+4. `/why <CA>`
 5. `/leaderboard`
 6. `/rejections`
 7. `/stats`
-8. `/report`
 
 Optional assets:
 

@@ -49,7 +49,6 @@ They must appear consistently in:
 - `/flow <CA>`
 - `/leaderboard`
 - `/stats`
-- `/report`
 
 Rules:
 

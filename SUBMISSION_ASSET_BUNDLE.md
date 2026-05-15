@@ -24,31 +24,28 @@ Use it together with `SUBMISSION_FORM_DRAFT.md` and `HACKATHON_MANAGEMENT.md`.
 | `/leaderboard` continuation | `docs/submission-assets/05b-leaderboard-continuation.png` | Optional | COMMITTED | Use only if judges need to see more leaderboard entries. |
 | `/rejections` | `docs/submission-assets/06-rejections.png` | Mandatory | COMMITTED | Low-noise filter proof. |
 | `/stats` | `docs/submission-assets/07-stats.png` | Mandatory | COMMITTED | Daily Radar memory. |
-| `/report` | `docs/submission-assets/08-report.png` | Mandatory | COMMITTED | Submission narrative inside Discord. |
 
 ## Recommended Screenshot Order
 
-1. `01-health.png`
-2. `02-radar.png`
+1. `02-radar.png`
+2. `04-flow.png`
 3. `03-why.png`
-4. `04-flow.png`
-5. `05-leaderboard.png`
-6. `06-rejections.png`
-7. `07-stats.png`
-8. `08-report.png`
+4. `05-leaderboard.png`
+5. `06-rejections.png`
+6. `07-stats.png`
+7. `01-health.png`
 
-This order shows runtime proof first, then Radar, then Verify, then Prove, then filtering discipline, then the final narrative.
+This order opens with the product story: Radar, Verify, Why, Prove, filtering discipline, daily memory, then Nansen CLI/API proof.
 
 ## Judge Demo Order
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
+3. `/flow <CA>`
+4. `/why <CA>`
 5. `/leaderboard`
 6. `/rejections`
 7. `/stats`
-8. `/report`
 
 ## Required Links Still Missing
 
@@ -96,7 +93,6 @@ Ready now:
 - `docs/submission-assets/05-leaderboard.png`
 - `docs/submission-assets/06-rejections.png`
 - `docs/submission-assets/07-stats.png`
-- `docs/submission-assets/08-report.png`
 
 Still needed before submission:
 
@@ -112,12 +108,12 @@ Best screenshot:
 
 Weakest screenshot:
 
-- `08-report.png`
+- none in the recommended core bundle; `01-health.png` is operational proof rather than product UX.
 
 Current judgment:
 
 - `03-why.png` has been replaced with the latest Japanese-first screenshot.
-- `08-report.png` is the weakest only in the sense that it is more text-heavy than the Radar/Verify surfaces, but it still works as the final narrative screen.
+- `/report` is intentionally excluded from the public-facing submission flow because `/flow`, `/leaderboard`, `/rejections`, `/stats`, and `/health` tell the story more clearly.
 
 ## Runtime Verification
 

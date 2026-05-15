@@ -20,7 +20,7 @@ Most token bots become useful after a contract address is already spreading. bb 
 
 The bot is designed around the loop `Radar -> Verify -> Prove -> Community`.
 
-`/radar` shows the current Radar state. If signals are weak, it stays quiet instead of forcing an alert. `/why <CA>` explains why Radar cared. `/flow <CA>` gives a focused verification view with DexScreener, gmgn, and Nansen links. `/leaderboard`, `/stats`, `/rejections`, and `/report` turn saved Radar Calls into proof, memory, and community context.
+`/radar` shows the current Radar state. If signals are weak, it stays quiet instead of forcing an alert. `/flow <CA>` gives a focused verification view with DexScreener, gmgn, and Nansen links. `/why <CA>` explains why Radar cared. `/leaderboard`, `/stats`, and `/rejections` turn saved Radar Calls into proof, memory, and community context.
 
 The product is built for Discord screenshots and fast room decisions, not dashboards. CA is present for verification, but it is intentionally secondary.
 
@@ -80,25 +80,23 @@ It feels like bb noticing early movement together, not like opening an analytics
 
 - `/health`: proves the bot is running and Nansen CLI is available.
 - `/radar`: shows the current Radar state and selected candidates, or explains that weak signals were filtered.
-- `/why <CA>`: explains why Radar thought one candidate mattered.
 - `/flow <CA>`: gives the focused verification flow with Nansen and market context.
+- `/why <CA>`: explains why Radar thought one candidate mattered.
 - `/leaderboard`: shows Radar Calls that produced meaningful post-alert moves.
 - `/rejections`: shows why weak/noisy candidates were skipped.
 - `/stats`: summarizes daily Radar activity and tracking.
-- `/report`: presents the project narrative inside Discord.
 
 ## Recommended Judge Demo Flow
 
 1. `/health`
 2. `/radar`
-3. `/why <CA>`
-4. `/flow <CA>`
+3. `/flow <CA>`
+4. `/why <CA>`
 5. `/leaderboard`
 6. `/rejections`
 7. `/stats`
-8. `/report`
 
-This order proves runtime first, then Radar, then Verify, then Prove, then filtering discipline, then the final submission narrative.
+This order proves runtime first, then Radar, then trader verification, then reasoning, proof, filtering discipline, and daily memory.
 
 ## GitHub Link Placeholder
 
@@ -144,12 +142,11 @@ Nansen usage is credit-conscious: broad scans happen first, deep enrichment is c
 - REPORT.md
 - `/health` screenshot showing bot + Nansen CLI proof
 - `/radar` screenshot showing the Radar state screen
-- `/why <CA>` screenshot showing Radar reasoning
 - `/flow <CA>` screenshot showing focused verification
+- `/why <CA>` screenshot showing Radar reasoning
 - `/leaderboard` screenshot showing post-alert proof
 - `/rejections` screenshot showing low-noise filtering
 - `/stats` screenshot showing Radar memory
-- `/report` screenshot showing the project narrative
 - optional short demo video using the recommended judge demo flow
 
 ## Strongest Positioning
