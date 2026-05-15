@@ -651,14 +651,23 @@ function holderLine(candidate) {
 
 function flowLine(candidate) {
   const flow = candidate.nansenDeepDive?.flow;
-  if (!flow) return `24h SM netflow ${finalNetflow(candidate)}`;
+  if (!flow) {
+    const value = Number(candidate.metrics?.netflow24hUsd);
+    if (!Number.isFinite(value)) return "\u8cc7\u91d1\u6d41\u5165\u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684";
+    const label = value > 0
+      ? "\u8cc7\u91d1\u6d41\u5165\u3042\u308a"
+      : value < 0
+        ? "\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a"
+        : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
+    return `${label} / \u6d41\u5165\u5dee\u984d ${formatUsd(value)}`;
+  }
   const net = Number(flow.netflowUsd);
   const label = Number.isFinite(net) && net > 0
     ? "\u8cc7\u91d1\u6d41\u5165\u3042\u308a"
     : Number.isFinite(net) && net < 0
       ? "\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a"
       : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
-  return `${label} / net ${formatUsd(flow.netflowUsd)}`;
+  return `${label} / \u6d41\u5165\u5dee\u984d ${formatUsd(flow.netflowUsd)}`;
 }
 
 function spreadStatusLine(candidate) {
@@ -768,13 +777,47 @@ function flowMetricLine(candidate) {
   const fallback = Number(candidate.metrics?.netflow24hUsd);
   const value = Number.isFinite(deep) ? deep : Number.isFinite(fallback) ? fallback : null;
   const meaning = interpretedFlowDirection(candidate).line.replace(/^\u30fb/, "");
-  return value === null ? meaning : `net ${formatUsd(value)} / ${meaning}`;
+  return value === null ? meaning : `${meaning}\uff08\u6d41\u5165\u5dee\u984d ${formatUsd(value)}\uff09`;
 }
 
 function readableFlowLine(candidate) {
   const line = flowLine(candidate);
   if (!line || line === "n/a" || line.includes("n/a")) return "\u8cc7\u91d1\u6d41\u5165\u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684";
   return line;
+}
+
+function readableAge(candidate) {
+  const age = finalAge(candidate);
+  return age === "n/a" ? "Age\u672a\u78ba\u8a8d" : `Age ${age}`;
+}
+
+function scoreLine(candidate) {
+  const score = Number(candidate.bbScore);
+  return Number.isFinite(score) ? `score ${score}` : "\u5224\u5b9a\u30b9\u30b3\u30a2\u672a\u78ba\u8a8d";
+}
+
+function compactSignalNumbers(candidate) {
+  return [
+    scoreLine(candidate),
+    `Smart Money ${smartMoneyMeaning(candidate)}`,
+    readableAge(candidate)
+  ].filter(Boolean).join(" / ");
+}
+
+function traderInterpretationLine(candidate) {
+  const parts = [];
+  const balance = marketBalanceMeaning(candidate);
+  const direction = interpretedFlowDirection(candidate).state;
+  if (balance) parts.push(balance);
+  if (direction === "plus") parts.push("\u8cc7\u91d1\u306e\u52e2\u3044\u306f\u30d7\u30e9\u30b9");
+  else if (direction === "out") parts.push("\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a");
+  else parts.push("\u8cb7\u3044\u512a\u52e2\u306f\u307e\u3060\u9650\u5b9a\u7684");
+  return parts.slice(0, 2).join(" / ");
+}
+
+function holderSnapshotLine(candidate) {
+  const holders = holderLine(candidate);
+  return holders === "n/a" ? "Holder: \u96c6\u4e2d\u306f\u672a\u78ba\u8a8d" : `Holder: ${holders}`;
 }
 
 function smartMoneyMeaning(candidate) {
@@ -802,6 +845,10 @@ function cleanAlphaSignalText(value) {
     return "";
   }
   return text
+    .replace(/winner probable/gi, "\u52dd\u3061wallet\u53cd\u5fdc\u3042\u308a")
+    .replace(/buyer pressure/gi, "\u8cb7\u3044\u5727\u3042\u308a")
+    .replace(/seller buy pressure/gi, "\u8cb7\u3044\u5727\u3042\u308a")
+    .replace(/narrative none/gi, "narrative\u306f\u672a\u78ba\u8a8d")
     .replace(/new wallets n\/a/gi, "\u65b0\u898fwallet\u306f\u672a\u78ba\u8a8d")
     .replace(/unknown/gi, "\u672a\u78ba\u8a8d")
     .replace(/n\/a/gi, "\u672a\u78ba\u8a8d");
@@ -852,17 +899,12 @@ function radarSignalState(candidate) {
 }
 
 function radarWhyNowLine(candidate) {
-  const metrics = candidate.metrics || {};
-  const sm = Number(candidate.smartMoneyInflows || metrics.traderCount || 0);
-  const flow = Number(metrics.netflow24hUsd || 0);
   const lines = [
-    `\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    compactSignalNumbers(candidate),
     `Radar\u53cd\u5fdc: ${radarReactionAge(candidate)}`,
-    `\u898b\u65b9: ${spreadStatusLine(candidate)}`
+    marketSnapshotLine(candidate),
+    `\u898b\u65b9: ${traderInterpretationLine(candidate)}`
   ];
-  if (sm >= 3) lines.push(`\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc ${sm}`);
-  if (flow > 0) lines.push(`\u52e2\u3044: 24h\u6d41\u5165 ${formatUsd(flow)}`);
-  else lines.push(`\u52e2\u3044: ${interpretedFlowDirection(candidate).line.replace(/^\u30fb/, "")}`);
   return lines.slice(0, 4).join("\n");
 }
 
@@ -897,7 +939,7 @@ function radarTraceLine(candidate) {
   const flow = candidate.nansenDeepDive?.flow;
   if (flow) return flowLine(candidate);
   const items = [];
-  if (Number(metrics.netflow24hUsd || 0) > 0) items.push(`24h flow ${formatUsd(metrics.netflow24hUsd)}`);
+  if (Number(metrics.netflow24hUsd || 0) > 0) items.push(`24h\u6d41\u5165 ${formatUsd(metrics.netflow24hUsd)}`);
   items.push(`SM ${finalSm(candidate)}`);
   const holders = holderLine(candidate);
   if (holders !== "n/a") items.push(`holders ${holders}`);
@@ -921,10 +963,10 @@ export function formatRadarEmbedsWinning(candidates) {
       description: `${state.label}\n\n${state.summary}`,
       color: state.color,
       fields: [
-        { name: "Radarが見た動き", value: shortText(radarWhyNowLine(candidate), 180) },
-        { name: "まず確認", value: shortText(radarVerifyLine(candidate), 180) },
-        { name: "注意点", value: shortText(radarRiskLine(candidate), 160), inline: true },
-        { name: "Nansen根拠", value: shortText(radarTraceLine(candidate), 220), inline: true },
+        { name: "\u6570\u5b57\u30b9\u30ca\u30c3\u30d7", value: shortText(radarWhyNowLine(candidate), 260) },
+        { name: "\u307e\u305a\u78ba\u8a8d", value: shortText(radarVerifyLine(candidate), 180) },
+        { name: "\u6ce8\u610f\u70b9", value: shortText(radarRiskLine(candidate), 160), inline: true },
+        { name: "Nansen\u6839\u62e0", value: shortText(radarTraceLine(candidate), 220), inline: true },
         { name: "CA", value: `\`${candidate.ca}\`` }
       ],
       footer: { text: "\u6295\u8cc7\u52a9\u8a00\u3067\u306f\u3042\u308a\u307e\u305b\u3093 | \u89e6\u308b\u524d\u306b\u78ba\u8a8d\u3057\u3066\u306d" },
@@ -952,12 +994,13 @@ function rejectedReasonFromScan(item) {
 }
 
 function compactRejectedLine(candidate) {
-  const ca = candidate.ca || "n/a";
-  const symbol = String(candidate.symbol || "n/a");
+  const ca = candidate.ca || "CA\u672a\u53d6\u5f97";
+  const symbol = String(candidate.symbol || "\u672a\u78ba\u8a8d");
   const label = symbol.startsWith("$") ? symbol : "$" + symbol;
   return [
-    `${label}: ${rejectedReasonFromScan(candidate)}`,
+    `${label}: ${compactSignalNumbers(candidate)}`,
     `\u898b\u65b9: ${watchOnlyContextLine(candidate)}`,
+    marketSnapshotLine(candidate),
     `CA: \`${ca}\``,
     `\u6b21: \u7406\u7531 \`/why ${ca}\` / \u6df1\u6398\u308a \`/flow ${ca}\``
   ].join("\n");
@@ -1072,14 +1115,24 @@ export function formatFlowIntroProduction(candidate) {
 function flowNowLine(candidate, classification) {
   const balance = marketBalanceMeaning(candidate);
   const lines = [
-    `\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    `\u30fb${readableAge(candidate)}`,
     `\u30fbRadar\u53cd\u5fdc: ${radarReactionAge(candidate)}`,
+    `\u30fb${marketSnapshotLine(candidate)}`,
+    `\u30fb${momentumLine(candidate)}`,
     `\u30fbSmart Money: ${smartMoneyMeaning(candidate)}`,
     `\u30fb\u8cc7\u91d1: ${flowMetricLine(candidate)}`,
-    `\u30fb${marketSnapshotLine(candidate)}`,
+    `\u30fb${holderSnapshotLine(candidate)}`,
     balance ? `\u30fb${balance}` : null
   ];
-  return shortText(lines.filter(Boolean).join("\n"), 320);
+  return shortText(lines.filter(Boolean).join("\n"), 420);
+}
+
+function flowViewLine(candidate) {
+  return [
+    `\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    `\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`,
+    `\u30fb\u898b\u65b9: ${traderInterpretationLine(candidate)}`
+  ].join("\n");
 }
 
 function flowVerifyNowLine(candidate) {
@@ -1094,15 +1147,18 @@ function flowVerifyNowLine(candidate) {
 function flowRiskSummary(candidate) {
   const pressure = buySellPressureMeaning(candidate);
   const momentum = momentumLine(candidate);
+  const holderRisk = holderRiskMeaning(candidate);
   const parts = [
     interpretedFlowDirection(candidate).state === "plus" ? null : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044",
-    holderRiskMeaning(candidate),
     marketBoardMeaning(candidate),
     pressure.includes("\u58f2\u308a") || pressure.includes("\u5747\u8861") ? momentum : null
   ].filter(Boolean);
   const holders = holderLine(candidate);
-  const holderDetail = holders !== "n/a" ? `\u4e0a\u4f4d\u4fdd\u6709: ${holders}` : holderRiskMeaning(candidate);
-  return shortText([holderDetail, ...parts.filter((item) => item !== holderRiskMeaning(candidate))].map((item) => `\u30fb${item}`).join("\n"), 260);
+  const holderDetail = holderRisk.includes("\u6ce8\u610f") || holderRisk.includes("\u672a\u78ba\u8a8d")
+    ? (holders !== "n/a" ? `\u4e0a\u4f4d\u4fdd\u6709: ${holders}` : holderRisk)
+    : null;
+  const lines = [holderDetail, ...parts].filter(Boolean);
+  return shortText((lines.length ? lines : ["\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d"]).map((item) => `\u30fb${item}`).join("\n"), 260);
 }
 
 function flowPositiveLine(candidate) {
@@ -1149,7 +1205,8 @@ function flowJudgmentMemo(candidate) {
 export function formatFlowEmbedProduction(candidate) {
   const classification = flowClassification(candidate);
   const fields = [
-    { name: "\u4eca\u306e\u30d5\u30a7\u30fc\u30ba", value: flowNowLine(candidate, classification) },
+    { name: "\u6570\u5b57\u30b9\u30ca\u30c3\u30d7\u30b7\u30e7\u30c3\u30c8", value: flowNowLine(candidate, classification) },
+    { name: "\u4eca\u306e\u898b\u65b9", value: flowViewLine(candidate) },
     { name: "\u826f\u3044\u70b9", value: flowPositiveLine(candidate) },
     { name: "\u6ce8\u610f\u70b9", value: flowRiskSummary(candidate) },
     { name: "\u307e\u305a\u898b\u308b", value: shortText(flowVerifyNowLine(candidate), 240) },
@@ -1193,37 +1250,40 @@ export function formatWhyIntro(candidate) {
 }
 
 function whyRadarReasonLine(candidate, classification) {
-  const parts = [];
-  parts.push(`\u30fb\u6c7a\u3081\u624b: Smart Money ${smartMoneyMeaning(candidate)}`);
-  parts.push(`\u30fbRadar\u53cd\u5fdc: ${radarReactionAge(candidate)}`);
-  parts.push(`\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`);
-  parts.push(`\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`);
-  parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a / \u677f\u306e\u539a\u3055");
-  return parts.slice(0, 5).join("\n");
+  return [
+    `\u30fb${scoreLine(candidate)}`,
+    `\u30fbSmart Money ${smartMoneyMeaning(candidate)}`,
+    `\u30fb${readableAge(candidate)} / Radar\u53cd\u5fdc ${radarReactionAge(candidate)}`,
+    `\u30fb${marketSnapshotLine(candidate)}`,
+    `\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`
+  ].join("\n");
 }
 
 function whyEvidenceLine(candidate) {
   const parts = [];
-  const sm = finalSm(candidate);
-  const flow = readableFlowLine(candidate);
-  const score = Number(candidate.bbScore);
-  if (Number.isFinite(score)) parts.push(`\u30fbRadar\u5224\u5b9a ${score}/100`);
-  parts.push(`\u30fbSmart Money ${smartMoneyMeaning(candidate)}`);
-  if (flow !== "n/a") parts.push(`\u30fb\u8cc7\u91d1\u306e\u52e2\u3044 ${flow}`);
-  const momentum = momentumLine(candidate);
-  if (!momentum.includes("Dex/gmgn")) parts.push(`\u30fb${momentum}`);
-  parts.push(`\u30fb${holderRiskMeaning(candidate)}`);
+  const direction = interpretedFlowDirection(candidate).state;
+  if (direction !== "plus") parts.push(`\u30fb\u8cc7\u91d1\u306e\u52e2\u3044: ${flowMetricLine(candidate)}`);
+  if (candidate.metrics?.bbAlreadyPosted === true || candidate.reviewStatus === "\u76e3\u8996\u5019\u88dc") parts.push("\u30fbbb\u65e2\u51fa: \u4f38\u3073\u306f\u51fa\u6765\u9ad8\u7d99\u7d9a\u3092\u78ba\u8a8d");
+  const holderRisk = holderRiskMeaning(candidate);
+  if (holderRisk.includes("\u6ce8\u610f") || holderRisk.includes("\u672a\u78ba\u8a8d")) parts.push(`\u30fb${holderRisk}`);
+  const board = marketBoardMeaning(candidate);
+  if (!board.includes("\u51fa\u6765\u9ad8\u3042\u308a")) parts.push(`\u30fb${board}`);
   parts.push(`\u30fb${newAttentionMeaning(candidate)}`);
-  return parts.slice(0, 5).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
+  return parts.slice(0, 5).join("\n") || "\u30fb\u5927\u304d\u306a\u5f31\u6750\u6599\u306f\u9650\u5b9a\u7684\u3002\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3060\u3051\u78ba\u8a8d";
 }
 
 function whyRiskLine(candidate) {
-  const parts = [
-    "\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a",
-    `\u30fb${holderRiskMeaning(candidate)}`,
-    `\u30fb${marketBoardMeaning(candidate)}`
-  ];
-  return parts.slice(0, 3).join("\n");
+  const direction = interpretedFlowDirection(candidate).state;
+  const positive = direction === "plus" ? "\u8cc7\u91d1\u306e\u52e2\u3044" : "Smart Money\u53cd\u5fdc";
+  const weak = direction === "plus" ? "\u4e0a\u4f4d\u58f2\u308a\u3068\u677f\u306e\u539a\u3055" : "\u8cc7\u91d1\u306e\u52e2\u3044";
+  return `Radar\u306f ${positive} \u3092\u8a55\u4fa1\u3002\u4e00\u65b9\u3067 ${weak} \u306f\u672a\u78ba\u8a8d\u306a\u306e\u3067\u3001\u307e\u305a /flow \u3067\u691c\u8a3c\u3002`;
+}
+
+function whyNextLine(candidate) {
+  return [
+    `\u6df1\u6398\u308a \`/flow ${candidate.ca}\``,
+    "\u30dc\u30bf\u30f3\u3067 Dex / gmgn / Nansen \u78ba\u8a8d"
+  ].join("\n");
 }
 
 export function formatWhyEmbed(candidate) {
@@ -1233,10 +1293,10 @@ export function formatWhyEmbed(candidate) {
     description: "Radarが注意を向けた理由です。",
     color: classification.color,
     fields: [
-      { name: "Radarが反応した理由", value: whyRadarReasonLine(candidate, classification) },
-      { name: "気になった動き", value: whyEvidenceLine(candidate) },
-      { name: "まず確認", value: `\`/flow ${candidate.ca}\`\n下のボタンで DexScreener / gmgn / Nansen 確認` },
-      { name: "注意点", value: shortText(whyRiskLine(candidate), 180) },
+      { name: "\u5f37\u6750\u6599", value: shortText(whyRadarReasonLine(candidate, classification), 320) },
+      { name: "\u5f31\u6750\u6599", value: shortText(whyEvidenceLine(candidate), 260) },
+      { name: "\u5224\u5b9a\u7406\u7531", value: shortText(whyRiskLine(candidate), 220) },
+      { name: "\u6b21\u306b\u898b\u308b", value: whyNextLine(candidate) },
       { name: "CA", value: `\`${candidate.ca}\`` }
     ],
     footer: { text: "投資助言ではありません | 触る前に確認してね" },
@@ -1256,15 +1316,21 @@ export function formatLeaderboardIntro(stats) {
 
 function proofLine(alert) {
   const tracking = alert.tracking || {};
-  const notified = formatUsd(alert.notification?.marketCapUsd);
-  const max = formatUsd(tracking.maxMarketCapUsd);
+  const notifiedValue = Number(alert.notification?.marketCapUsd);
+  const maxValue = Number(tracking.maxMarketCapUsd);
+  const notified = formatUsd(notifiedValue);
+  const max = formatUsd(maxValue);
   const latest = Number.isFinite(Number(tracking.latestMarketCapUsd))
     ? formatUsd(tracking.latestMarketCapUsd)
     : "取得待ち";
+  const multiple = Number.isFinite(notifiedValue) && notifiedValue > 0 && Number.isFinite(maxValue)
+    ? `${(maxValue / notifiedValue).toFixed(2)}x`
+    : "\u53d6\u5f97\u5f85\u3061";
   return [
-    `最大上昇: ${formatGain(tracking.maxGainPercent)}`,
-    `通知時 -> 最大: ${notified} -> ${max}`,
-    `現在: ${latest}`
+    `\u6700\u5927\u4e0a\u6607: ${formatGain(tracking.maxGainPercent)} / ${multiple}`,
+    `\u901a\u77e5\u6642 -> \u6700\u5927: ${notified} -> ${max}`,
+    `\u901a\u77e5\u304b\u3089: ${radarReactionAge(alert)}`,
+    `\u73fe\u5728: ${latest}`
   ].join("\n");
 }
 
@@ -1298,13 +1364,13 @@ export function formatLeaderboardEmbeds(stats) {
 
 function reasonLabel(reason) {
   const labels = {
-    holder_concentration: "🏦 上位Holder集中",
-    flow_outflow: "🌊 Flow流出寄り",
-    bb_already_posted: "📢 bb内で既出",
-    single_sm_trader: "👤 Smart Moneyが少ない",
+    holder_concentration: "🏦 Holder集中高め",
+    flow_outflow: "🌊 流入弱め",
+    bb_already_posted: "📢 bb既出",
+    single_sm_trader: "👤 Smart Money不足",
     low_score: "📉 bb反応度未満",
     below_bb_score: "📉 bb反応度未満",
-    market_weak: "📊 DEX状況が弱い"
+    market_weak: "📊 板薄め"
   };
   return labels[reason] || reason;
 }
@@ -1553,13 +1619,13 @@ export function formatHealthProduction(status) {
 
 function dailyReasonLabel(reason) {
   const labels = {
-    holder_concentration: "上位Holder集中",
-    flow_outflow: "Flow流出寄り",
-    bb_already_posted: "bb内で既出",
-    single_sm_trader: "Smart Moneyが少ない",
+    holder_concentration: "Holder集中高め",
+    flow_outflow: "流入弱め",
+    bb_already_posted: "bb既出",
+    single_sm_trader: "Smart Money不足",
     low_score: "bb反応度未満",
     below_bb_score: "bb反応度未満",
-    market_weak: "DEX状況が弱い"
+    market_weak: "板薄め"
   };
   return labels[reason] || reason || "記録なし";
 }
@@ -1572,6 +1638,14 @@ function dailyBestRadarLine(alert) {
   if (!alert) return "今日はまだ記録なし";
   const gain = formatGain(alert.tracking?.maxGainPercent || 0);
   return `$${alert.symbol} ${gain} / 通知時 ${formatUsd(alert.notification?.marketCapUsd)} -> max ${formatUsd(alert.tracking?.maxMarketCapUsd)}`;
+}
+
+function dailyTrendLine(stats) {
+  const today = stats.today || {};
+  const topReason = dailyReasonLabel(today.topRejectReason?.reason);
+  if (today.bestRadar) return `\u4eca\u65e5\u306f $${today.bestRadar.symbol} \u578b\u306eSmart Money\u53cd\u5fdc\u304c\u4e2d\u5fc3\u3002\u898b\u9001\u308a\u306f ${topReason}\u3002`;
+  if (today.rejected) return `\u4eca\u65e5\u306f\u901a\u77e5\u3088\u308a\u9078\u5225\u304c\u4e2d\u5fc3\u3002\u898b\u9001\u308a\u306f ${topReason}\u3002`;
+  return "\u4eca\u65e5\u306eRadar\u50be\u5411\u306f\u307e\u3060\u8a18\u9332\u4e2d\u3002";
 }
 
 function dailyCommentary(stats) {
@@ -1605,6 +1679,7 @@ export function formatDailyStatsContent(stats) {
     `Best Radar: ${dailyBestRadarLine(today.bestRadar)}`,
     `Top Reject Reason: ${topReject}`,
     `Community: ${dailyReactionLine(today.reactions)}`,
+    `\u4eca\u65e5\u306eRadar\u50be\u5411: ${dailyTrendLine(stats)}`,
     "",
     `今日の所感: ${dailyCommentary(stats)}`,
     "",
@@ -1634,6 +1709,7 @@ export function formatDailyStatsEmbed(stats) {
       { name: "Best Radar", value: dailyBestRadarLine(best) },
       { name: "Top Reject Reason", value: topRejectLines, inline: true },
       { name: "Community", value: dailyReactionLine(today.reactions), inline: true },
+      { name: "\u4eca\u65e5\u306eRadar\u50be\u5411", value: dailyTrendLine(stats) },
       { name: "今日の所感", value: dailyCommentary(stats) },
       { name: "次に見る場所", value: "`/leaderboard` 伸びたRadar\n`/rejections` 見送った理由\n`/radar` 最新候補" }
     ],
