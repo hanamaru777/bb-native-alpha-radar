@@ -224,23 +224,133 @@ function rejectionReasonTags(candidate) {
   return tags;
 }
 
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
+function compactObject(object) {
+  return Object.fromEntries(
+    Object.entries(object || {}).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  );
+}
+
+function compactMarketQuality(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  return compactObject({
+    summary: market.summary,
+    reasons: Array.isArray(market.reasons) ? market.reasons.slice(0, 4) : undefined,
+    liquidityUsd: finiteNumber(market.liquidityUsd ?? candidate.metrics?.liquidityUsd),
+    volume24hUsd: finiteNumber(market.volume24hUsd ?? candidate.metrics?.volume24hUsd),
+    buys1h: finiteNumber(market.buys1h),
+    sells1h: finiteNumber(market.sells1h),
+    priceChange1h: finiteNumber(market.priceChange1h ?? candidate.metrics?.priceChange1h),
+    priceChange24h: finiteNumber(market.priceChange24h ?? candidate.metrics?.priceChange24h),
+    penalty: finiteNumber(market.penalty ?? candidate.metrics?.marketPenalty),
+    bonus: finiteNumber(market.bonus ?? candidate.metrics?.marketBonus),
+    hardReject: market.hardReject ?? candidate.metrics?.marketHardReject
+  });
+}
+
+function compactFlowSummary(candidate) {
+  const flow = candidate.nansenDeepDive?.flow || {};
+  return compactObject({
+    inflowUsd: finiteNumber(flow.inflowUsd),
+    outflowUsd: finiteNumber(flow.outflowUsd),
+    netflowUsd: finiteNumber(flow.netflowUsd),
+    bias: flow.bias,
+    summary: flow.summary
+  });
+}
+
+function compactHolderSummary(candidate) {
+  const holders = candidate.nansenDeepDive?.holders || {};
+  const labels = holders.labels || {};
+  return compactObject({
+    rowCount: finiteNumber(holders.rowCount),
+    top1Percent: finiteNumber(holders.top1Percent),
+    top5Percent: finiteNumber(holders.top5Percent),
+    concentration: holders.concentration,
+    labels: compactObject({
+      summary: labels.summary,
+      detected: Array.isArray(labels.detected) ? labels.detected.slice(0, 5) : undefined
+    })
+  });
+}
+
+function compactAlphaSummary(candidate) {
+  const alpha = candidate.metrics?.alphaSignals || candidate.nansenDeepDive?.alphaSignals || {};
+  return compactObject({
+    winnerWalletProxy: alpha.winnerWalletProxy || alpha.winningWallet?.label,
+    newWalletProxy: alpha.newWalletProxy || alpha.newWallets?.label,
+    sellerBuyPressure: alpha.sellerBuyPressure || alpha.seller?.label,
+    narratives: Array.isArray(alpha.narratives) ? alpha.narratives.slice(0, 4) : undefined,
+    scoreAdjustment: finiteNumber(alpha.scoreAdjustment),
+    reason: alpha.reason
+  });
+}
+
+function toScanCandidateSnapshot(candidate, scannedAt) {
+  const metrics = candidate.metrics || {};
+  const marketQuality = compactMarketQuality(candidate);
+  const flow = compactFlowSummary(candidate);
+  const holders = compactHolderSummary(candidate);
+  const alphaSignals = compactAlphaSummary(candidate);
+  return compactObject({
+    symbol: candidate.symbol,
+    ca: candidate.ca,
+    bbScore: finiteNumber(candidate.bbScore),
+    reviewStatus: metrics.bbAlreadyPosted ? "監視候補" : "見送り候補",
+    marketCap: candidate.marketCap,
+    detectedAt: candidate.detectedAt || scannedAt,
+    savedAt: candidate.savedAt,
+    scannedAt,
+    source: candidate.source,
+    reasons: rejectionReasonTags(candidate),
+    smartMoneyInflows: candidate.smartMoneyInflows ?? metrics.traderCount,
+    newWalletGrowth: candidate.newWalletGrowth,
+    metrics: compactObject({
+      tokenAgeDays: finiteNumber(metrics.tokenAgeDays),
+      marketCapUsd: finiteNumber(metrics.marketCapUsd ?? parseUsd(candidate.marketCap)),
+      liquidityUsd: finiteNumber(metrics.liquidityUsd ?? marketQuality.liquidityUsd),
+      volume24hUsd: finiteNumber(metrics.volume24hUsd ?? marketQuality.volume24hUsd),
+      netflow1hUsd: finiteNumber(metrics.netflow1hUsd),
+      netflow24hUsd: finiteNumber(metrics.netflow24hUsd),
+      netflow7dUsd: finiteNumber(metrics.netflow7dUsd),
+      traderCount: finiteNumber(metrics.traderCount ?? candidate.smartMoneyInflows),
+      bbAlreadyPosted: metrics.bbAlreadyPosted,
+      bbLookbackChecked: finiteNumber(metrics.bbLookbackChecked),
+      holderPenalty: finiteNumber(metrics.holderPenalty),
+      flowAdjustment: finiteNumber(metrics.flowAdjustment),
+      marketPenalty: finiteNumber(metrics.marketPenalty),
+      marketBonus: finiteNumber(metrics.marketBonus),
+      marketHardReject: metrics.marketHardReject,
+      singleSmHolderPenalty: finiteNumber(metrics.singleSmHolderPenalty),
+      priceChange1h: finiteNumber(metrics.priceChange1h ?? marketQuality.priceChange1h),
+      priceChange24h: finiteNumber(metrics.priceChange24h ?? marketQuality.priceChange24h),
+      alphaSignals
+    }),
+    nansenDeepDive: compactObject({
+      marketQuality,
+      flow,
+      holders,
+      alphaSignals
+    })
+  });
+}
+
 export function saveScanSummary(result, source = "manual") {
   const scans = readScanHistory();
   const rejected = Array.isArray(result?.rejected) ? result.rejected : [];
   const candidates = Array.isArray(result?.candidates) ? result.candidates : [];
+  const scannedAt = new Date().toISOString();
   const record = {
-    scannedAt: new Date().toISOString(),
+    scannedAt,
     source,
     scannedCount: Number(result?.scannedCount || candidates.length + rejected.length || 0),
     passedCount: candidates.length,
     rejectedCount: rejected.length,
-    rejected: rejected.slice(0, 5).map((candidate) => ({
-      symbol: candidate.symbol,
-      ca: candidate.ca,
-      bbScore: candidate.bbScore,
-      marketCap: candidate.marketCap,
-      reasons: rejectionReasonTags(candidate)
-    }))
+    rejected: rejected.slice(0, 5).map((candidate) => toScanCandidateSnapshot(candidate, scannedAt))
   };
   scans.unshift(record);
   writeScanHistory(scans);

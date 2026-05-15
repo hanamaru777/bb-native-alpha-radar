@@ -788,12 +788,12 @@ function readableFlowLine(candidate) {
 
 function readableAge(candidate) {
   const age = finalAge(candidate);
-  return age === "n/a" ? "Age\u672a\u78ba\u8a8d" : `Age ${age}`;
+  return age === "n/a" ? "" : `Age ${age}`;
 }
 
 function scoreLine(candidate) {
   const score = Number(candidate.bbScore);
-  return Number.isFinite(score) ? `score ${score}` : "\u5224\u5b9a\u30b9\u30b3\u30a2\u672a\u78ba\u8a8d";
+  return Number.isFinite(score) ? `score ${score}` : "";
 }
 
 function compactSignalNumbers(candidate) {
@@ -997,13 +997,14 @@ function compactRejectedLine(candidate) {
   const ca = candidate.ca || "CA\u672a\u53d6\u5f97";
   const symbol = String(candidate.symbol || "\u672a\u78ba\u8a8d");
   const label = symbol.startsWith("$") ? symbol : "$" + symbol;
+  const market = marketSnapshotLine(candidate);
   return [
     `${label}: ${compactSignalNumbers(candidate)}`,
     `\u898b\u65b9: ${watchOnlyContextLine(candidate)}`,
-    marketSnapshotLine(candidate),
+    market.includes("Dex/gmgn") ? null : market,
     `CA: \`${ca}\``,
     `\u6b21: \u7406\u7531 \`/why ${ca}\` / \u6df1\u6398\u308a \`/flow ${ca}\``
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 export function formatRadarMissReportWinning(rejected = [], scannedCount = 0, stats = null) {
@@ -1114,16 +1115,23 @@ export function formatFlowIntroProduction(candidate) {
 
 function flowNowLine(candidate, classification) {
   const balance = marketBalanceMeaning(candidate);
-  const lines = [
-    `\u30fb${readableAge(candidate)}`,
-    `\u30fbRadar\u53cd\u5fdc: ${radarReactionAge(candidate)}`,
-    `\u30fb${marketSnapshotLine(candidate)}`,
-    `\u30fb${momentumLine(candidate)}`,
-    `\u30fbSmart Money: ${smartMoneyMeaning(candidate)}`,
-    `\u30fb\u8cc7\u91d1: ${flowMetricLine(candidate)}`,
-    `\u30fb${holderSnapshotLine(candidate)}`,
-    balance ? `\u30fb${balance}` : null
-  ];
+  const age = readableAge(candidate);
+  const reaction = radarReactionAge(candidate);
+  const market = marketSnapshotLine(candidate);
+  const momentum = momentumLine(candidate);
+  const sm = smartMoneyMeaning(candidate);
+  const flow = flowMetricLine(candidate);
+  const holder = holderSnapshotLine(candidate);
+  const lines = [];
+  if (age && !age.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb${age}`);
+  if (!reaction.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fbRadar\u53cd\u5fdc: ${reaction}`);
+  if (!market.includes("Dex/gmgn")) lines.push(`\u30fb${market}`);
+  if (!momentum.includes("Dex/gmgn")) lines.push(`\u30fb${momentum}`);
+  lines.push(`\u30fbSmart Money: ${sm}`);
+  if (!flow.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb\u8cc7\u91d1: ${flow}`);
+  else lines.push("\u30fb\u8cc7\u91d1: \u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684");
+  if (!holder.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb${holder}`);
+  if (balance) lines.push(`\u30fb${balance}`);
   return shortText(lines.filter(Boolean).join("\n"), 420);
 }
 
@@ -1250,13 +1258,18 @@ export function formatWhyIntro(candidate) {
 }
 
 function whyRadarReasonLine(candidate, classification) {
+  const age = readableAge(candidate);
+  const reaction = radarReactionAge(candidate);
+  const market = marketSnapshotLine(candidate);
   return [
     `\u30fb${scoreLine(candidate)}`,
     `\u30fbSmart Money ${smartMoneyMeaning(candidate)}`,
-    `\u30fb${readableAge(candidate)} / Radar\u53cd\u5fdc ${radarReactionAge(candidate)}`,
-    `\u30fb${marketSnapshotLine(candidate)}`,
+    age || !reaction.includes("\u672a\u78ba\u8a8d")
+      ? `\u30fb${[age, reaction.includes("\u672a\u78ba\u8a8d") ? "" : `Radar\u53cd\u5fdc ${reaction}`].filter(Boolean).join(" / ")}`
+      : null,
+    market.includes("Dex/gmgn") ? null : `\u30fb${market}`,
     `\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function whyEvidenceLine(candidate) {
