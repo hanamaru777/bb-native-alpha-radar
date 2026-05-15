@@ -334,11 +334,41 @@ async function handleHealth(interaction) {
   );
 }
 
+function findRecentRejectedByCa(ca) {
+  const target = String(ca || "").toLowerCase();
+  if (!target) return null;
+  const rejected = getStats().scans?.recentRejected || [];
+  const match = rejected.find((candidate) => String(candidate.ca || "").toLowerCase() === target);
+  if (!match) return null;
+  const reasons = Array.isArray(match.reasons) ? match.reasons : [];
+  const reviewStatus = reasons.includes("bb_already_posted") ? "監視候補" : "見送り候補";
+  return {
+    ...match,
+    smartMoneyInflows: match.smartMoneyInflows || match.metrics?.traderCount || "n/a",
+    newWalletGrowth: match.newWalletGrowth || "n/a",
+    reason: reasons.length ? reasons.join(" / ") : "Radar watch-only candidate.",
+    caution: "通知基準未満。出来高継続、上位売り、板の厚さを確認してね。",
+    reviewStatus,
+    radarCall: { label: reviewStatus },
+    metrics: {
+      ...(match.metrics || {}),
+      bbAlreadyPosted: match.metrics?.bbAlreadyPosted ?? reasons.includes("bb_already_posted"),
+      holderPenalty: match.metrics?.holderPenalty ?? (reasons.includes("holder_concentration") ? 1 : 0),
+      flowAdjustment: match.metrics?.flowAdjustment ?? (reasons.includes("flow_outflow") ? -1 : 0),
+      singleSmHolderPenalty: match.metrics?.singleSmHolderPenalty ?? (reasons.includes("single_sm_trader") ? 1 : 0)
+    }
+  };
+}
+
+function findCandidateForReview(ca) {
+  return findAlertByCa(ca) || findRecentRejectedByCa(ca);
+}
+
 async function handleFlow(interaction) {
   await deferInteraction(config.discordToken, interaction.id, interaction.token);
 
   const ca = interaction.data?.options?.find((option) => option.name === "ca")?.value;
-  const known = ca ? findAlertByCa(ca) : null;
+  const known = ca ? findCandidateForReview(ca) : null;
   const liveAnalysis = ca
     ? await analyzeTokenFlow(ca).catch((error) => ({
         symbol: known?.symbol || "UNKNOWN",
@@ -366,9 +396,11 @@ async function handleFlow(interaction) {
   const analysis = known
     ? {
         ...known,
-        nansenDeepDive: liveAnalysis?.nansenDeepDive,
-        liveNansenReason: liveAnalysis?.reason,
-        liveNansenCaution: liveAnalysis?.caution
+        marketCap: liveAnalysis?.marketCap || known.marketCap,
+        metrics: { ...(known.metrics || {}), ...(liveAnalysis?.metrics || {}) },
+        nansenDeepDive: { ...(known.nansenDeepDive || {}), ...(liveAnalysis?.nansenDeepDive || {}) },
+        liveNansenReason: liveAnalysis?.reason || known.reason,
+        liveNansenCaution: liveAnalysis?.caution || known.caution
       }
     : liveAnalysis || fallback;
 
@@ -415,7 +447,7 @@ async function refreshDailyStatsReactions(stats) {
 async function handleWhy(interaction) {
   await deferInteraction(config.discordToken, interaction.id, interaction.token);
   const ca = interaction.data?.options?.find((option) => option.name === "ca")?.value;
-  const known = ca ? findAlertByCa(ca) : null;
+  const known = ca ? findCandidateForReview(ca) : null;
   if (!known) {
     await editInteractionReply(
       config.discordToken,

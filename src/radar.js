@@ -121,7 +121,10 @@ function cleanDexSummary(summary) {
 
 export function radarCallLabel(candidate) {
   const id = Number(candidate?.radarCall?.id);
-  return Number.isFinite(id) && id > 0 ? `Radar Call #${id}` : "Radar Call";
+  if (Number.isFinite(id) && id > 0) return `Radar Call #${id}`;
+  if (candidate?.reviewStatus) return candidate.reviewStatus;
+  if (candidate?.radarCall?.label) return candidate.radarCall.label;
+  return "Radar Call";
 }
 
 export function radarConfidence(candidate) {
@@ -711,6 +714,32 @@ function buySellPressureMeaning(candidate) {
   return "\u58f2\u308a\u5727\u306fDex/gmgn\u3067\u78ba\u8a8d";
 }
 
+function compactMoneyMetric(value) {
+  return formatUsd(value);
+}
+
+function marketSnapshotLine(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const mc = Number(candidate.metrics?.marketCapUsd ?? candidate.notification?.marketCapUsd);
+  const liquidity = Number(market.liquidityUsd ?? candidate.metrics?.liquidityUsd ?? candidate.tracking?.latestLiquidityUsd);
+  const volume = Number(market.volume24hUsd ?? candidate.metrics?.volume24hUsd ?? candidate.tracking?.latestVolume24hUsd);
+  const parts = [];
+  if (Number.isFinite(mc) && mc > 0) parts.push(`MC ${compactMoneyMetric(mc)}`);
+  else if (candidate.marketCap) parts.push(`MC ${candidate.marketCap}`);
+  if (Number.isFinite(liquidity) && liquidity > 0) parts.push(`LIQ ${compactMoneyMetric(liquidity)}`);
+  if (Number.isFinite(volume) && volume > 0) parts.push(`Vol ${compactMoneyMetric(volume)}`);
+  return parts.join(" / ") || "MC / LIQ / Vol \u306fDex/gmgn\u3067\u78ba\u8a8d";
+}
+
+function flowMetricLine(candidate) {
+  const flow = candidate.nansenDeepDive?.flow;
+  const deep = Number(flow?.netflowUsd);
+  const fallback = Number(candidate.metrics?.netflow24hUsd);
+  const value = Number.isFinite(deep) ? deep : Number.isFinite(fallback) ? fallback : null;
+  const meaning = interpretedFlowDirection(candidate).line.replace(/^\u30fb/, "");
+  return value === null ? meaning : `net ${formatUsd(value)} / ${meaning}`;
+}
+
 function watchOnlyContextLine(candidate) {
   const reasons = Array.isArray(candidate.reasons) ? candidate.reasons : [];
   if (candidate.metrics?.bbAlreadyPosted === true || reasons.includes("bb_already_posted")) return "\u3059\u3067\u306b\u4e00\u90e8\u3067\u51fa\u3066\u3044\u308b\u305f\u3081\u3001\u4f38\u3073\u308b\u304b\u306f\u51fa\u6765\u9ad8\u7d99\u7d9a\u3092\u78ba\u8a8d";
@@ -862,7 +891,7 @@ function compactRejectedLine(candidate) {
     `${label}: ${rejectedReasonFromScan(candidate)}`,
     `\u898b\u65b9: ${watchOnlyContextLine(candidate)}`,
     `CA: \`${ca}\``,
-    `\u6b21: \u7406\u7531 \`/why <CA>\` / \u6df1\u6398\u308a \`/flow <CA>\``
+    `\u6b21: \u7406\u7531 \`/why ${ca}\` / \u6df1\u6398\u308a \`/flow ${ca}\``
   ].join("\n");
 }
 
@@ -973,12 +1002,14 @@ export function formatFlowIntroProduction(candidate) {
 }
 
 function flowNowLine(candidate, classification) {
+  const sm = finalSm(candidate);
   const lines = [
-    interpretedStageLine(candidate),
-    interpretedSmartMoneyLine(candidate),
-    interpretedFlowDirection(candidate).line
+    `\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    `\u30fbSmart Money: ${sm === "n/a" ? "n/a" : `${sm}\u4eba`}`,
+    `\u30fb\u8cc7\u91d1: ${flowMetricLine(candidate)}`,
+    `\u30fb${marketSnapshotLine(candidate)}`
   ];
-  return shortText(lines.filter(Boolean).join("\n"), 220);
+  return shortText(lines.filter(Boolean).join("\n"), 260);
 }
 
 function flowVerifyNowLine(candidate) {
@@ -998,7 +1029,9 @@ function flowRiskSummary(candidate) {
     marketBoardMeaning(candidate),
     pressure.includes("\u58f2\u308a") || pressure.includes("\u5747\u8861") ? pressure : null
   ].filter(Boolean);
-  return shortText(parts.map((item) => `\u30fb${item}`).join("\n"), 220);
+  const holders = holderLine(candidate);
+  const holderDetail = holders !== "n/a" ? `\u4e0a\u4f4d\u4fdd\u6709: ${holders}` : holderRiskMeaning(candidate);
+  return shortText([holderDetail, ...parts.filter((item) => item !== holderRiskMeaning(candidate))].map((item) => `\u30fb${item}`).join("\n"), 260);
 }
 
 function flowPositiveLine(candidate) {
@@ -1096,11 +1129,13 @@ function whyEvidenceLine(candidate) {
   const parts = [];
   const sm = finalSm(candidate);
   const flow = flowLine(candidate);
+  const score = Number(candidate.bbScore);
+  if (Number.isFinite(score)) parts.push(`\u30fbRadar\u5224\u5b9a ${score}/100`);
   if (sm !== "n/a") parts.push(`\u30fbSmart Money\u4eba\u6570 ${sm}`);
   if (flow !== "n/a") parts.push(`\u30fb\u8cc7\u91d1\u306e\u52e2\u3044 ${flow}`);
   parts.push(`\u30fb${holderRiskMeaning(candidate)}`);
   parts.push(`\u30fb${newAttentionMeaning(candidate)}`);
-  return parts.slice(0, 4).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
+  return parts.slice(0, 5).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
 }
 
 function whyRiskLine(candidate) {
@@ -1214,7 +1249,7 @@ export function formatRejectionsEmbed(stats) {
         const reasons = (item.reasons || []).map(reasonLabel).join(" / ") || "条件未満";
         const state = (item.reasons || []).includes("bb_already_posted") ? "通知不要" : "👀 監視のみ";
         const caLine = item.ca ? `\nCA: \`${item.ca}\`` : "";
-        const nextLine = item.ca ? "\n次: 理由確認 `/why <CA>` / 深掘り `/flow <CA>`" : "";
+        const nextLine = item.ca ? `\n\u6b21: \u7406\u7531\u78ba\u8a8d \`/why ${item.ca}\` / \u6df1\u6398\u308a \`/flow ${item.ca}\`` : "";
         return `${index + 1}. $${item.symbol}\nScore: ${item.bbScore}/100\n理由: ${reasons}\n状態: ${state}${caLine}${nextLine}`;
       }).join("\n\n")
     : "最近の見送り候補はないよ。";
