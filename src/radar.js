@@ -644,30 +644,31 @@ function finalNetflow(candidate) {
 function holderLine(candidate) {
   const holders = candidate.nansenDeepDive?.holders;
   if (!holders) return "n/a";
-  const top1 = holders.top1Percent === null || holders.top1Percent === undefined ? "n/a" : `${holders.top1Percent.toFixed(1)}%`;
-  const top5 = holders.top5Percent === null || holders.top5Percent === undefined ? "n/a" : `${holders.top5Percent.toFixed(1)}%`;
-  return `${holders.concentration} / top1 ${top1} / top5 ${top5}`;
+  const top1Value = Number(holders.top1Percent);
+  const top5Value = Number(holders.top5Percent);
+  const hasTop1 = Number.isFinite(top1Value);
+  const hasTop5 = Number.isFinite(top5Value);
+  const concentration = String(holders.concentration || "").trim();
+  if (!concentration && !hasTop1 && !hasTop5) return "n/a";
+  const parts = [];
+  if (concentration) parts.push(concentration);
+  if (hasTop1) parts.push(`top1 ${top1Value.toFixed(1)}%`);
+  if (hasTop5) parts.push(`top5 ${top5Value.toFixed(1)}%`);
+  return parts.join(" / ");
 }
 
 function flowLine(candidate) {
   const flow = candidate.nansenDeepDive?.flow;
-  if (!flow) {
-    const value = Number(candidate.metrics?.netflow24hUsd);
-    if (!Number.isFinite(value)) return "\u8cc7\u91d1\u6d41\u5165\u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684";
-    const label = value > 0
-      ? "\u8cc7\u91d1\u6d41\u5165\u3042\u308a"
-      : value < 0
-        ? "\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a"
-        : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
-    return `${label} / \u6d41\u5165\u5dee\u984d ${formatUsd(value)}`;
-  }
-  const net = Number(flow.netflowUsd);
-  const label = Number.isFinite(net) && net > 0
+  const deep = Number(flow?.netflowUsd);
+  const fallback = Number(candidate.metrics?.netflow24hUsd);
+  const value = Number.isFinite(deep) ? deep : Number.isFinite(fallback) ? fallback : null;
+  if (value === null) return "\u8cc7\u91d1\u6d41\u5165\u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684";
+  const label = value > 0
     ? "\u8cc7\u91d1\u6d41\u5165\u3042\u308a"
-    : Number.isFinite(net) && net < 0
+    : value < 0
       ? "\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a"
       : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044";
-  return `${label} / \u6d41\u5165\u5dee\u984d ${formatUsd(flow.netflowUsd)}`;
+  return `${label} / \u6d41\u5165\u5dee\u984d ${formatUsd(value)}`;
 }
 
 function spreadStatusLine(candidate) {
@@ -765,10 +766,34 @@ function marketBalanceMeaning(candidate) {
   const mc = Number(candidate.metrics?.marketCapUsd ?? candidate.notification?.marketCapUsd);
   const liquidity = Number(market.liquidityUsd ?? candidate.metrics?.liquidityUsd ?? candidate.tracking?.latestLiquidityUsd);
   const volume = Number(market.volume24hUsd ?? candidate.metrics?.volume24hUsd ?? candidate.tracking?.latestVolume24hUsd);
+  if (Number.isFinite(liquidity) && liquidity > 0 && liquidity < 15000) return "LIQ\u306f\u8584\u3081\u306a\u306e\u3067\u677f\u78ba\u8a8d";
+  if (Number.isFinite(liquidity) && liquidity > 0 && liquidity < 50000) return "\u51fa\u6765\u9ad8\u306f\u3042\u308b\u304c\u3001LIQ\u306f\u307e\u3060\u8584\u3081";
   if (Number.isFinite(volume) && Number.isFinite(mc) && mc > 0 && volume > mc * 20) return "Vol\u306f\u5927\u304d\u3044\u304c\u7d99\u7d9a\u6027\u306f\u672a\u78ba\u8a8d";
   if (Number.isFinite(volume) && Number.isFinite(mc) && mc > 0 && volume > mc * 3) return "\u77ed\u671f\u51fa\u6765\u9ad8\u306f\u5f37\u3081";
   if (Number.isFinite(liquidity) && Number.isFinite(mc) && mc > 0 && liquidity > mc * 1.2) return "\u6570\u5024\u30d0\u30e9\u30f3\u30b9\u306f\u8981\u78ba\u8a8d";
   return "";
+}
+
+function momentumMeaning(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const buys = Number(market.buys1h);
+  const sells = Number(market.sells1h);
+  if (!Number.isFinite(buys) || !Number.isFinite(sells) || buys + sells <= 0) return "";
+  if (buys > sells * 1.8) return "\u8cb7\u3044\u512a\u52e2";
+  if (buys > sells * 1.2) return "\u8cb7\u3044\u5bc4\u308a\u3060\u304c\u3001\u5727\u5012\u7684\u3067\u306f\u306a\u3044";
+  if (sells > buys * 1.2) return "\u58f2\u308a\u512a\u52e2\u306b\u6ce8\u610f";
+  return "\u58f2\u8cb7\u306f\u307b\u307c\u62ee\u6297";
+}
+
+function holderInterpretation(candidate) {
+  const holders = candidate.nansenDeepDive?.holders || {};
+  const top1 = Number(holders.top1Percent);
+  const top5 = Number(holders.top5Percent);
+  if (!Number.isFinite(top1) && !Number.isFinite(top5)) return "";
+  if ((Number.isFinite(top1) && top1 >= 35) || (Number.isFinite(top5) && top5 >= 80)) return "\u4e0a\u4f4d\u4fdd\u6709\u306f\u304b\u306a\u308a\u6ce8\u610f";
+  if ((Number.isFinite(top1) && top1 >= 20) || (Number.isFinite(top5) && top5 >= 55)) return "top5\u9ad8\u3081\u3002dump\u30ea\u30b9\u30af\u78ba\u8a8d";
+  if ((Number.isFinite(top1) && top1 >= 12) || (Number.isFinite(top5) && top5 >= 35)) return "\u4e0a\u4f4d\u96c6\u4e2d\u306f\u3084\u3084\u6ce8\u610f";
+  return "\u4e0a\u4f4d\u96c6\u4e2d\u306f\u8efd\u3081";
 }
 
 function flowMetricLine(candidate) {
@@ -817,7 +842,8 @@ function traderInterpretationLine(candidate) {
 
 function holderSnapshotLine(candidate) {
   const holders = holderLine(candidate);
-  return holders === "n/a" ? "Holder: \u96c6\u4e2d\u306f\u672a\u78ba\u8a8d" : `Holder: ${holders}`;
+  const meaning = holderInterpretation(candidate);
+  return holders === "n/a" ? "Holder: \u96c6\u4e2d\u306f\u672a\u78ba\u8a8d" : `Holder: ${holders}${meaning ? ` / ${meaning}` : ""}`;
 }
 
 function smartMoneyMeaning(candidate) {
@@ -1122,16 +1148,17 @@ function flowNowLine(candidate, classification) {
   const sm = smartMoneyMeaning(candidate);
   const flow = flowMetricLine(candidate);
   const holder = holderSnapshotLine(candidate);
+  const momentumNote = momentumMeaning(candidate);
   const lines = [];
   if (age && !age.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb${age}`);
   if (!reaction.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fbRadar\u53cd\u5fdc: ${reaction}`);
   if (!market.includes("Dex/gmgn")) lines.push(`\u30fb${market}`);
-  if (!momentum.includes("Dex/gmgn")) lines.push(`\u30fb${momentum}`);
+  if (!market.includes("Dex/gmgn") && balance) lines.push(`\u30fb\u5e02\u5834: ${balance}`);
+  if (!momentum.includes("Dex/gmgn")) lines.push(`\u30fb${momentum}${momentumNote ? ` / ${momentumNote}` : ""}`);
   lines.push(`\u30fbSmart Money: ${sm}`);
   if (!flow.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb\u8cc7\u91d1: ${flow}`);
   else lines.push("\u30fb\u8cc7\u91d1: \u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684");
   if (!holder.includes("\u672a\u78ba\u8a8d")) lines.push(`\u30fb${holder}`);
-  if (balance) lines.push(`\u30fb${balance}`);
   return shortText(lines.filter(Boolean).join("\n"), 420);
 }
 
@@ -1196,7 +1223,7 @@ function flowTraceSummary(candidate) {
   if (momentum && !momentum.includes("Dex/gmgn")) lines.push(`・売買 ${momentum}`);
   if (balance) lines.push(`・解釈 ${balance}`);
   if (alphaSignal) lines.push(`・文脈 ${alphaSignal}`);
-  if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
+  if (marketQuality?.summary && marketQuality.summary !== "DEX data: 取得待ち") {
     lines.push(`・DEX ${cleanDexSummary(marketQuality.summary)}`);
   }
 
@@ -1261,13 +1288,17 @@ function whyRadarReasonLine(candidate, classification) {
   const age = readableAge(candidate);
   const reaction = radarReactionAge(candidate);
   const market = marketSnapshotLine(candidate);
+  const balance = marketBalanceMeaning(candidate);
+  const flow = flowMetricLine(candidate);
+  const flowState = interpretedFlowDirection(candidate).state;
   return [
     `\u30fb${scoreLine(candidate)}`,
     `\u30fbSmart Money ${smartMoneyMeaning(candidate)}`,
     age || !reaction.includes("\u672a\u78ba\u8a8d")
       ? `\u30fb${[age, reaction.includes("\u672a\u78ba\u8a8d") ? "" : `Radar\u53cd\u5fdc ${reaction}`].filter(Boolean).join(" / ")}`
       : null,
-    market.includes("Dex/gmgn") ? null : `\u30fb${market}`,
+    market.includes("Dex/gmgn") ? null : `\u30fb${market}${balance ? ` / ${balance}` : ""}`,
+    flowState === "plus" ? `\u30fb\u8cc7\u91d1 ${flow}` : null,
     `\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`
   ].filter(Boolean).join("\n");
 }
