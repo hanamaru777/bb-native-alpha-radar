@@ -6,6 +6,22 @@ It is not a price bot. It is not a trading assistant. It does not tell users to 
 
 The bot uses Nansen Smart Money signals to notice early Solana lowcap meme movement before a CA becomes a bb-wide Discord narrative. It then keeps the output intentionally small, asks users to verify, records what happened, and turns the result into community memory.
 
+## Discord Screenshots
+
+![Radar](docs/submission-assets/02-radar.png)
+
+![Flow](docs/submission-assets/04-flow.png)
+
+![Why](docs/submission-assets/03-why.png)
+
+![Leaderboard](docs/submission-assets/05a-leaderboard.png)
+
+![Rejections](docs/submission-assets/06-rejections.png)
+
+![Stats](docs/submission-assets/07-stats.png)
+
+![Health](docs/submission-assets/01-health.png)
+
 ## Core Loop
 
 `Radar -> Verify -> Prove -> Community`
