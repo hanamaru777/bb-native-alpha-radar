@@ -718,6 +718,26 @@ function compactMoneyMetric(value) {
   return formatUsd(value);
 }
 
+function radarReactionAge(candidate) {
+  const value = candidate.detectedAt || candidate.savedAt || candidate.notification?.notifiedAt;
+  if (!value) return "\u53cd\u5fdc\u6642\u523b\u306f\u672a\u78ba\u8a8d";
+  const time = new Date(value || 0);
+  if (!Number.isFinite(time.getTime())) return "\u53cd\u5fdc\u6642\u523b\u306f\u672a\u78ba\u8a8d";
+  const diffMs = Math.max(0, Date.now() - time.getTime());
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diffMs < hour) return `${Math.max(1, Math.round(diffMs / minute))}\u5206\u524d`;
+  if (diffMs < day) return `${Math.round(diffMs / hour)}\u6642\u9593\u524d`;
+  return time.toLocaleString("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
 function marketSnapshotLine(candidate) {
   const market = candidate.nansenDeepDive?.marketQuality || {};
   const mc = Number(candidate.metrics?.marketCapUsd ?? candidate.notification?.marketCapUsd);
@@ -731,6 +751,17 @@ function marketSnapshotLine(candidate) {
   return parts.join(" / ") || "MC / LIQ / Vol \u306fDex/gmgn\u3067\u78ba\u8a8d";
 }
 
+function marketBalanceMeaning(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const mc = Number(candidate.metrics?.marketCapUsd ?? candidate.notification?.marketCapUsd);
+  const liquidity = Number(market.liquidityUsd ?? candidate.metrics?.liquidityUsd ?? candidate.tracking?.latestLiquidityUsd);
+  const volume = Number(market.volume24hUsd ?? candidate.metrics?.volume24hUsd ?? candidate.tracking?.latestVolume24hUsd);
+  if (Number.isFinite(volume) && Number.isFinite(mc) && mc > 0 && volume > mc * 20) return "Vol\u306f\u5927\u304d\u3044\u304c\u7d99\u7d9a\u6027\u306f\u672a\u78ba\u8a8d";
+  if (Number.isFinite(volume) && Number.isFinite(mc) && mc > 0 && volume > mc * 3) return "\u77ed\u671f\u51fa\u6765\u9ad8\u306f\u5f37\u3081";
+  if (Number.isFinite(liquidity) && Number.isFinite(mc) && mc > 0 && liquidity > mc * 1.2) return "\u6570\u5024\u30d0\u30e9\u30f3\u30b9\u306f\u8981\u78ba\u8a8d";
+  return "";
+}
+
 function flowMetricLine(candidate) {
   const flow = candidate.nansenDeepDive?.flow;
   const deep = Number(flow?.netflowUsd);
@@ -738,6 +769,42 @@ function flowMetricLine(candidate) {
   const value = Number.isFinite(deep) ? deep : Number.isFinite(fallback) ? fallback : null;
   const meaning = interpretedFlowDirection(candidate).line.replace(/^\u30fb/, "");
   return value === null ? meaning : `net ${formatUsd(value)} / ${meaning}`;
+}
+
+function readableFlowLine(candidate) {
+  const line = flowLine(candidate);
+  if (!line || line === "n/a" || line.includes("n/a")) return "\u8cc7\u91d1\u6d41\u5165\u30c7\u30fc\u30bf\u306f\u9650\u5b9a\u7684";
+  return line;
+}
+
+function smartMoneyMeaning(candidate) {
+  const sm = Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount);
+  if (!Number.isFinite(sm) || sm <= 0) return "\u5f37\u3044Smart Money\u53cd\u5fdc\u306f\u672a\u78ba\u8a8d";
+  return `${sm}\u4eba`;
+}
+
+function momentumLine(candidate) {
+  const market = candidate.nansenDeepDive?.marketQuality || {};
+  const buys = Number(market.buys1h);
+  const sells = Number(market.sells1h);
+  if (!Number.isFinite(buys) || !Number.isFinite(sells) || buys + sells <= 0) return "\u58f2\u8cb7\u30e2\u30e1\u30f3\u30bf\u30e0\u306fDex/gmgn\u3067\u78ba\u8a8d";
+  const label = buys > sells * 1.2
+    ? "\u8cb7\u3044\u512a\u52e2"
+    : sells > buys * 1.2
+      ? "\u58f2\u308a\u512a\u52e2"
+      : "\u58f2\u8cb7\u306f\u5747\u8861";
+  return `${label}: Buy ${Math.round(buys)} / Sell ${Math.round(sells)}`;
+}
+
+function cleanAlphaSignalText(value) {
+  const text = String(value || "").trim();
+  if (!text || text === "n/a" || text === "unknown" || text === "winner probable / new wallets n/a / unknown / narrative none") {
+    return "";
+  }
+  return text
+    .replace(/new wallets n\/a/gi, "\u65b0\u898fwallet\u306f\u672a\u78ba\u8a8d")
+    .replace(/unknown/gi, "\u672a\u78ba\u8a8d")
+    .replace(/n\/a/gi, "\u672a\u78ba\u8a8d");
 }
 
 function watchOnlyContextLine(candidate) {
@@ -790,6 +857,7 @@ function radarWhyNowLine(candidate) {
   const flow = Number(metrics.netflow24hUsd || 0);
   const lines = [
     `\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
+    `Radar\u53cd\u5fdc: ${radarReactionAge(candidate)}`,
     `\u898b\u65b9: ${spreadStatusLine(candidate)}`
   ];
   if (sm >= 3) lines.push(`\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc ${sm}`);
@@ -1002,14 +1070,16 @@ export function formatFlowIntroProduction(candidate) {
 }
 
 function flowNowLine(candidate, classification) {
-  const sm = finalSm(candidate);
+  const balance = marketBalanceMeaning(candidate);
   const lines = [
     `\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`,
-    `\u30fbSmart Money: ${sm === "n/a" ? "n/a" : `${sm}\u4eba`}`,
+    `\u30fbRadar\u53cd\u5fdc: ${radarReactionAge(candidate)}`,
+    `\u30fbSmart Money: ${smartMoneyMeaning(candidate)}`,
     `\u30fb\u8cc7\u91d1: ${flowMetricLine(candidate)}`,
-    `\u30fb${marketSnapshotLine(candidate)}`
+    `\u30fb${marketSnapshotLine(candidate)}`,
+    balance ? `\u30fb${balance}` : null
   ];
-  return shortText(lines.filter(Boolean).join("\n"), 260);
+  return shortText(lines.filter(Boolean).join("\n"), 320);
 }
 
 function flowVerifyNowLine(candidate) {
@@ -1023,11 +1093,12 @@ function flowVerifyNowLine(candidate) {
 
 function flowRiskSummary(candidate) {
   const pressure = buySellPressureMeaning(candidate);
+  const momentum = momentumLine(candidate);
   const parts = [
     interpretedFlowDirection(candidate).state === "plus" ? null : "\u8cb7\u3044\u512a\u52e2\u3068\u306f\u307e\u3060\u8a00\u3048\u306a\u3044",
     holderRiskMeaning(candidate),
     marketBoardMeaning(candidate),
-    pressure.includes("\u58f2\u308a") || pressure.includes("\u5747\u8861") ? pressure : null
+    pressure.includes("\u58f2\u308a") || pressure.includes("\u5747\u8861") ? momentum : null
   ].filter(Boolean);
   const holders = holderLine(candidate);
   const holderDetail = holders !== "n/a" ? `\u4e0a\u4f4d\u4fdd\u6709: ${holders}` : holderRiskMeaning(candidate);
@@ -1037,25 +1108,30 @@ function flowRiskSummary(candidate) {
 function flowPositiveLine(candidate) {
   const lines = [];
   const pressure = buySellPressureMeaning(candidate);
+  const momentum = momentumLine(candidate);
   if (candidate.metrics?.bbAlreadyPosted === false) lines.push("\u30fbbb\u3067\u5927\u304d\u304f\u5e83\u304c\u308b\u524d\u306e\u53ef\u80fd\u6027");
   if (Number(candidate.smartMoneyInflows || candidate.metrics?.traderCount || 0) >= 3) lines.push("\u30fbSmart Money\u53cd\u5fdc\u3042\u308a");
-  if (pressure.includes("\u8cb7\u3044\u53cd\u5fdc")) lines.push(`\u30fb${pressure}`);
+  if (pressure.includes("\u8cb7\u3044\u53cd\u5fdc")) lines.push(`\u30fb${momentum}`);
   lines.push(`\u30fb${marketBoardMeaning(candidate)}`);
   return shortText(lines.slice(0, 3).join("\n"), 220);
 }
 
 function flowTraceSummary(candidate) {
   const lines = [];
-  const flow = flowLine(candidate);
+  const flow = readableFlowLine(candidate);
   const holders = holderLine(candidate);
   const labels = candidate.nansenDeepDive?.holders?.labels?.summary;
   const marketQuality = candidate.nansenDeepDive?.marketQuality;
-  const alphaSignal = candidate.nansenDeepDive?.alphaSignals?.reason || "";
+  const alphaSignal = cleanAlphaSignalText(candidate.nansenDeepDive?.alphaSignals?.reason || "");
+  const momentum = momentumLine(candidate);
+  const balance = marketBalanceMeaning(candidate);
 
-  if (flow !== "n/a") lines.push(`・資金 ${flow}`);
+  if (flow) lines.push(`・資金 ${flow}`);
   if (holders !== "n/a") lines.push(`・ホルダー ${holders}`);
   if (labels && labels !== "n/a") lines.push(`・ラベル ${labels}`);
-  if (alphaSignal && alphaSignal !== "n/a") lines.push(`・文脈 ${alphaSignal}`);
+  if (momentum && !momentum.includes("Dex/gmgn")) lines.push(`・売買 ${momentum}`);
+  if (balance) lines.push(`・解釈 ${balance}`);
+  if (alphaSignal) lines.push(`・文脈 ${alphaSignal}`);
   if (marketQuality && marketQuality.summary !== "DEX data: 取得待ち") {
     lines.push(`・DEX ${cleanDexSummary(marketQuality.summary)}`);
   }
@@ -1118,21 +1194,24 @@ export function formatWhyIntro(candidate) {
 
 function whyRadarReasonLine(candidate, classification) {
   const parts = [];
-  parts.push(`\u30fb\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc ${finalSm(candidate)}`);
+  parts.push(`\u30fb\u6c7a\u3081\u624b: Smart Money ${smartMoneyMeaning(candidate)}`);
+  parts.push(`\u30fbRadar\u53cd\u5fdc: ${radarReactionAge(candidate)}`);
   parts.push(`\u30fb\u30d5\u30a7\u30fc\u30ba: ${phaseStatusLine(candidate)}`);
   parts.push(`\u30fb\u5e83\u304c\u308a: ${spreadStatusLine(candidate)}`);
   parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a / \u677f\u306e\u539a\u3055");
-  return parts.slice(0, 4).join("\n");
+  return parts.slice(0, 5).join("\n");
 }
 
 function whyEvidenceLine(candidate) {
   const parts = [];
   const sm = finalSm(candidate);
-  const flow = flowLine(candidate);
+  const flow = readableFlowLine(candidate);
   const score = Number(candidate.bbScore);
   if (Number.isFinite(score)) parts.push(`\u30fbRadar\u5224\u5b9a ${score}/100`);
-  if (sm !== "n/a") parts.push(`\u30fbSmart Money\u4eba\u6570 ${sm}`);
+  parts.push(`\u30fbSmart Money ${smartMoneyMeaning(candidate)}`);
   if (flow !== "n/a") parts.push(`\u30fb\u8cc7\u91d1\u306e\u52e2\u3044 ${flow}`);
+  const momentum = momentumLine(candidate);
+  if (!momentum.includes("Dex/gmgn")) parts.push(`\u30fb${momentum}`);
   parts.push(`\u30fb${holderRiskMeaning(candidate)}`);
   parts.push(`\u30fb${newAttentionMeaning(candidate)}`);
   return parts.slice(0, 5).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";

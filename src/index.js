@@ -344,8 +344,8 @@ function findRecentRejectedByCa(ca) {
   const reviewStatus = reasons.includes("bb_already_posted") ? "監視候補" : "見送り候補";
   return {
     ...match,
-    smartMoneyInflows: match.smartMoneyInflows || match.metrics?.traderCount || "n/a",
-    newWalletGrowth: match.newWalletGrowth || "n/a",
+    smartMoneyInflows: match.smartMoneyInflows || match.metrics?.traderCount || null,
+    newWalletGrowth: match.newWalletGrowth || null,
     reason: reasons.length ? reasons.join(" / ") : "Radar watch-only candidate.",
     caution: "通知基準未満。出来高継続、上位売り、板の厚さを確認してね。",
     reviewStatus,
@@ -374,8 +374,8 @@ async function handleFlow(interaction) {
         symbol: known?.symbol || "UNKNOWN",
         ca,
         marketCap: known?.marketCap || "Nansen unavailable",
-        smartMoneyInflows: known?.smartMoneyInflows || "n/a",
-        newWalletGrowth: "n/a",
+        smartMoneyInflows: known?.smartMoneyInflows || null,
+        newWalletGrowth: null,
         bbScore: known?.bbScore || "not scored",
         reason: "Nansen live analysis is temporarily unavailable.",
         caution: `Nansen fetch failed: ${error.message}`
