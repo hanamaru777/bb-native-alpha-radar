@@ -610,7 +610,7 @@ async function connectGatewayOnce(onClosed) {
   });
 
   ws.addEventListener("error", (error) => {
-    console.error("Gateway websocket error:", error.message || "unknown error");
+    console.warn("Gateway websocket transient error. Reconnect will be attempted:", error.message || "unknown error");
     if (!closed) {
       try {
         ws.close();
@@ -630,7 +630,7 @@ function startGatewayLoop() {
     if (reconnectTimer) return;
     const delayMs = Math.min(30000, 2000 * Math.max(1, reconnectAttempts));
     reconnectAttempts += 1;
-    console.log(`Gateway reconnect scheduled in ${Math.round(delayMs / 1000)} seconds.`);
+    console.log(`Gateway reconnect scheduled in ${Math.round(delayMs / 1000)} seconds. Slash command registration remains active.`);
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       connect();
@@ -643,9 +643,9 @@ function startGatewayLoop() {
     try {
       await connectGatewayOnce(scheduleReconnect);
       reconnectAttempts = 0;
-      console.log("Gateway connected. Slash commands are listening.");
+      console.log("Gateway connected. Slash command handlers are listening.");
     } catch (error) {
-      console.error("Gateway connect failed:", error.message);
+      console.warn("Gateway connect attempt failed. Will retry automatically:", error.message);
       scheduleReconnect();
     } finally {
       connecting = false;

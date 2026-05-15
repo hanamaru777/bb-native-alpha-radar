@@ -111,6 +111,7 @@ Must not be done yet:
 | `/health` screenshot reviewed | DONE | User | screenshot | Use this as CLI/Nansen proof in the final screenshot set. |
 | `/flow` current screenshot reviewed | DONE | User | screenshot | `/flow` screenshot has been reviewed visually. |
 | `/flow` final completion confirmed | DONE | User | screenshot, manual review | Latest `/flow` screenshot reviewed and accepted. |
+| Final UI interpretation pass | DONE | Codex | commit, check pass | `/radar`, `/why`, and `/flow` were reviewed for interpretation-first wording. `/flow` now leads with human judgment before raw Nansen evidence. |
 | `npm.cmd run check:all` passed after latest pushed changes | DONE | Codex | check pass | Latest pass after `/flow` final polish. |
 | Safe runtime start/stop documented | DONE | Codex | commit | README now defines foreground start, safe stop, primary repo path, and background caution. |
 | Avoid bot running during development | DONE | Codex | commit | README now warns that scheduled scans can keep consuming Nansen credits during development. |
@@ -167,6 +168,7 @@ Must not be done yet:
 | Restart/stop operation needs documentation | DONE | Codex | commit | README includes recommended start/stop method for development and demo use. |
 | Avoid leaving bot running during development because of 30-minute scan credit use | DONE | Codex | commit | README explicitly warns about scheduled-scan credit use. |
 | Automatic radar posting verification state unclear | DONE | Codex | manual review | Confirmed by `source: "auto"` scan history and saved auto alerts with Discord `messageId`. |
+| Gateway reconnect behavior reviewed | DONE | Codex | commit, manual review | Temporary Gateway websocket/connect failures are non-fatal when reconnect succeeds. Slash command registration remains active, and scheduled auto radar/daily summary timers continue in the Node process. Logs now say retry is automatic. |
 | Daily Summary verification state unclear | DONE | Codex | manual review | Verified by successful Discord post. Current intended local setting is ON at `23:50` JST. |
 | Possible `stop-bot.cmd` task | DONE | Codex | commit | Added because it clearly reduces stray-process confusion on Windows. |
 | Visible Discord UI must remain Japanese-first | DONE | Codex | commit | Keep this as hard guardrail. |
@@ -401,6 +403,7 @@ Demo video decision:
 | Risk | Status | Owner | Evidence required | Next action |
 | - | - | - | - | - |
 | Runtime confusion between foreground/background bot processes | DONE | Codex | commit | Start/stop flow and repo-scoped stop scripts are documented. |
+| Gateway transient reconnect logs may appear | DONE | Codex | commit | Treat `Gateway websocket transient error` followed by successful reconnect as normal Discord/network behavior, not a fatal bot failure. |
 | Bot left running during development may spend Nansen credits every scan interval | DONE | Codex | commit | README warns about scheduled-scan credit use during development. |
 | `/flow` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/flow` screenshot reviewed and accepted. |
 | `/why` final UI not explicitly approved after latest polish | DONE | User | screenshot | Latest `/why` screenshot reviewed and accepted. |

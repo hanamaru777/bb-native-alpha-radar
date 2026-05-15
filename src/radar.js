@@ -694,18 +694,19 @@ function radarWhyNowLine(candidate) {
   const flow = Number(metrics.netflow24hUsd || 0);
   const age = Number(metrics.tokenAgeDays || 0);
   const mcap = Number(metrics.marketCapUsd || 0);
-  if (sm >= 3) parts.push(`Smart Money ${sm}`);
-  if (flow > 0) parts.push(`24h flow ${formatUsd(flow)}`);
-  if (mcap > 0 && mcap <= 100_000) parts.push("lowcap");
-  if (age > 0 && age <= 2) parts.push(`${finalAge(candidate)} old`);
+  if (sm >= 3) parts.push(`Smart Money\u53cd\u5fdc ${sm}`);
+  if (flow > 0) parts.push(`24h\u6d41\u5165 ${formatUsd(flow)}`);
+  if (mcap > 0 && mcap <= 100_000) parts.push("lowcap\u521d\u52d5\u5e2f");
+  if (age > 0 && age <= 2) parts.push("\u4f5c\u6210\u76f4\u5f8c");
   const narratives = metrics.alphaSignals?.narratives || candidate.nansenDeepDive?.alphaSignals?.narratives || [];
   if (narratives.length) parts.push(narratives.join(" / "));
-  return parts.join(" / ") || candidate.reason || "Smart Money側に早い反応があります。";
+  return parts.join(" / ") || candidate.reason || "Smart Money\u5074\u306b\u65e9\u3044\u53cd\u5fdc\u304c\u3042\u308a\u307e\u3059\u3002";
 }
 
 function radarVerifyLine(candidate) {
   return [
-    "Dex / gmgn / Nansenで確認",
+    "Dex / gmgn / Nansen\u3067\u78ba\u8a8d",
+    "\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u898b\u308b",
     `/flow ${candidate.ca}`
   ].join("\n");
 }
@@ -713,14 +714,14 @@ function radarVerifyLine(candidate) {
 function radarRiskLine(candidate) {
   const parts = [];
   const metrics = candidate.metrics || {};
-  if (Number(metrics.holderPenalty || 0) > 0) parts.push("上位ホルダー集中");
-  if (Number(metrics.flowAdjustment || 0) < 0) parts.push("Nansen flow弱め");
+  if (Number(metrics.holderPenalty || 0) > 0) parts.push("\u30db\u30eb\u30c0\u30fc\u96c6\u4e2d\u306b\u6ce8\u610f");
+  if (Number(metrics.flowAdjustment || 0) < 0) parts.push("Nansen flow\u306f\u5f31\u3081");
   if (Number(metrics.marketPenalty || 0) > 0) {
     const marketReasons = candidate.nansenDeepDive?.marketQuality?.reasons || [];
-    parts.push(marketReasons.slice(0, 2).join(" / ") || "DEX側の警戒あり");
+    parts.push(marketReasons.slice(0, 2).join(" / ") || "DEX\u5074\u306e\u8b66\u6212\u3042\u308a");
   }
-  if (Number(candidate.smartMoneyInflows || metrics.traderCount || 0) <= 1) parts.push("Smart Moneyが少ない");
-  return parts.join(" / ") || "板・出来高・上位売りを確認";
+  if (Number(candidate.smartMoneyInflows || metrics.traderCount || 0) <= 1) parts.push("Smart Money\u304c\u5c11\u306a\u3044");
+  return parts.join(" / ") || "\u677f\u30fb\u51fa\u6765\u9ad8\u30fb\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d";
 }
 
 function riskLine(candidate) {
@@ -872,24 +873,51 @@ function flowClassification(candidate) {
   };
 }
 
+function interpretedFlowDirection(candidate) {
+  const deepFlow = Number(candidate.nansenDeepDive?.flow?.netflowUsd);
+  const metricsFlow = Number(candidate.metrics?.netflow24hUsd);
+  const value = Number.isFinite(deepFlow) ? deepFlow : Number.isFinite(metricsFlow) ? metricsFlow : null;
+  if (value === null) return { state: "unknown", line: "・資金流入はまだ中立" };
+  if (value > 0) return { state: "plus", line: "・資金流入はプラス" };
+  if (value < 0) return { state: "out", line: "・資金は流出寄り" };
+  return { state: "neutral", line: "・資金流入はまだ中立" };
+}
+
+function interpretedSmartMoneyLine(candidate) {
+  const sm = Number(finalSm(candidate));
+  if (Number.isFinite(sm) && sm >= 20) return "・Smart Money反応は強め";
+  if (Number.isFinite(sm) && sm >= 3) return "・Smart Money反応あり";
+  return "・Smart Money反応はまだ薄い";
+}
+
+function interpretedStageLine(candidate) {
+  const score = Number(candidate.bbScore || 0);
+  const metrics = candidate.metrics || {};
+  const age = Number(metrics.tokenAgeDays || 0);
+  const mcap = Number(metrics.marketCapUsd || 0);
+  if (score >= config.minBbScore && age > 0 && age <= 2) return "・初動監視段階";
+  if (mcap > 0 && mcap <= 100_000) return "・lowcap初動帯";
+  return "・初動監視段階";
+}
+
 export function formatFlowIntroProduction(candidate) {
   return `**Flow確認**\nRadarが拾った動きを、ここで確認するよ。\n${radarCallLabel(candidate)} / $${candidate.symbol}`;
 }
 
 function flowNowLine(candidate, classification) {
-  const parts = [classification.label];
-  const sm = finalSm(candidate);
-  const flow = flowLine(candidate);
-  if (sm !== "n/a") parts.push(`Smart Money ${sm}`);
-  if (flow !== "n/a") parts.push(flow);
-  return shortText(parts.filter(Boolean).map((item) => `・${item}`).join("\n"), 220);
+  const lines = [
+    interpretedSmartMoneyLine(candidate),
+    interpretedFlowDirection(candidate).line,
+    interpretedStageLine(candidate)
+  ];
+  return shortText(lines.filter(Boolean).join("\n"), 220);
 }
 
 function flowVerifyNowLine(candidate) {
   return [
-    "・Dex / gmgn / Nansenで確認",
-    "・板・出来高・上位売り",
-    `・\`/why ${candidate.ca}\` に戻る`
+    "\u30fbDex / gmgn / Nansen\u3067\u78ba\u8a8d",
+    "\u30fb\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u898b\u308b",
+    `\u30fb\`/why ${candidate.ca}\` \u306b\u623b\u308b`
   ].join("\n");
 }
 
@@ -898,7 +926,7 @@ function flowRiskSummary(candidate) {
     .split(" / ")
     .map((item) => item.trim())
     .filter(Boolean);
-  return shortText((parts.length ? parts : ["取得待ち"]).map((item) => `・${item}`).join("\n"), 180);
+  return shortText((parts.length ? parts : ["\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d"]).map((item) => `\u30fb${item}`).join("\n"), 180);
 }
 
 function flowTraceSummary(candidate) {
@@ -920,10 +948,20 @@ function flowTraceSummary(candidate) {
   return shortText(lines.join("\n") || "・取得待ち", 320);
 }
 
+function flowJudgmentMemo(candidate) {
+  const sm = Number(finalSm(candidate));
+  const direction = interpretedFlowDirection(candidate).state;
+  if (direction === "out") return "Smart Money\u53cd\u5fdc\u306f\u3042\u308b\u304c\u3001\u8cc7\u91d1\u306f\u6d41\u51fa\u5bc4\u308a\u3002\u7121\u7406\u306b\u89e6\u3089\u305a\u3001\u6b21\u306e\u53cd\u5fdc\u3092\u76e3\u8996\u3002";
+  if (direction === "plus" && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u3068\u8cc7\u91d1\u6d41\u5165\u304c\u540c\u3058\u65b9\u5411\u3002\u305f\u3060\u3057\u89e6\u308b\u524d\u306b\u677f\u3001\u51fa\u6765\u9ad8\u3001\u30db\u30eb\u30c0\u30fc\u96c6\u4e2d\u3092\u78ba\u8a8d\u3002";
+  if ((direction === "neutral" || direction === "unknown") && Number.isFinite(sm) && sm >= 3) return "Smart Money\u53cd\u5fdc\u306f\u5f37\u3044\u4e00\u65b9\u3001\u8cc7\u91d1\u6d41\u5165\u306f\u307e\u3060\u4e2d\u7acb\u3002\u307e\u305a\u306f\u51fa\u6765\u9ad8\u7d99\u7d9a\u3068\u4e0a\u4f4d\u58f2\u308a\u3092\u78ba\u8a8d\u3002";
+  return "\u53cd\u5fdc\u306f\u898b\u3048\u308b\u304c\u6c7a\u5b9a\u6253\u306f\u307e\u3060\u5f31\u3081\u3002\u8ffd\u52a0\u306eSmart Money\u6d41\u5165\u3068bb\u5074\u306e\u5e83\u304c\u308a\u3092\u76e3\u8996\u3002";
+}
+
 export function formatFlowEmbedProduction(candidate) {
   const classification = flowClassification(candidate);
   const fields = [
     { name: "今起きてること", value: flowNowLine(candidate, classification) },
+    { name: "\u5224\u65ad\u30e1\u30e2", value: shortText(flowJudgmentMemo(candidate), 220) },
     { name: "まず見る", value: shortText(flowVerifyNowLine(candidate), 220) },
     { name: "注意点", value: flowRiskSummary(candidate) },
     { name: "Nansen根拠", value: flowTraceSummary(candidate) },
@@ -965,14 +1003,15 @@ export function formatWhyIntro(candidate) {
 }
 
 function whyRadarReasonLine(candidate, classification) {
-  const parts = [
-    classification.label,
-    bbUnpostedLine(candidate),
-    "低時価総額帯",
-    "Smart Money先行",
-    candidate.tracking?.maxGainPercent ? "通知後の実績あり" : "Nansen確認向き"
-  ].filter(Boolean);
-  return parts.slice(0, 4).map((item) => `・${item}`).join("\n");
+  const parts = [];
+  parts.push("\u30fb\u6c7a\u3081\u624b: Smart Money\u53cd\u5fdc");
+  if (candidate.metrics?.bbAlreadyPosted === false) parts.push("\u30fbbb\u672a\u6295\u7a3f\u3067\u521d\u52d5\u611f\u3042\u308a");
+  const direction = interpretedFlowDirection(candidate).state;
+  if (direction === "plus") parts.push("\u30fb\u8ffd\u3044\u98a8: Nansen flow\u304c\u30d7\u30e9\u30b9");
+  else if (direction === "out") parts.push("\u30fb\u6ce8\u610f: Nansen flow\u306f\u6d41\u51fa\u5bc4\u308a");
+  else parts.push("\u30fb\u78ba\u8a8d\u5f85\u3061: Nansen flow\u306f\u4e2d\u7acb");
+  parts.push("\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a / \u4e0a\u4f4d\u58f2\u308a");
+  return parts.slice(0, 4).join("\n");
 }
 
 function whyEvidenceLine(candidate) {
@@ -980,18 +1019,18 @@ function whyEvidenceLine(candidate) {
   const sm = finalSm(candidate);
   const flow = flowLine(candidate);
   const holder = holderLine(candidate);
-  if (sm !== "n/a") parts.push(`Smart Money ${sm}`);
-  if (flow !== "n/a") parts.push(`Nansen資金 ${flow}`);
-  if (holder !== "n/a") parts.push(`ホルダー ${holder}`);
-  return parts.slice(0, 3).map((item) => `・${item}`).join("\n") || "・取得待ち";
+  if (sm !== "n/a") parts.push(`\u30fbSmart Money ${sm}`);
+  if (flow !== "n/a") parts.push(`\u30fbNansen flow ${flow}`);
+  if (holder !== "n/a") parts.push(`\u30fb\u30db\u30eb\u30c0\u30fc ${holder}`);
+  return parts.slice(0, 3).join("\n") || "\u30fb\u53d6\u5f97\u5f85\u3061";
 }
 
 function whyRiskLine(candidate) {
   const parts = [
-    "出来高継続",
-    ...String(riskLine(candidate) || "").split(" / ")
+    "\u30fb\u672a\u78ba\u8a8d: \u51fa\u6765\u9ad8\u7d99\u7d9a",
+    ...String(riskLine(candidate) || "").split(" / ").map((item) => `\u30fb${item.trim()}`)
   ].map((item) => item.trim()).filter(Boolean);
-  return parts.slice(0, 3).map((item) => `・${item}`).join("\n");
+  return parts.slice(0, 3).join("\n");
 }
 
 export function formatWhyEmbed(candidate) {
