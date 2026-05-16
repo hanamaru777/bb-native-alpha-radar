@@ -1370,12 +1370,16 @@ function proofLine(alert) {
   const multiple = Number.isFinite(notifiedValue) && notifiedValue > 0 && Number.isFinite(maxValue)
     ? `${(maxValue / notifiedValue).toFixed(2)}x`
     : "\u53d6\u5f97\u5f85\u3061";
+  const notifiedAt = compactDate(alert.notification?.notifiedAt || alert.savedAt);
+  const elapsed = radarReactionAge(alert);
   return [
     `\u6700\u5927\u4e0a\u6607: ${formatGain(tracking.maxGainPercent)} / ${multiple}`,
-    `\u901a\u77e5\u6642 -> \u6700\u5927: ${notified} -> ${max}`,
-    `\u901a\u77e5\u304b\u3089: ${radarReactionAge(alert)}`,
-    `\u73fe\u5728: ${latest}`
-  ].join("\n");
+    `\u901a\u77e5\u6642MC: ${notified}`,
+    `\u6700\u5927MC: ${max}`,
+    `\u73fe\u5728MC: ${latest}`,
+    `\u901a\u77e5\u65e5\u6642: ${notifiedAt}`,
+    elapsed.includes("/") ? null : `\u7d4c\u904e: ${elapsed}`
+  ].filter(Boolean).join("\n");
 }
 
 function radarCaughtLine(alert) {
