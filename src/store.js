@@ -379,7 +379,7 @@ export function getStats() {
     best,
     recent: uniqueRecent(validAlerts).slice(0, 5),
     tracking: trackingStats(validAlerts),
-    scans: scanStats(scans)
+    scans: scanStats(scans, validAlerts)
   };
 }
 
@@ -436,10 +436,19 @@ function dailyRadarStats(validAlerts, scans, today) {
   };
 }
 
-function scanStats(scans) {
+function scanStats(scans, postedAlerts = []) {
   const today = localDateKey();
   const todayScans = scans.filter((scan) => isLocalDateKey(scan.scannedAt, today));
   const recentRejected = uniqueRejectedCandidates(scans.flatMap((scan) => scan.rejected || []));
+  const postedCaSet = new Set(
+    postedAlerts
+      .map((alert) => String(alert.ca || "").toLowerCase())
+      .filter(Boolean)
+  );
+  const visibleRecentRejected = recentRejected.filter((candidate) => {
+    const ca = String(candidate.ca || "").toLowerCase();
+    return !ca || !postedCaSet.has(ca);
+  });
   const reasonCounts = {};
   for (const rejected of recentRejected.slice(0, 50)) {
     for (const reason of rejected.reasons || []) {
@@ -455,7 +464,7 @@ function scanStats(scans) {
     total: scans.length,
     today: todayScans.length,
     rejectedTotal: scans.reduce((sum, scan) => sum + Number(scan.rejectedCount || 0), 0),
-    recentRejected: recentRejected.slice(0, 5),
+    recentRejected: visibleRecentRejected.slice(0, 5),
     topReasons
   };
 }
